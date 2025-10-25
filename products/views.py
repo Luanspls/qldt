@@ -31,3 +31,7 @@ def user_detail(request, user_id):
             return JsonResponse({'error': 'user not found'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+def health_check(request):
+    return JsonResponse({'status': 'ok'})
