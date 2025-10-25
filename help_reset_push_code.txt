@@ -1,0 +1,75 @@
+## Nếu bạn muốn bắt đầu lại hoàn toàn:
+    # Tạo backup để an toàn
+    git branch backup-main
+
+    # Reset hoàn toàn
+    git reset --hard origin/main
+
+    # Copy các file config quan trọng từ backup
+    git checkout backup-main -- railway.json Procfile requirements.txt
+
+    # Sau đó commit và push
+    git add .
+    git commit -m "Add Railway deployment config"
+    git push origin main
+##=====================================================================
+## Các bước an toàn push code mới lên git
+    # 1. Dừng rebase hiện tại
+    Dừng rebase hiện tại
+    # 2. Kéo code mới nhất từ remote về
+    git pull origin main
+    # 3. Giải quyết conflict thủ công:
+    - Mở các file bị conflict.
+    - Tìm các đoạn xung đột (được đánh dấu bằng <<<<<<<, =======, >>>>>>>).
+    - Quyết định giữ code nào (có thể giữ code của bạn, giữ code từ remote, hoặc kết hợp cả hai).
+    - Xóa các dấu đánh dấu conflict và lưu file.
+    # 4. Thêm các file đã sửa vào staging area
+    git add .
+    # 5. Commit các thay đổi:
+    git commit -m "Resolve merge conflicts"
+    # 6. Push code lên remote:
+    git push origin main
+##======================================================================
+## Phương án 2: Sử dụng force push (chỉ dùng nếu bạn chắc chắn muốn thay thế hoàn toàn remote bằng code local)
+Cảnh báo: Phương án này sẽ ghi đè lịch sử trên remote bằng lịch sử local của bạn. Nếu có người khác đang làm việc trên repository, điều này có thể gây ra vấn đề cho họ.
+
+    # 1. Đảm bảo bạn đang ở branch main:
+    git checkout main
+    # 2. Cập nhật local với remote (nhưng không merge):
+    git fetch origin
+    # 3. Reset branch local của bạn để khớp với remote (tùy chọn, nếu bạn muốn bắt đầu từ remote mới nhất):
+    git reset --hard origin/main
+    # 4. Áp dụng các thay đổi của bạn lên trên cùng (nếu bạn đã reset, bạn cần sao chép các thay đổi của mình lại):
+    - Nếu bạn chưa reset, bạn có thể tạo một commit mới chứa tất cả thay đổi của bạn.
+    - Hoặc, nếu bạn đã reset, bạn có thể copy các file của bạn vào thư mục dự án và commit.
+    # 5. Force push:
+    git push -f origin main
+##======================================================================
+## Phương án 3: Tạo một commit merge (nếu bạn không muốn rebase)
+    # 1. Hủy bỏ quá trình rebase hiện tại:
+    git rebase --abort
+    # 2. Thực hiện một merge thông thường:
+    git pull origin main --no-rebase
+    # 3. Giải quyết conflict (tương tự như trên) và commit:
+    git add .
+    git commit -m "Merge remote changes and resolve conflicts"
+    # 4. Push:
+    git push origin main
+##======================================================================
+## Phương án 4. Reset và Push Từ Đầu
+    # 1. Clone repository về thư mục mới (để backup)
+    cd ..
+    git clone https://github.com/Luanspls/QLDT_WEB.git QLDT_WEB-backup
+    cd QLDT_WEB
+
+    # 2. Reset hard về remote
+    git fetch origin
+    git reset --hard origin/main
+
+    # 3. XÓA TẤT CẢ FILE CŨ (giữ lại .git folder)
+    # Copy toàn bộ code mới của bạn vào
+
+    # 4. Add, commit và force push
+    git add .
+    git commit -m "Complete code replacement"
+    git push -f origin main

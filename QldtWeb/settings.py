@@ -63,12 +63,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'products',
     'django_extensions',
-    'rest_framework',
-    'crispy_forms',
     'crispy_bootstrap5',
-    'widget_tweaks',
     'django_htmx',
-    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
