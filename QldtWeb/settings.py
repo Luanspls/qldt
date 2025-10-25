@@ -4,48 +4,48 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def get_database_config():
-    """Lấy cấu hình database an toàn"""
-    supabase_url = os.environ.get('SUPABASE_URL')
+# def get_database_config():
+#     """Lấy cấu hình database an toàn"""
+#     supabase_url = os.environ.get('SUPABASE_URL')
     
-    if not supabase_url:
-        # Fallback to SQLite
-        return {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-            }
-        }
+#     if not supabase_url:
+#         # Fallback to SQLite
+#         return {
+#             'default': {
+#                 'ENGINE': 'django.db.backends.sqlite3',
+#                 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#             }
+#         }
     
-    try:
-        # Parse Supabase URL
-        from urllib.parse import urlparse
-        result = urlparse(supabase_url)
+#     try:
+#         # Parse Supabase URL
+#         from urllib.parse import urlparse
+#         result = urlparse(supabase_url)
         
-        return {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': 'postgres',
-                'USER': 'postgres',
-                'PASSWORD': result.password,
-                'HOST': result.hostname,
-                'PORT': result.port or 5432,
-                'OPTIONS': {
-                    'connect_timeout': 30,
-                    'sslmode': 'require',
-                },
-            }
-        }
-    except Exception as e:
-        print(f"Database config error: {e}, using SQLite fallback")
-        return {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-            }
-        }
+#         return {
+#             'default': {
+#                 'ENGINE': 'django.db.backends.postgresql',
+#                 'NAME': 'postgres',
+#                 'USER': 'postgres',
+#                 'PASSWORD': result.password,
+#                 'HOST': result.hostname,
+#                 'PORT': result.port or 5432,
+#                 'OPTIONS': {
+#                     'connect_timeout': 30,
+#                     'sslmode': 'require',
+#                 },
+#             }
+#         }
+#     except Exception as e:
+#         print(f"Database config error: {e}, using SQLite fallback")
+#         return {
+#             'default': {
+#                 'ENGINE': 'django.db.backends.sqlite3',
+#                 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#             }
+#         }
 
-DATABASES = get_database_config()
+# DATABASES = get_database_config()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -132,7 +132,7 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
+                # 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
         },
@@ -147,29 +147,29 @@ WSGI_APPLICATION = 'QldtWeb.wsgi.application'
 # Có thể dùng SQLite cho free tier, nhưng lưu ý Railway có ephemeral storage (mất dữ liệu khi redeploy)
 # Hoặc dùng Supabase cho cả database của Django (khuyến nghị)
 
-# DATABASES = {
-#     # 'default': {
-#     #     'ENGINE': 'django.db.backends.sqlite3',
-#     #     'NAME': BASE_DIR / 'db.sqlite3',
-#     # },
-#     'default': {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": os.environ.get('DB_NAME', 'postgres'),
-#         "USER": os.environ.get('DB_USER', 'postgres'),
-#         "PASSWORD": os.environ.get('DB_PASSWORD'),
-#         # "HOST": "localhost",
-#         "HOST": os.environ.get('DB_HOST'),
-#         "PORT": os.environ.get('DB_PORT', '5432'),
-#         'SCHEMA': 'public',
-#         'OPTIONS': {
-#             'connect_timeout': 30,
-#             'keepalives': 1,
-#             'keepalives_idle': 30,
-#             'keepalives_interval': 10,
-#             'keepalives_count': 5,
-#         },
-#     }
-# }
+DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': BASE_DIR / 'db.sqlite3',
+    # },
+    'default': {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get('DB_NAME', 'postgres'),
+        "USER": os.environ.get('DB_USER', 'postgres'),
+        "PASSWORD": os.environ.get('DB_PASSWORD'),
+        # "HOST": "localhost",
+        "HOST": os.environ.get('DB_HOST'),
+        "PORT": os.environ.get('DB_PORT', '5432'),
+        'SCHEMA': 'public',
+        'OPTIONS': {
+            'connect_timeout': 30,
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
+        },
+    }
+}
 
 # Internationalization
 
