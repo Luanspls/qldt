@@ -1,1 +1,1 @@
-web: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn QldtWeb.wsgi:application --bind 0.0.0.0:$PORT
+web: python -c "try: __import__('django.core.management').execute_from_command_line(['manage.py', 'migrate']); except: print('Migration failed, continuing...')" && python manage.py collectstatic --noinput && gunicorn QldtWeb.wsgi:application --bind 0.0.0.0:$PORT
