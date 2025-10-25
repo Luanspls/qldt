@@ -4,17 +4,6 @@ import json
 from .services import UserService
 
 
-def home(request):
-    """Home page"""
-    return JsonResponse({
-        'message': 'Welcome to QLDT Web API',
-        'endpoints': {
-            'health': '/',
-            'api': '/api/',
-            'products': '/api/products/'
-        }
-    })
-
 @csrf_exempt
 def users_list(request):
     if request.method == 'GET':
@@ -42,11 +31,3 @@ def user_detail(request, user_id):
             return JsonResponse({'error': 'user not found'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-
-@csrf_exempt
-def health_check(request):
-    return JsonResponse({
-        'status': 'success',
-        'message': 'QLDT Web API is running',
-        'version': '1.0.0'
-    })
