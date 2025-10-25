@@ -9,5 +9,6 @@ def health_check(request):
         'service': 'Django API',
         'version': '1.0.0',
         'environment': os.environ.get('ENVIRONMENT', 'development'),
-        'public_url': f"https://{os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'unknown')}",
-    })
+        'public_url': f"https://{os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'localhost')}"},
+        status=200
+    )
