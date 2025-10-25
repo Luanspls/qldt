@@ -101,12 +101,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
+    # 'rest_framework',
     'corsheaders',
     'products',
-    'django_extensions',
-    'crispy_bootstrap5',
-    'django_htmx',
+    # 'django_extensions',
+    # 'crispy_bootstrap5',
+    # 'django_htmx',
 ]
 
 MIDDLEWARE = [
