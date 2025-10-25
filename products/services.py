@@ -1,4 +1,3 @@
-# products/services.py
 from supabase import create_client
 import os
 from typing import List, Dict, Optional
