@@ -69,4 +69,4 @@ def health_check(request):
         })
 
 def home_page(request):
-    return render(request, 'products/home.html')
+    return render(request, 'products/templates/products/home.html')

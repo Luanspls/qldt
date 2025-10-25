@@ -4,6 +4,40 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+RAILWAY_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'qldtweb-production.up.railway.app')
+
+# CORS settings cho phép frontend truy cập
+CORS_ALLOWED_ORIGINS = [
+    "https://qldtweb-production.vercel.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# Hoặc cho phép tất cả origins (chỉ cho development)
+CORS_ALLOW_ALL_ORIGINS = True
+
+# CORS methods và headers
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET', 
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
 # def get_database_config():
 #     """Lấy cấu hình database an toàn"""
 #     supabase_url = os.environ.get('SUPABASE_URL')

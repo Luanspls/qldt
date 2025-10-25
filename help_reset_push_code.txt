@@ -1,3 +1,8 @@
+## UPDATE FILE:
+git add file1, file2, ... (gồm cả đuôi)
+git commit -m "Fix: ...."
+git push origin main
+##=======================================================================
 ## Nếu bạn muốn bắt đầu lại hoàn toàn:
     # Tạo backup để an toàn
     git branch backup-main
