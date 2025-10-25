@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.shortcuts import render
 from .services import UserService
 from .supabase_api import supabase_api
 
@@ -66,3 +67,6 @@ def health_check(request):
             'database': 'supabase_disconnected',
             'error': str(e)
         })
+
+def home_page(request):
+    return render(request, 'products/home.html')
