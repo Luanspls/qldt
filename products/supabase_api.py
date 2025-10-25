@@ -5,7 +5,7 @@ from typing import List, Dict, Optional
 class SupabaseAPI:
     def __init__(self):
         self.url = os.environ.get('SUPABASE_URL')
-        self.key = os.environ.get('SUPABASE_KEY')
+        self.key = os.environ.get('SUPABASE_ANON_KEY')
         self.headers = {
             'apikey': self.key,
             'Authorization': f'Bearer {self.key}',
