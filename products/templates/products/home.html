@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Home</title>
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'products/style.css' %}">
+    <title>QLDT Web</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-    <h1>Welcome to QLDT Web</h1>
-    <p>This is a test page with static files.</p>
+    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h1>Welcome to QLDT Web</h1>
+        <p>Django + Supabase + Railway</p>
+        <div>
+            <a href="/admin/">Admin Panel</a> | 
+            <a href="/products/">Products API</a> | 
+            <a href="/health/">Health Check</a>
+        </div>
+    </div>
 </body>
 </html>
