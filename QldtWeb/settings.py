@@ -132,35 +132,35 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 #     }
 # else:
 #     # Fallback configuration
-#     DATABASES = {
-#         'default': {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': BASE_DIR / 'db.sqlite3',
-#         }
-#     }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 # print(f"✅ Database HOST: {DATABASES['default'].get('HOST', 'N/A')}")
 # print(f"✅ Database CONN_MAX_AGE: {DATABASES['default'].get('CONN_MAX_AGE', 'N/A')}")
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'c10.54321@',  # THAY THẾ
-        'HOST': 'aws-0-ap-southeast-1.pooler.supabase.co',  # Dùng connection pooling
-        'PORT': '6543',
-        'CONN_MAX_AGE': 60,
-        'OPTIONS': {
-            'sslmode': 'require',
-            'connect_timeout': 30,
-            'keepalives': 1,
-            'keepalives_idle': 30,
-            'keepalives_interval': 10,
-            'keepalives_count': 5,
-        }
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'postgres',
+#         'USER': 'postgres',
+#         'PASSWORD': 'c10.54321@',  # THAY THẾ
+#         'HOST': 'aws-0-ap-southeast-1.pooler.supabase.co',  # Dùng connection pooling
+#         'PORT': '6543',
+#         'CONN_MAX_AGE': 60,
+#         'OPTIONS': {
+#             'sslmode': 'require',
+#             'connect_timeout': 30,
+#             'keepalives': 1,
+#             'keepalives_idle': 30,
+#             'keepalives_interval': 10,
+#             'keepalives_count': 5,
+#         }
+#     }
+# }
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
