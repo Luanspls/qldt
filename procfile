@@ -1,1 +1,1 @@
-web: mkdir -p staticfiles && python manage.py collectstatic --noinput && gunicorn QldtWeb.wsgi:application --bind 0.0.0.0:$PORT
+web: python manage.py migrate && python manage.py create_superuser || true && python manage.py collectstatic --noinput && gunicorn QldtWeb.wsgi:application --bind 0.0.0.0:$PORT
