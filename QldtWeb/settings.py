@@ -108,32 +108,32 @@ TEMPLATES = [
 # Lấy DATABASE_URL từ environment variable
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if DATABASE_URL:
-    # Sử dụng DATABASE_URL nếu có
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
-    print("✅ Using DATABASE_URL configuration")
-else:
-    # Fallback đến cấu hình cũ
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'postgres'),
-            'USER': os.environ.get('DB_USER', 'postgres'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'HOST': os.environ.get('DB_HOST', ''),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-            'OPTIONS': {
-                'sslmode': 'require',
-                'connect_timeout': 30,
-            },
-        }
-    }
+# if DATABASE_URL:
+# Sử dụng DATABASE_URL nếu có
+DATABASES = {
+    'default': dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+}
+print("✅ Using DATABASE_URL configuration")
+# else:
+#     # Fallback đến cấu hình cũ
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': os.environ.get('DB_NAME', 'postgres'),
+#             'USER': os.environ.get('DB_USER', 'postgres'),
+#             'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+#             'HOST': os.environ.get('DB_HOST', ''),
+#             'PORT': os.environ.get('DB_PORT', '5432'),
+#             'OPTIONS': {
+#                 'sslmode': 'require',
+#                 'connect_timeout': 30,
+#             },
+#         }
+#     }
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
