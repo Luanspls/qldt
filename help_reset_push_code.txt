@@ -78,3 +78,38 @@ Cảnh báo: Phương án này sẽ ghi đè lịch sử trên remote bằng l�
     git add .
     git commit -m "Complete code replacement"
     git push -f origin main
+
+## Xóa các file không mong muốn (trong danh sách .gitignogre) đã đẩy lên git
+    # Cách 1. Xóa cache và áp dụng .gitignore
+        # Xóa cache của git
+        git rm -r --cached .
+
+        # Thêm lại tất cả file (sẽ tuân theo .gitignore)
+        git add .
+
+        # Commit thay đổi
+        git commit -m "Apply .gitignore and remove tracked files"
+
+        # Push lên
+        git push origin 
+    # Cách 2. Xóa cụ thể các file/folder không mong muốn
+        # Xóa folder venv khỏi tracking
+        git rm -r --cached .venv
+        git rm -r --cached venv
+
+        # Xóa file .env
+        git rm --cached .env
+
+        # Xóa các file khác nếu cần
+        git rm --cached *.pyc
+
+        # Commit và push
+        git add .
+        git commit -m "Remove unwanted files from tracking"
+        git push origin 
+    # 3. Kiểm tra kết quả
+        # Xem những file nào đang được track
+        git ls-files
+
+        # Kiểm tra xem .gitignore có hoạt động không
+        git status
