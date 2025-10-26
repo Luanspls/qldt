@@ -1,6 +1,7 @@
 import os
 import sys
 import dj_database_url
+from urllib.parse import urlparse
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -25,35 +26,35 @@ ALLOWED_HOSTS = ['*']
 #     '.railway.app',  # Cho phép tất cả subdomain railway
 # ]
 
-CSRF_TRUSTED_ORIGINS = [
-    f'https://{RAILWAY_DOMAIN}',
-    f'https://*.{RAILWAY_DOMAIN}',
-    'https://*.railway.app',
-]
+# CSRF_TRUSTED_ORIGINS = [
+#     f'https://{RAILWAY_DOMAIN}',
+#     f'https://*.{RAILWAY_DOMAIN}',
+#     'https://*.railway.app',
+# ]
 
-# 
+# # 
 
-# CORS methods và headers
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET', 
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
+# # CORS methods và headers
+# CORS_ALLOW_METHODS = [
+#     'DELETE',
+#     'GET', 
+#     'OPTIONS',
+#     'PATCH',
+#     'POST',
+#     'PUT',
+# ]
 
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
+# CORS_ALLOW_HEADERS = [
+#     'accept',
+#     'accept-encoding',
+#     'authorization',
+#     'content-type',
+#     'dnt',
+#     'origin',
+#     'user-agent',
+#     'x-csrftoken',
+#     'x-requested-with',
+# ]
 
 # Application definition
 INSTALLED_APPS = [
@@ -74,6 +75,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'products.middleware.DatabaseHealthCheckMiddleware',  # THÊM DÒNG NÀY
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -109,35 +111,70 @@ TEMPLATES = [
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # if DATABASE_URL:
-# Sử dụng DATABASE_URL nếu có
-DATABASES = {
-    'default': dj_database_url.config(
-        default=DATABASE_URL,
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
-print("✅ Using DATABASE_URL configuration")
+#     db_config = dj_database_url.parse(DATABASE_URL)
+    
+#     # Thêm connection options chi tiết
+#     db_config.update({
+#         'CONN_MAX_AGE': 60,  # Giữ connection 60 giây
+#         'CONN_HEALTH_CHECKS': True,
+#         'OPTIONS': {
+#             'sslmode': 'require',
+#             'connect_timeout': 30,
+#             'keepalives': 1,
+#             'keepalives_idle': 30,
+#             'keepalives_interval': 10,
+#             'keepalives_count': 5,
+#         }
+#     })
+    
+#     DATABASES = {
+#         'default': db_config
+#     }
 # else:
-#     # Fallback đến cấu hình cũ
+#     # Fallback configuration
 #     DATABASES = {
 #         'default': {
-#             'ENGINE': 'django.db.backends.postgresql',
-#             'NAME': os.environ.get('DB_NAME', 'postgres'),
-#             'USER': os.environ.get('DB_USER', 'postgres'),
-#             'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-#             'HOST': os.environ.get('DB_HOST', ''),
-#             'PORT': os.environ.get('DB_PORT', '5432'),
-#             'OPTIONS': {
-#                 'sslmode': 'require',
-#                 'connect_timeout': 30,
-#             },
+#             'ENGINE': 'django.db.backends.sqlite3',
+#             'NAME': BASE_DIR / 'db.sqlite3',
 #         }
 #     }
+
+# print(f"✅ Database HOST: {DATABASES['default'].get('HOST', 'N/A')}")
+# print(f"✅ Database CONN_MAX_AGE: {DATABASES['default'].get('CONN_MAX_AGE', 'N/A')}")
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': 'c10.54321@',  # THAY THẾ
+        'HOST': 'aws-0-ap-southeast-1.pooler.supabase.co',  # Dùng connection pooling
+        'PORT': '6543',
+        'CONN_MAX_AGE': 60,
+        'OPTIONS': {
+            'sslmode': 'require',
+            'connect_timeout': 30,
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
+        }
+    }
+}
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+# SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+# SESSION_CACHE_ALIAS = 'default'
+
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+#         'LOCATION': 'unique-snowflake',
+#     }
+# }
 
 # Security
 if not DEBUG:
