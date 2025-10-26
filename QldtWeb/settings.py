@@ -102,31 +102,20 @@ TEMPLATES = [
     },
 ]
 
-
-# DATABASES = {
-#     # 'default': {
-#     #     'ENGINE': 'django.db.backends.sqlite3',
-#     #     'NAME': BASE_DIR / 'db.sqlite3',
-#     # }
-#     'default': {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": os.environ.get('DB_NAME', 'postgres'),
-#         "USER": os.environ.get('DB_USER', 'postgres'),
-#         "PASSWORD": os.environ.get('DB_PASSWORD'),
-#         "HOST": os.environ.get('DB_HOST'),
-#         "PORT": os.environ.get('DB_PORT', '5432'),
-#         'SCHEMA': 'public',
-#         'OPTIONS': {
-#             'connect_timeout': 30,
-#             'keepalives': 1,
-#             'keepalives_idle': 30,
-#             'keepalives_interval': 10,
-#             'keepalives_count': 5,
-#             'sslmode': 'require',
-#             'sslrootcert': os.path.join(BASE_DIR, 'supabase-root.crt'),
-#         },
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'postgres'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', ''),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {
+            'sslmode': 'require',
+            'connect_timeout': 30,
+        },
+    }
+}
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
