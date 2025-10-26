@@ -16,7 +16,7 @@ class SupabaseAPI:
         """Lấy danh sách products từ Supabase"""
         try:
             response = requests.get(
-                f"{self.url}/rest/v1/products",
+                f"{self.url}/rest/v1/users",
                 headers=self.headers,
                 params={"select": "*"}
             )
