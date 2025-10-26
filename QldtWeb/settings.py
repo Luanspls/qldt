@@ -60,10 +60,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'rest_framework',
+    'djangorestframework',
     'corsheaders',
     'products',
-    'django_extensions',
     # 'crispy_bootstrap5',
     # 'django_htmx',
 ]
