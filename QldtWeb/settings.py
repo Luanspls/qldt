@@ -128,44 +128,6 @@ TEMPLATES = [
 #     }
 # }
 
-import urllib.parse
-
-# Lấy connection string từ environment variable
-database_url = os.environ.get('DATABASE_URL')
-
-if database_url:
-    # Parse connection string từ Supabase
-    parsed_url = urllib.parse.urlparse(database_url)
-    
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': parsed_url.path[1:],  # Bỏ '/' đầu tiên
-            'USER': parsed_url.username,
-            'PASSWORD': parsed_url.password,
-            'HOST': parsed_url.hostname,
-            'PORT': parsed_url.port or 5432,
-            'OPTIONS': {
-                'sslmode': 'require',
-            },
-        }
-    }
-else:
-    # Fallback đến cấu hình cũ
-    DATABASES = {
-        'default': {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get('DB_NAME', 'postgres'),
-            "USER": os.environ.get('DB_USER', 'postgres'),
-            "PASSWORD": os.environ.get('DB_PASSWORD'),
-            "HOST": os.environ.get('DB_HOST'),
-            "PORT": os.environ.get('DB_PORT', '5432'),
-            'OPTIONS': {
-                'sslmode': 'require',
-            },
-        }
-    }
-
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
