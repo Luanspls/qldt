@@ -11,17 +11,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
 
 # DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
-DEBUG = False
+DEBUG = True
 
 RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '') or 'qldtweb-production.up.railway.app'
 
-ALLOWED_HOSTS = [
-    RAILWAY_DOMAIN,
-    'localhost',
-    '127.0.0.1',
-    '0.0.0.0',
-    '.railway.app',  # Cho phép tất cả subdomain railway
-]
+ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS = [
+#     RAILWAY_DOMAIN,
+#     'localhost',
+#     '127.0.0.1',
+#     '0.0.0.0',
+#     '.railway.app',  # Cho phép tất cả subdomain railway
+# ]
 
 CSRF_TRUSTED_ORIGINS = [
     f'https://{RAILWAY_DOMAIN}',
@@ -188,39 +189,28 @@ if DEBUG:
         }
     }
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'filters': {
-#         'ignore_chrome_devtools': {
-#             '()': 'django.utils.log.CallbackFilter',
-#             'callback': lambda record: not (
-#                 'GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1' in record.getMessage()
-#             ),
-#         },
-#     },
-#     'formatters': {
-#         'verbose': {
-#             'format': '{levelname} {asctime} {module} {message}',
-#             'style': '{',
-#         },
-#     },
-#     'handlers': {
-#         'console': {
-#             'class': 'logging.StreamHandler',
-#             'formatter': 'verbose',
-#         },
-#         'file': {
-#             'class': 'logging.FileHandler',
-#             'filename': os.path.join(BASE_DIR, 'django.log'),
-#             'formatter': 'verbose',
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'handlers': ['file'], 
-#             'level': 'DEBUG',  # INFO, WARNING, ERROR
-#             'propagate': True,
-#         },
-#     },
-# }
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}

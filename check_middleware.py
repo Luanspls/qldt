@@ -30,7 +30,7 @@ def check_middleware():
     
     # Test authentication
     from django.contrib.auth import authenticate, login
-    user = authenticate(username='admin', password='c10.123456@')  # Thay 'your-password' bằng password thực
+    user = authenticate(username='admin', password='your-password')  # Thay 'your-password' bằng password thực
     
     if user:
         login(request, user)

@@ -19,7 +19,7 @@ def test_admin_login():
     request.session.save()
     
     # Test authentication
-    user = authenticate(username='admin', password='c10.123456@')
+    user = authenticate(username='admin', password='your-password')
     if user:
         print(f"✅ Authentication successful: {user}")
         login(request, user)
