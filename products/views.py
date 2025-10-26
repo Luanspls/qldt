@@ -70,3 +70,19 @@ def health_check(request):
 
 def home_page(request):
     return render(request, 'products/home.html')
+
+@csrf_exempt
+def debug_setup(request):
+    """Endpoint để debug và setup database"""
+    try:
+        from django.core.management import execute_from_command_line
+        execute_from_command_line(['manage.py', 'migrate'])
+        
+        from django.contrib.auth.models import User
+        if not User.objects.filter(username='admin').exists():
+            User.objects.create_superuser('admin1', 'admin1@example.com', 'admin123')
+            return JsonResponse({'status': 'success', 'message': 'Migrations run and admin user created'})
+        else:
+            return JsonResponse({'status': 'success', 'message': 'Migrations run - admin exists'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
