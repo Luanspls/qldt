@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Chương trình Đào tạo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .editable:focus {
+            outline: 2px solid #3b82f6;
+            background-color: #f0f9ff;
+        }
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8 text-blue-800">QUẢN LÝ CHƯƠNG TRÌNH ĐÀO TẠO</h1>
+        
+        <!-- Thông tin chung -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Khoa đào tạo</label>
+                    <select class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option>Khoa Công nghệ Thông tin</option>
+                        <option>Khoa Kinh tế - Kế toán</option>
+                        <option>Khoa Ngoại ngữ</option>
+                        <option>Khoa Đào tạo Giáo viên</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Tổ bộ môn</label>
+                    <select class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option>Tổ Tin học</option>
+                        <option>Tổ Toán</option>
+                        <option>Tổ Cơ bản</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Chương trình đào tạo</label>
+                    <select class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option>Chương trình Tin học ứng dụng</option>
+                        <option>Chương trình Quản trị mạng</option>
+                        <option>Chương trình Lập trình ứng dụng</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Khóa học</label>
+                    <select class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option>Khóa 2022-2025</option>
+                        <option>Khóa 2021-2024</option>
+                        <option>Khóa 2023-2026</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Nút chức năng -->
+        <div class="flex flex-wrap justify-between mb-6">
+            <div class="flex space-x-2 mb-4">
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+                    <i class="fas fa-plus mr-2"></i> Thêm chương trình đào tạo
+                </button>
+                <button class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+                    <i class="fas fa-sync-alt mr-2"></i> Cập nhật
+                </button>
+            </div>
+            
+            <div>
+                <button class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+                    <i class="fas fa-file-excel mr-2"></i> Import Excel
+                </button>
+            </div>
+        </div>
+        
+        <!-- Bảng dữ liệu -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="table-container">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TT</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã môn học</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên học phần</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số tín chỉ</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng số giờ</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lý thuyết</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thực hành</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kiểm tra/Thi</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HK1</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HK2</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HK3</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HK4</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HK5</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HK6</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đơn vị</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giảng viên</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- Dòng tiêu đề I -->
+                        <tr class="bg-blue-100 font-bold">
+                            <td colspan="17" class="px-4 py-2">I. CÁC MÔN HỌC CHUNG</td>
+                        </tr>
+                        
+                        <!-- Dòng 1 -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 whitespace-nowrap">1</td>
+                            <td class="px-4 py-2"><input type="text" value="MH01" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Giáo dục chính trị" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="4.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="75.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="41.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="29.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="5.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="4.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Khoa các BMC" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2">
+                                <button class="text-blue-600 hover:text-blue-900">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Dòng 2 -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 whitespace-nowrap">2</td>
+                            <td class="px-4 py-2"><input type="text" value="MH02" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Pháp luật" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="2.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="30.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="18.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="10.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="2.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="2.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Khoa các BMC" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2">
+                                <button class="text-blue-600 hover:text-blue-900">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Dòng 3 -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 whitespace-nowrap">3</td>
+                            <td class="px-4 py-2"><input type="text" value="MH03" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Giáo dục thể chất" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="2.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="60.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="5.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="51.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="4.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="2.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Khoa các BMC" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2">
+                                <button class="text-blue-600 hover:text-blue-900">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Dòng 4 -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 whitespace-nowrap">4</td>
+                            <td class="px-4 py-2"><input type="text" value="MH04" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="GD Quốc phòng và An ninh" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="3.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="75.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="36.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="36.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="3.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="3.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Khoa các BMC" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2">
+                                <button class="text-blue-600 hover:text-blue-900">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Dòng 5 -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 whitespace-nowrap">5</td>
+                            <td class="px-4 py-2"><input type="text" value="MH05" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Tin học" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="3.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="75.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="15.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="58.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="2.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="3.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Tổ Tin học" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Trương Quỳnh Liễu" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2">
+                                <button class="text-blue-600 hover:text-blue-900">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Dòng tiêu đề II -->
+                        <tr class="bg-blue-100 font-bold">
+                            <td colspan="17" class="px-4 py-2">II. CÁC MÔN HỌC CHUYÊN NGÀNH</td>
+                        </tr>
+                        
+                        <!-- Dòng 6 -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 whitespace-nowrap">6</td>
+                            <td class="px-4 py-2"><input type="text" value="MH06" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Tiếng Anh" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="5.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="120.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="42.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="72.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="6.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="5.0" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="Khoa Ngoại ngữ" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2"><input type="text" value="" class="editable w-full bg-transparent border-none"></td>
+                            <td class="px-4 py-2">
+                                <button class="text-blue-600 hover:text-blue-900">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Thông tin tổng kết -->
+        <div class="mt-6 bg-white rounded-lg shadow-md p-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <p class="text-gray-600">Tổng số tín chỉ</p>
+                    <p class="text-xl font-bold text-blue-700">76.0</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-gray-600">Tổng số giờ</p>
+                    <p class="text-xl font-bold text-blue-700">2475.0</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-gray-600">Tỷ lệ lý thuyết</p>
+                    <p class="text-xl font-bold text-blue-700">30.5%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-gray-600">Tỷ lệ thực hành</p>
+                    <p class="text-xl font-bold text-blue-700">69.5%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Xử lý sự kiện cho nút sửa
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const inputs = row.querySelectorAll('input');
+                
+                // Chuyển đổi giữa chế độ chỉnh sửa và xem
+                if (this.innerHTML.includes('fa-edit')) {
+                    this.innerHTML = '<i class="fas fa-check"></i>';
+                    inputs.forEach(input => {
+                        input.classList.add('border', 'border-blue-400');
+                        input.removeAttribute('readonly');
+                    });
+                } else {
+                    this.innerHTML = '<i class="fas fa-edit"></i>';
+                    inputs.forEach(input => {
+                        input.classList.remove('border', 'border-blue-400');
+                        input.setAttribute('readonly', true);
+                    });
+                }
+            });
+        });
+        
+        // Thiết lập các ô input ban đầu là readonly
+        document.querySelectorAll('input').forEach(input => {
+            input.setAttribute('readonly', true);
+        });
+    </script>
+</body>
+</html>
