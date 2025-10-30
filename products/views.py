@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.shortcuts import render
+from django.views import View
 from .services import UserService
 from .supabase_api import supabase_api
 
@@ -86,11 +87,6 @@ def debug_setup(request):
             return JsonResponse({'status': 'success', 'message': 'Migrations run - admin exists'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
-
-from django.shortcuts import render
-from django.views import View
-from django.http import JsonResponse
-import json
 
 class TrainProgramManagerView(View):
     template_name = 'products/TrainProgram.html'
