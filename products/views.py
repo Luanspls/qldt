@@ -12,6 +12,22 @@ from django.conf import settings
 from .services import UserService
 from .supabase_api import supabase_api
 
+
+def home_page(request):
+    return render(request, 'products/home.html')
+
+def users_list(request):
+    users = supabase_api.get_users()
+    return JsonResponse(users, safe=False)    
+
+def health_check(request):
+    """Kiểm tra sức khỏe kết nối đến Supabase"""
+    users = supabase_api.get_users()
+    if users:
+        return JsonResponse({'status': 'healthy', 'message': 'Kết nối Supabase thành công'})
+    else:
+        return JsonResponse({'status': 'unhealthy', 'message': 'Không thể kết nối đến Supabase'}, status=500)
+
 class TrainProgramManagerView(View):
     template_name = 'products/TrainProgram.html'
     

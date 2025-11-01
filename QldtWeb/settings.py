@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get('DEBUG', 'False')
 # DEBUG = True
 
-RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '') or 'qldt.up.railway.app'
+RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '') or 'qldt.up.railway.app' or 'qldtweb.onrender.com'
 
 # ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = [
@@ -83,7 +83,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'products.middleware.DatabaseHealthCheckMiddleware',  # THÊM DÒNG NÀY
+    # 'products.middleware.DatabaseHealthCheckMiddleware',  # THÊM DÒNG NÀY
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
