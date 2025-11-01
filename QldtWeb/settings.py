@@ -1,30 +1,32 @@
 import os
 import sys
 import dj_database_url
+import socket
 from urllib.parse import urlparse
 from pathlib import Path
 from dotenv import load_dotenv
 
-# load_dotenv()
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
+# SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
 
-# DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False')
+# DEBUG = True
 
 RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '') or 'qldt.up.railway.app'
 
-ALLOWED_HOSTS = ['*']
-# ALLOWED_HOSTS = [
-#     RAILWAY_DOMAIN,
-#     'localhost',
-#     '127.0.0.1',
-#     '0.0.0.0',
-#     '.railway.app',  # Cho phép tất cả subdomain railway
-# ]
+# ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    # RAILWAY_DOMAIN,
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '.railway.app',  # Cho phép tất cả subdomain railway
+    '.onrender.com',  # Cho phép tất cả subdomain onrender
+]
 
 # CSRF_TRUSTED_ORIGINS = [
 #     f'https://{RAILWAY_DOMAIN}',
@@ -32,7 +34,14 @@ ALLOWED_HOSTS = ['*']
 #     'https://*.railway.app',
 # ]
 
-# # 
+# CORS settings cho phép frontend truy 
+# CORS_ALLOWED_ORIGINS = [
+#     "https://qldt.vercel.app",
+#     "http://localhost:3000",
+#     "http://
+# ]
+# Hoặc cho phép tất cả origins (chỉ cho development)
+# CORS_ALLOW_ALL_ORIGINS = True
 
 # # CORS methods và headers
 # CORS_ALLOW_METHODS = [
@@ -74,7 +83,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    # 'products.middleware.DatabaseHealthCheckMiddleware',  # THÊM DÒNG NÀY
+    'products.middleware.DatabaseHealthCheckMiddleware',  # THÊM DÒNG NÀY
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -107,73 +116,114 @@ TEMPLATES = [
 ]
 
 # Lấy DATABASE_URL từ environment variable
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if DATABASE_URL:
-    db_config = dj_database_url.parse(DATABASE_URL)
+def get_supabase_connection():
+    """Custom function to handle Supabase connection with DNS workaround"""
+    DATABASE_URL = os.getenv('DATABASE_URL')
     
-    # Thêm connection options chi tiết
-    db_config.update({
-        'CONN_MAX_AGE': 60,  # Giữ connection 60 giây
-        'CONN_HEALTH_CHECKS': True,
-        'OPTIONS': {
-            'sslmode': 'require',
-            'connect_timeout': 30,
-            'keepalives': 1,
-            'keepalives_idle': 30,
-            'keepalives_interval': 10,
-            'keepalives_count': 5,
-        }
-    })
-    
-    DATABASES = {
-        'default': db_config
-    }
-else:
-    # Fallback configuration
-    DATABASES = {
-        'default': {
+    if not DATABASE_URL:
+        return {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         }
-    }
+    
+    try:
+        # Thử phân giải hostname bằng socket
+        hostname = 'aws-1-ap-southeast-1.pooler.supabase.com'
+        
+        # Lấy địa chỉ IP
+        ip_address = socket.gethostbyname(hostname)
+        
+        print(f"Resolved {hostname} to {ip_address}")
+        
+        # Thay thế hostname bằng IP trong DATABASE_URL
+        DATABASE_URL = DATABASE_URL.replace(hostname, ip_address)
+        
+        db_config = dj_database_url.parse(DATABASE_URL)
+        db_config['OPTIONS'] = {
+            'connect_timeout': 10,
+        }
+        
+        return db_config
+        
+    except socket.gaierror as e:
+        print(f"DNS resolution failed: {e}")
+        print("Falling back to SQLite")
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    except Exception as e:
+        print(f"Other connection error: {e}")
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
 
-# print(f"✅ Database HOST: {DATABASES['default'].get('HOST', 'N/A')}")
-# print(f"✅ Database CONN_MAX_AGE: {DATABASES['default'].get('CONN_MAX_AGE', 'N/A')}")
+# Sử dụng custom connection
+DATABASES = {
+    'default': get_supabase_connection()
+}
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'postgres',
-#         'USER': 'postgres',
-#         'PASSWORD': 'c10.54321@',  # THAY THẾ
-#         'HOST': 'aws-0-ap-southeast-1.pooler.supabase.co',  # Dùng connection pooling
-#         'PORT': '5432',
-#         'CONN_MAX_AGE': 60,
-#         'OPTIONS': {
-#             'sslmode': 'require',
-#             'connect_timeout': 30,
-#             'keepalives': 1,
-#             'keepalives_idle': 30,
-#             'keepalives_interval': 10,
-#             'keepalives_count': 5,
+# if DATABASE_URL:
+#     try:
+#         db_config = dj_database_url.parse(DATABASE_URL)
+
+#         # Thêm connection options chi tiết
+#         db_config.update({
+#             'CONN_MAX_AGE': 60,  # Giữ connection 60 giây
+#             'CONN_HEALTH_CHECKS': True,
+#             'OPTIONS': {
+#                 'sslmode': 'require',
+#                 'connect_timeout': 30,
+#                 'keepalives': 1,
+#                 'keepalives_idle': 30,
+#                 'keepalives_interval': 10,
+#                 'keepalives_count': 5,
+#             }
+#         })
+        
+#         DATABASES = {
+#             'default': db_config
+#         }
+#     except Exception as e:
+#         print(f"Lỗi kết nối Supabase: {e}")
+#         # Fallback to SQLite
+#         DATABASES = {
+#             'default': {
+#                 'ENGINE': 'django.db.backends.sqlite3',
+#                 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#             }
+#         }
+# else:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.sqlite3',
+#             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
 #         }
 #     }
-# }
 
+# Password validation
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+# Authentication backends
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-
-# SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
-# SESSION_CACHE_ALIAS = 'default'
-
-# CACHES = {
-#     'default': {
-#         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-#         'LOCATION': 'unique-snowflake',
-#     }
-# }
 
 # Security
 if not DEBUG:
@@ -193,15 +243,6 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# CORS settings cho phép frontend truy cập
-# CORS_ALLOWED_ORIGINS = [
-#     "https://qldtweb-production.vercel.app",
-#     "http://localhost:3000",
-#     "http://127.0.0.1:3000",
-# ]
-# Hoặc cho phép tất cả origins (chỉ cho development)
-CORS_ALLOW_ALL_ORIGINS = True
-
 # Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
@@ -217,10 +258,10 @@ STATICFILES_DIRS = [
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# # Login/Logout URLs
-# LOGIN_URL = '/admin/login/'
-# LOGIN_REDIRECT_URL = '/admin/'
-# LOGOUT_REDIRECT_URL = '/admin/'
+# Login/Logout URLs
+LOGIN_URL = '/admin/login/'
+LOGIN_REDIRECT_URL = '/admin/'
+LOGOUT_REDIRECT_URL = '/admin/'
 
 # Supabase configuration
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -240,29 +281,3 @@ if DEBUG:
             'level': 'DEBUG'
         }
     }
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'django.request': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
-}
