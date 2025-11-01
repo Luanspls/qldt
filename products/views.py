@@ -9,6 +9,8 @@ import pandas as pd
 from django.core.files.storage import default_storage
 import os
 from django.conf import settings
+from .services import UserService
+from .supabase_api import supabase_api
 
 class TrainProgramManagerView(View):
     template_name = 'products/TrainProgram.html'

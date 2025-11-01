@@ -68,6 +68,7 @@ class Curriculum(models.Model):
         ('archived', 'Lưu trữ'),
     ]
     
+
     major = models.ForeignKey(Major, on_delete=models.CASCADE, verbose_name="Ngành đào tạo", db_column="major_id")
     code = models.CharField(max_length=50, unique=True, verbose_name="Mã chương trình")
     name = models.CharField(max_length=255, verbose_name="Tên chương trình")
