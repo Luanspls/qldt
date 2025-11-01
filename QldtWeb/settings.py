@@ -20,7 +20,7 @@ RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', ''
 
 # ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = [
-    # RAILWAY_DOMAIN,
+    RAILWAY_DOMAIN,
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
