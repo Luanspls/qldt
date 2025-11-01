@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from pathlib import Path
 from dotenv import load_dotenv
 
-# load_dotenv()
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get('DEBUG', 'False')
 # DEBUG = True
 
-RAILWAY_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '').replace('https://', '') or 'qldt.up.railway.app'
+RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_DOMAIN', '').replace('https://', '') or 'qldt.up.railway.app'
 
 # ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = [
@@ -117,77 +117,77 @@ TEMPLATES = [
 
 
 #==================================================================
-# def get_supabase_connection():
-#     """Custom function to handle Supabase connection with DNS workaround"""
-#     DATABASE_URL = os.getenv('DATABASE_URL')
+def get_supabase_connection():
+    """Custom function to handle Supabase connection with DNS workaround"""
+    DATABASE_URL = os.getenv('DATABASE_URL')
     
-#     if not DATABASE_URL:
-#         return {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#         }
+    if not DATABASE_URL:
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
     
-#     try:
-#         # Thử phân giải hostname bằng socket
-#         hostname = 'aws-1-ap-southeast-1.pooler.supabase.com'
+    try:
+        # Thử phân giải hostname bằng socket
+        hostname = 'aws-1-ap-southeast-1.pooler.supabase.com'
         
-#         # Lấy địa chỉ IP
-#         ip_address = socket.gethostbyname(hostname)
+        # Lấy địa chỉ IP
+        ip_address = socket.gethostbyname(hostname)
         
-#         print(f"Resolved {hostname} to {ip_address}")
+        print(f"Resolved {hostname} to {ip_address}")
         
-#         # Thay thế hostname bằng IP trong DATABASE_URL
-#         DATABASE_URL = DATABASE_URL.replace(hostname, ip_address)
+        # Thay thế hostname bằng IP trong DATABASE_URL
+        DATABASE_URL = DATABASE_URL.replace(hostname, ip_address)
         
-#         db_config = dj_database_url.parse(DATABASE_URL)
-#         db_config['OPTIONS'] = {
-#             'connect_timeout': 10,
-#         }
+        db_config = dj_database_url.parse(DATABASE_URL)
+        db_config['OPTIONS'] = {
+            'connect_timeout': 10,
+        }
         
-#         return db_config
+        return db_config
         
-#     except socket.gaierror as e:
-#         print(f"DNS resolution failed: {e}")
-#         print("Falling back to SQLite")
-#         return {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#         }
-#     except Exception as e:
-#         print(f"Other connection error: {e}")
-#         return {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#         }
+    except socket.gaierror as e:
+        print(f"DNS resolution failed: {e}")
+        print("Falling back to SQLite")
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    except Exception as e:
+        print(f"Other connection error: {e}")
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
 
-# # Sử dụng custom connection
-# DATABASES = {
-#     'default': get_supabase_connection()
-# }
+# Sử dụng custom connection
+DATABASES = {
+    'default': get_supabase_connection()
+}
 #==================================================================
 
-# Lấy DATABASE_URL từ environment variable
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# # Lấy DATABASE_URL từ environment variable
+# DATABASE_URL = os.environ.get('DATABASE_URL')
 
-db_config = dj_database_url.parse(DATABASE_URL)
+# db_config = dj_database_url.parse(DATABASE_URL)
 
-# Thêm connection options chi tiết
-db_config.update({
-    'CONN_MAX_AGE': 60,  # Giữ connection 60 giây
-    'CONN_HEALTH_CHECKS': True,
-    'OPTIONS': {
-        'sslmode': 'require',
-        'connect_timeout': 30,
-        'keepalives': 1,
-        'keepalives_idle': 30,
-        'keepalives_interval': 10,
-        'keepalives_count': 5,
-    }
-})
+# # Thêm connection options chi tiết
+# db_config.update({
+#     'CONN_MAX_AGE': 60,  # Giữ connection 60 giây
+#     'CONN_HEALTH_CHECKS': True,
+#     'OPTIONS': {
+#         'sslmode': 'require',
+#         'connect_timeout': 30,
+#         'keepalives': 1,
+#         'keepalives_idle': 30,
+#         'keepalives_interval': 10,
+#         'keepalives_count': 5,
+#     }
+# })
 
-DATABASES = {
-    'default': db_config
-}
+# DATABASES = {
+#     'default': db_config
+# }
     
 
 # Password validation
