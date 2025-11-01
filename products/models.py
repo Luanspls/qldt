@@ -89,7 +89,8 @@ class Curriculum(models.Model):
         on_delete=models.SET_NULL, 
         null=True, 
         related_name='created_curricula',
-        verbose_name="Người tạo"
+        verbose_name="Người tạo",
+        db_column='created_by'
     )
     approved_by = models.ForeignKey(
         User, 
@@ -97,7 +98,8 @@ class Curriculum(models.Model):
         null=True, 
         blank=True,
         related_name='approved_curricula',
-        verbose_name="Người phê duyệt"
+        verbose_name="Người phê duyệt",
+        db_column="approved_by"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -138,13 +140,15 @@ class Subject(models.Model):
         Curriculum, 
         on_delete=models.CASCADE, 
         related_name='subjects',
-        verbose_name="Chương trình đào tạo"
+        verbose_name="Chương trình đào tạo",
+        db_column="curriculum_id"
     )
     subject_type = models.ForeignKey(
         SubjectType, 
         on_delete=models.SET_NULL, 
         null=True,
-        verbose_name="Loại môn học"
+        verbose_name="Loại môn học",
+        db_column="subject_type_id"
     )
     code = models.CharField(max_length=20, verbose_name="Mã môn học")
     name = models.CharField(max_length=255, verbose_name="Tên môn học")
@@ -182,14 +186,16 @@ class Subject(models.Model):
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
-        verbose_name="Đơn vị quản lý"
+        verbose_name="Đơn vị quản lý",
+        db_column="department_id"
     )
     subject_group = models.ForeignKey(
         SubjectGroup, 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
-        verbose_name="Tổ bộ môn"
+        verbose_name="Tổ bộ môn",
+        db_column="subject_group_id"
     )
     prerequisites = models.TextField(blank=True, null=True, verbose_name="Điều kiện tiên quyết")
     learning_outcomes = models.TextField(blank=True, null=True, verbose_name="Chuẩn đầu ra")
@@ -220,7 +226,8 @@ class SemesterAllocation(models.Model):
         Subject, 
         on_delete=models.CASCADE, 
         related_name='semester_allocations',
-        verbose_name="Môn học"
+        verbose_name="Môn học",
+        db_column="subject_id"
     )
     semester = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(12)],
@@ -255,14 +262,16 @@ class Instructor(models.Model):
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
-        verbose_name="Khoa"
+        verbose_name="Khoa",
+        db_column="department_id"
     )
     subject_group = models.ForeignKey(
         SubjectGroup, 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
-        verbose_name="Tổ bộ môn"
+        verbose_name="Tổ bộ môn",
+        db_column="subject_group_id"
     )
     is_active = models.BooleanField(default=True, verbose_name="Đang hoạt động")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -283,13 +292,15 @@ class TeachingAssignment(models.Model):
         Subject, 
         on_delete=models.CASCADE, 
         related_name='teaching_assignments',
-        verbose_name="Môn học"
+        verbose_name="Môn học",
+        db_column="subject_id"
     )
     instructor = models.ForeignKey(
         Instructor, 
         on_delete=models.CASCADE,
         related_name='teaching_assignments',
-        verbose_name="Giảng viên"
+        verbose_name="Giảng viên",
+        db_column="instructor_id"
     )
     academic_year = models.CharField(max_length=20, verbose_name="Năm học")
     semester = models.IntegerField(
@@ -324,7 +335,8 @@ class Course(models.Model):
         Curriculum, 
         on_delete=models.CASCADE, 
         related_name='courses',
-        verbose_name="Chương trình đào tạo"
+        verbose_name="Chương trình đào tạo",
+        db_column="curriculum_id"
     )
     code = models.CharField(max_length=50, unique=True, verbose_name="Mã khóa học")
     name = models.CharField(max_length=255, verbose_name="Tên khóa học")
@@ -366,7 +378,8 @@ class ImportHistory(models.Model):
         on_delete=models.SET_NULL, 
         null=True,
         blank=True,
-        verbose_name="Chương trình đào tạo"
+        verbose_name="Chương trình đào tạo",
+        db_column="curriculum_id"
     )
     file_name = models.CharField(max_length=255, verbose_name="Tên file")
     file_size = models.IntegerField(null=True, blank=True, verbose_name="Kích thước file")
@@ -374,7 +387,8 @@ class ImportHistory(models.Model):
         User, 
         on_delete=models.SET_NULL, 
         null=True,
-        verbose_name="Người import"
+        verbose_name="Người import",
+        db_column="imported_by"
     )
     record_count = models.IntegerField(default=0, verbose_name="Số bản ghi")
     status = models.CharField(
