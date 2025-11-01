@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get('DEBUG', 'False')
 # DEBUG = True
 
-RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '') or 'qldt.up.railway.app' or 'qldtweb.onrender.com'
+RAILWAY_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '').replace('https://', '') or 'qldt.up.railway.app'
 
 # ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = [
@@ -25,7 +25,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '0.0.0.0',
     '.railway.app',  # Cho phép tất cả subdomain railway
-    '.onrender.com',  # Cho phép tất cả subdomain onrender
+    # '.onrender.com',  # Cho phép tất cả subdomain onrender
 ]
 
 # CSRF_TRUSTED_ORIGINS = [
