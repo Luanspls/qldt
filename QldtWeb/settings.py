@@ -12,15 +12,15 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
-
-DEBUG = os.environ.get('DEBUG', 'False')
+# DEBUG = os.environ.get('DEBUG', 'False')
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 # DEBUG = True
 
-RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_DOMAIN', '').replace('https://', '') or 'qldt.up.railway.app'
+# RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_DOMAIN', '').replace('https://', '') or 'qldt.up.railway.app'
 
 # ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = [
-    RAILWAY_DOMAIN,
+    os.getenv('RAILWAY_PUBLIC_DOMAIN', ''),
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
