@@ -115,57 +115,6 @@ TEMPLATES = [
     },
 ]
 
-
-#==================================================================
-# def get_supabase_connection():
-#     """Custom function to handle Supabase connection with DNS workaround"""
-#     DATABASE_URL = os.getenv('DATABASE_URL')
-    
-#     if not DATABASE_URL:
-#         return {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#         }
-    
-#     try:
-#         # Thử phân giải hostname bằng socket
-#         hostname = 'aws-1-ap-southeast-1.pooler.supabase.com'
-        
-#         # Lấy địa chỉ IP
-#         ip_address = socket.gethostbyname(hostname)
-        
-#         print(f"Resolved {hostname} to {ip_address}")
-        
-#         # Thay thế hostname bằng IP trong DATABASE_URL
-#         DATABASE_URL = DATABASE_URL.replace(hostname, ip_address)
-        
-#         db_config = dj_database_url.parse(DATABASE_URL)
-#         db_config['OPTIONS'] = {
-#             'connect_timeout': 10,
-#         }
-        
-#         return db_config
-        
-#     except socket.gaierror as e:
-#         print(f"DNS resolution failed: {e}")
-#         print("Falling back to SQLite")
-#         return {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#         }
-#     except Exception as e:
-#         print(f"Other connection error: {e}")
-#         return {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#         }
-
-# # Sử dụng custom connection
-# DATABASES = {
-#     'default': get_supabase_connection()
-# }
-#==================================================================
-
 # Lấy DATABASE_URL từ environment variable
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
@@ -188,7 +137,6 @@ db_config.update({
 DATABASES = {
     'default': db_config
 }
-    
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
