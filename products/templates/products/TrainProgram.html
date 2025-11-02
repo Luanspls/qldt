@@ -27,8 +27,8 @@
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">Khoa đào tạo</label>
                     <select id="khoa-dao-tao" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {% for khoa in khoa_dao_tao_list %}
-                        <option>{{ khoa }}</option>
+                        {% for department in departments %}
+                        <option>{{ department }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -36,8 +36,8 @@
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">Tổ bộ môn</label>
                     <select id="to-bo-mon" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {% for to in to_bo_mon_list %}
-                        <option>{{ to }}</option>
+                        {% for tosubject_group in subject_groups %}
+                        <option>{{ subject_group }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -45,7 +45,7 @@
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">Chương trình đào tạo</label>
                     <select id="chuong-trinh-dao-tao" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {% for ct in chuong_trinh_dao_tao_list %}
+                        {% for ct in curricula %}
                         <option>{{ ct }}</option>
                         {% endfor %}
                     </select>
@@ -54,8 +54,8 @@
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">Khóa học</label>
                     <select id="khoa-hoc" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {% for khoa in khoa_hoc_list %}
-                        <option>{{ khoa }}</option>
+                        {% for cours in courses %}
+                        <option>{{ cours }}</option>
                         {% endfor %}
                     </select>
                 </div>
