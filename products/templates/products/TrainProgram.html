@@ -85,6 +85,89 @@
             </div>
         </div>
         
+        <!-- Modal thêm chương trình đào tạo -->
+        <div id="modal-them-chuong-trinh" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Thêm chương trình đào tạo mới</h3>
+                    <form id="form-them-chuong-trinh" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Mã chương trình *</label>
+                                <input type="text" name="code" class="w-full p-2 border border-gray-300 rounded-md" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Tên chương trình *</label>
+                                <input type="text" name="name" class="w-full p-2 border border-gray-300 rounded-md" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Năm học áp dụng *</label>
+                                <input type="text" name="academic_year" class="w-full p-2 border border-gray-300 rounded-md" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Ngành đào tạo *</label>
+                                <select name="major_id" class="w-full p-2 border border-gray-300 rounded-md" required>
+                                    <option value="">-- Chọn ngành --</option>
+                                    {% for major in majors %}
+                                    <option value="{{ major.id }}">{{ major.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Mô tả</label>
+                            <textarea name="description" class="w-full p-2 border border-gray-300 rounded-md" rows="3"></textarea>
+                        </div>
+                    </form>
+                    <div class="flex justify-end mt-4 space-x-2">
+                        <button id="btn-huy-chuong-trinh" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                            Hủy
+                        </button>
+                        <button id="btn-luu-chuong-trinh" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Lưu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal import Excel -->
+        <div id="modal-import" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Import từ Excel</h3>
+                    <form id="form-import" class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Chương trình đào tạo *</label>
+                            <select id="import-curriculum" name="curriculum_id" class="w-full p-2 border border-gray-300 rounded-md" required>
+                                <option value="">-- Chọn chương trình --</option>
+                                {% for curriculum in curricula %}
+                                <option value="{{ curriculum.id }}">{{ curriculum.name }} ({{ curriculum.academic_year }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">File Excel *</label>
+                            <input type="file" id="excel-file" name="excel_file" accept=".xlsx, .xls" class="w-full p-2 border border-gray-300 rounded-md" required>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <p><a href="#" id="btn-download-template" class="text-blue-600 hover:text-blue-800">Tải file mẫu</a></p>
+                        </div>
+                    </form>
+                    <div class="flex justify-end mt-4 space-x-2">
+                        <button id="btn-huy-import" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                            Hủy
+                        </button>
+                        <button id="btn-luu-import" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Import
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Bảng dữ liệu -->
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="table-container">
@@ -172,64 +255,13 @@
     </div>
 
     <script>
-        // Dữ liệu mẫu từ Django
-        const monHocData = {{ mon_hoc_data|safe }};
-        const curriculumId = document.getElementById('chuong-trinh-dao-tao').value;
-        // Khởi tạo bảng
-        function renderTable() {
-            const tableBody = document.getElementById('table-body');
-            tableBody.innerHTML = '';
-            
-            monHocData.forEach((monHoc, index) => {
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-gray-50';
-                row.innerHTML = `
-                    <td class="px-4 py-2 whitespace-nowrap">${index + 1}</td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.ma_mon_hoc}" class="editable w-full bg-transparent border-none" data-field="ma_mon_hoc" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.ten_mon_hoc}" class="editable w-full bg-transparent border-none" data-field="ten_mon_hoc" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.so_tin_chi}" class="editable w-full bg-transparent border-none" data-field="so_tin_chi" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.tong_so_gio}" class="editable w-full bg-transparent border-none" data-field="tong_so_gio" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.ly_thuyet}" class="editable w-full bg-transparent border-none" data-field="ly_thuyet" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.thuc_hanh}" class="editable w-full bg-transparent border-none" data-field="thuc_hanh" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.kiem_tra_thi}" class="editable w-full bg-transparent border-none" data-field="kiem_tra_thi" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.hk1}" class="editable w-full bg-transparent border-none" data-field="hk1" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.hk2}" class="editable w-full bg-transparent border-none" data-field="hk2" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.hk3}" class="editable w-full bg-transparent border-none" data-field="hk3" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.hk4}" class="editable w-full bg-transparent border-none" data-field="hk4" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.hk5}" class="editable w-full bg-transparent border-none" data-field="hk5" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.hk6}" class="editable w-full bg-transparent border-none" data-field="hk6" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.don_vi}" class="editable w-full bg-transparent border-none" data-field="don_vi" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2"><input type="text" value="${monHoc.giang_vien}" class="editable w-full bg-transparent border-none" data-field="giang_vien" data-id="${monHoc.id}"></td>
-                    <td class="px-4 py-2">
-                        <button class="btn-sua text-blue-600 hover:text-blue-900" data-id="${monHoc.id}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-            
-            // Tính toán thống kê
-            //calculateStatistics();
-            loadThongKe(curriculumId);
-        }
-        
-        {% comment %} // Tính toán thống kê
-        function calculateStatistics() {
-            // Đây là nơi bạn sẽ tính toán các thống kê từ dữ liệu
-            // Hiện tại sử dụng giá trị mẫu
-            document.getElementById('tong-tin-chi').textContent = '76.0';
-            document.getElementById('tong-gio').textContent = '2475.0';
-            document.getElementById('ty-le-ly-thuyet').textContent = '30.5%';
-            document.getElementById('ty-le-thuc-hanh').textContent = '69.5%';
-        } {% endcomment %}
-        
-
         // Biến toàn cục lưu trữ dữ liệu
         let allDepartments = {{ departments|safe }};
         let allSubjectGroups = {{ subject_groups|safe }};
         let allCurricula = {{ curricula|safe }};
         let allCourses = {{ courses|safe }};
+        let allSubjectTypes = {{ subject_types|safe }};
+        let allMajors = {{ majors|safe }};
         let monHocData = {{ mon_hoc_data|safe }};
         
         // Khởi tạo dropdowns
@@ -238,18 +270,150 @@
             populateDropdown('to-bo-mon', allSubjectGroups, 'name');
             populateDropdown('chuong-trinh-dao-tao', allCurricula, 'name');
             populateDropdown('khoa-hoc', allCourses, 'name');
+            populateDropdown('import-curriculum', allCurricula, 'name');
         }
         
         function populateDropdown(elementId, data, displayField) {
             const dropdown = document.getElementById(elementId);
+            if (!dropdown) return;
+            
             dropdown.innerHTML = '<option value="">-- Chọn --</option>';
             
             data.forEach(item => {
                 const option = document.createElement('option');
                 option.value = item.id;
                 option.textContent = item[displayField];
+                if (item.academic_year) {
+                    option.textContent += ` (${item.academic_year})`;
+                }
                 dropdown.appendChild(option);
             });
+        }
+        
+        // Render bảng dữ liệu
+        function renderTable() {
+            const tableBody = document.getElementById('table-body');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+            
+            if (monHocData.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="17" class="px-4 py-4 text-center text-gray-500">Không có dữ liệu môn học</td>`;
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            monHocData.forEach((monHoc, index) => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-4 py-2 whitespace-nowrap text-center">${index + 1}</td>
+                    <td class="px-4 py-2">
+                        <input type="text" value="${monHoc.ma_mon_hoc || ''}" 
+                            class="editable w-full bg-transparent border-none" 
+                            data-field="code" data-id="${monHoc.id}" readonly>
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="text" value="${monHoc.ten_mon_hoc || ''}" 
+                            class="editable w-full bg-transparent border-none" 
+                            data-field="name" data-id="${monHoc.id}" readonly>
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.so_tin_chi || 0}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="credits" data-id="${monHoc.id}" readonly step="0.5">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.tong_so_gio || 0}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="total_hours" data-id="${monHoc.id}" readonly>
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.ly_thuyet || 0}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="theory_hours" data-id="${monHoc.id}" readonly>
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.thuc_hanh || 0}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="practice_hours" data-id="${monHoc.id}" readonly>
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.kiem_tra_thi || 0}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="exam_hours" data-id="${monHoc.id}" readonly>
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.hk1 || ''}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="hk1" data-id="${monHoc.id}" readonly step="0.5">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.hk2 || ''}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="hk2" data-id="${monHoc.id}" readonly step="0.5">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.hk3 || ''}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="hk3" data-id="${monHoc.id}" readonly step="0.5">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.hk4 || ''}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="hk4" data-id="${monHoc.id}" readonly step="0.5">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.hk5 || ''}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="hk5" data-id="${monHoc.id}" readonly step="0.5">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${monHoc.hk6 || ''}" 
+                            class="editable w-full bg-transparent border-none text-center" 
+                            data-field="hk6" data-id="${monHoc.id}" readonly step="0.5">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="text" value="${monHoc.don_vi || ''}" 
+                            class="editable w-full bg-transparent border-none" 
+                            data-field="department" data-id="${monHoc.id}" readonly>
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="text" value="${monHoc.giang_vien || ''}" 
+                            class="editable w-full bg-transparent border-none" 
+                            data-field="instructor" data-id="${monHoc.id}" readonly>
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                        <button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" data-id="${monHoc.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-xoa text-red-600 hover:text-red-900" data-id="${monHoc.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Cập nhật thống kê
+            updateStatistics();
+        }
+        
+        // Cập nhật thống kê
+        function updateStatistics() {
+            const totalCredits = monHocData.reduce((sum, item) => sum + (parseFloat(item.so_tin_chi) || 0), 0);
+            const totalHours = monHocData.reduce((sum, item) => sum + (parseInt(item.tong_so_gio) || 0), 0);
+            const totalTheory = monHocData.reduce((sum, item) => sum + (parseInt(item.ly_thuyet) || 0), 0);
+            const totalPractice = monHocData.reduce((sum, item) => sum + (parseInt(item.thuc_hanh) || 0), 0);
+            
+            const tyLeLyThuyet = totalHours > 0 ? (totalTheory / totalHours * 100).toFixed(1) : 0;
+            const tyLeThucHanh = totalHours > 0 ? (totalPractice / totalHours * 100).toFixed(1) : 0;
+            
+            document.getElementById('tong-tin-chi').textContent = totalCredits.toFixed(1);
+            document.getElementById('tong-gio').textContent = totalHours;
+            document.getElementById('ty-le-ly-thuyet').textContent = `${tyLeLyThuyet}%`;
+            document.getElementById('ty-le-thuc-hanh').textContent = `${tyLeThucHanh}%`;
         }
         
         // Load dữ liệu theo bộ lọc
@@ -259,20 +423,36 @@
             const curriculumId = document.getElementById('chuong-trinh-dao-tao').value;
             const courseId = document.getElementById('khoa-hoc').value;
             
-            // Chỉ load khi có đủ thông tin
-            if (curriculumId) {
-                let url = `/api/subjects/?curriculum_id=${curriculumId}`;
-                if (departmentId) url += `&department_id=${departmentId}`;
-                if (subjectGroupId) url += `&subject_group_id=${subjectGroupId}`;
-                
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        monHocData = data;
-                        renderTable();
+            let url = '/api/subjects/?';
+            const params = [];
+            
+            if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
+            if (departmentId) params.push(`department_id=${departmentId}`);
+            if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
+            if (courseId) params.push(`course_id=${courseId}`);
+            
+            url += params.join('&');
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    monHocData = data;
+                    renderTable();
+                    
+                    // Load thống kê nếu có curriculum
+                    if (curriculumId) {
                         loadThongKe(curriculumId);
-                    });
-            }
+                    } else {
+                        updateStatistics();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading filtered data:', error);
+                    alert('Có lỗi xảy ra khi tải dữ liệu');
+                });
         }
         
         // Load thống kê
@@ -284,149 +464,14 @@
                     document.getElementById('tong-gio').textContent = data.tong_gio;
                     document.getElementById('ty-le-ly-thuyet').textContent = data.ty_le_ly_thuyet;
                     document.getElementById('ty-le-thuc-hanh').textContent = data.ty_le_thuc_hanh;
+                })
+                .catch(error => {
+                    console.error('Error loading statistics:', error);
+                    updateStatistics();
                 });
         }
         
-        // Xử lý sự kiện thay đổi dropdown
-        document.getElementById('khoa-dao-tao').addEventListener('change', function() {
-            const departmentId = this.value;
-            
-            // Reset các dropdown phía sau
-            document.getElementById('to-bo-mon').value = '';
-            document.getElementById('chuong-trinh-dao-tao').value = '';
-            document.getElementById('khoa-hoc').value = '';
-            
-            // Load subject groups theo department
-            if (departmentId) {
-                fetch(`/api/subject-groups/?department_id=${departmentId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        populateDropdown('to-bo-mon', data, 'name');
-                    });
-            } else {
-                populateDropdown('to-bo-mon', allSubjectGroups, 'name');
-            }
-            
-            loadFilteredData();
-        });
-        
-        // Tương tự cho các dropdown khác...
-        document.getElementById('to-bo-mon').addEventListener('change', function() {
-            document.getElementById('chuong-trinh-dao-tao').value = '';
-            document.getElementById('khoa-hoc').value = '';
-            loadFilteredData();
-        });
-        
-        document.getElementById('chuong-trinh-dao-tao').addEventListener('change', function() {
-            const curriculumId = this.value;
-            document.getElementById('khoa-hoc').value = '';
-            
-            if (curriculumId) {
-                fetch(`/api/courses/?curriculum_id=${curriculumId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        populateDropdown('khoa-hoc', data, 'name');
-                    });
-            } else {
-                populateDropdown('khoa-hoc', allCourses, 'name');
-            }
-            
-            loadFilteredData();
-        });
-        
-        document.getElementById('khoa-hoc').addEventListener('change', loadFilteredData);
-
-
-        // Xử lý sự kiện khi trang tải xong
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeDropdowns();
-            renderTable();
-
-            // Thêm chức năng tải file mẫu
-            document.getElementById('btn-download-template').addEventListener('click', function() {
-                fetch('/download-excel-template/')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            window.open(data.file_url, '_blank');
-                        }
-                    });
-            });
-            
-            // Xử lý sự kiện cho nút sửa
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.btn-sua')) {
-                    const button = e.target.closest('.btn-sua');
-                    const row = button.closest('tr');
-                    const inputs = row.querySelectorAll('input');
-                    
-                    // Chuyển đổi giữa chế độ chỉnh sửa và xem
-                    if (button.innerHTML.includes('fa-edit')) {
-                        button.innerHTML = '<i class="fas fa-check"></i>';
-                        inputs.forEach(input => {
-                            input.classList.add('border', 'border-blue-400');
-                            input.removeAttribute('readonly');
-                        });
-                    } else {
-                        button.innerHTML = '<i class="fas fa-edit"></i>';
-                        inputs.forEach(input => {
-                            input.classList.remove('border', 'border-blue-400');
-                            input.setAttribute('readonly', true);
-                            
-                            // Gửi yêu cầu cập nhật đến server
-                            const id = input.getAttribute('data-id');
-                            const field = input.getAttribute('data-field');
-                            const value = input.value;
-                            
-                            // Gọi API cập nhật
-                            updateMonHoc(id, field, value);
-                        });
-                    }
-                }
-            });
-            
-            // Xử lý import Excel
-            document.getElementById('btn-import').addEventListener('click', function() {
-                document.getElementById('file-input').click();
-            });
-            
-            document.getElementById('file-input').addEventListener('change', function(e) {
-                if (e.target.files.length > 0) {
-                    const formData = new FormData();
-                    formData.append('excel_file', e.target.files[0]);
-                    
-                    fetch('/import-excel/', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': getCookie('csrftoken'),
-                        },
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            alert('Import thành công!');
-                            // Cập nhật lại bảng với dữ liệu mới
-                            // monHocData = data.data;
-                            // renderTable();
-                        } else {
-                            alert('Có lỗi xảy ra: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Có lỗi xảy ra khi import file');
-                    });
-                }
-            });
-            
-            // Thiết lập các ô input ban đầu là readonly
-            document.querySelectorAll('input').forEach(input => {
-                input.setAttribute('readonly', true);
-            });
-        });
-        
-        // Hàm cập nhật môn học
+        // Cập nhật môn học
         function updateMonHoc(id, field, value) {
             const data = {
                 id: id,
@@ -434,7 +479,7 @@
                 value: value
             };
             
-            fetch(`/mon-hoc/${id}/`, {
+            fetch(`/train-program/${id}/`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -447,12 +492,143 @@
             .then(data => {
                 if (data.status !== 'success') {
                     alert('Có lỗi khi cập nhật: ' + data.message);
+                    // Reload data to reset values
+                    loadFilteredData();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Có lỗi xảy ra khi cập nhật');
+                loadFilteredData();
             });
+        }
+        
+        // Xóa môn học
+        function deleteMonHoc(id) {
+            if (!confirm('Bạn có chắc chắn muốn xóa môn học này?')) {
+                return;
+            }
+            
+            fetch(`/train-program/${id}/`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Đã xóa môn học thành công');
+                    loadFilteredData();
+                } else {
+                    alert('Có lỗi khi xóa: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi xóa');
+            });
+        }
+        
+        // Tạo chương trình đào tạo mới
+        function createCurriculum() {
+            const form = document.getElementById('form-them-chuong-trinh');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            
+            // Validate
+            if (!data.code || !data.name || !data.academic_year || !data.major_id) {
+                alert('Vui lòng điền đầy đủ các trường bắt buộc');
+                return;
+            }
+            
+            fetch('/api/curriculum/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Đã tạo chương trình đào tạo thành công');
+                    document.getElementById('modal-them-chuong-trinh').classList.add('hidden');
+                    form.reset();
+                    // Reload dropdown curricula
+                    loadCurricula();
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi tạo chương trình');
+            });
+        }
+        
+        // Import Excel
+        function importExcel() {
+            const form = document.getElementById('form-import');
+            const formData = new FormData(form);
+            const curriculumId = document.getElementById('import-curriculum').value;
+            const fileInput = document.getElementById('excel-file');
+            
+            if (!curriculumId) {
+                alert('Vui lòng chọn chương trình đào tạo');
+                return;
+            }
+            
+            if (!fileInput.files.length) {
+                alert('Vui lòng chọn file Excel');
+                return;
+            }
+            
+            fetch('/import-excel/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    document.getElementById('modal-import').classList.add('hidden');
+                    form.reset();
+                    // Reload data
+                    loadFilteredData();
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi import file');
+            });
+        }
+        
+        // Tải file mẫu
+        function downloadTemplate() {
+            window.open('/download-excel-template/', '_blank');
+        }
+        
+        // Load lại danh sách curricula
+        function loadCurricula() {
+            fetch('/api/curricula/')
+                .then(response => response.json())
+                .then(data => {
+                    allCurricula = data;
+                    populateDropdown('chuong-trinh-dao-tao', allCurricula, 'name');
+                    populateDropdown('import-curriculum', allCurricula, 'name');
+                })
+                .catch(error => {
+                    console.error('Error loading curricula:', error);
+                });
         }
         
         // Hàm lấy CSRF token
@@ -470,6 +646,165 @@
             }
             return cookieValue;
         }
+        
+        // Xử lý sự kiện khi trang tải xong
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDropdowns();
+            renderTable();
+            
+            // Xử lý sự kiện thay đổi dropdown
+            document.getElementById('khoa-dao-tao').addEventListener('change', function() {
+                const departmentId = this.value;
+                
+                // Reset các dropdown phía sau
+                document.getElementById('to-bo-mon').value = '';
+                document.getElementById('chuong-trinh-dao-tao').value = '';
+                document.getElementById('khoa-hoc').value = '';
+                
+                // Load subject groups theo department
+                if (departmentId) {
+                    fetch(`/api/subject-groups/?department_id=${departmentId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            populateDropdown('to-bo-mon', data, 'name');
+                        });
+                } else {
+                    populateDropdown('to-bo-mon', allSubjectGroups, 'name');
+                }
+                
+                loadFilteredData();
+            });
+            
+            document.getElementById('to-bo-mon').addEventListener('change', function() {
+                document.getElementById('chuong-trinh-dao-tao').value = '';
+                document.getElementById('khoa-hoc').value = '';
+                loadFilteredData();
+            });
+            
+            document.getElementById('chuong-trinh-dao-tao').addEventListener('change', function() {
+                const curriculumId = this.value;
+                document.getElementById('khoa-hoc').value = '';
+                
+                if (curriculumId) {
+                    fetch(`/api/courses/?curriculum_id=${curriculumId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            populateDropdown('khoa-hoc', data, 'name');
+                        });
+                } else {
+                    populateDropdown('khoa-hoc', allCourses, 'name');
+                }
+                
+                loadFilteredData();
+            });
+            
+            document.getElementById('khoa-hoc').addEventListener('change', loadFilteredData);
+            
+            // Xử lý sự kiện cho nút sửa
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-sua')) {
+                    const button = e.target.closest('.btn-sua');
+                    const row = button.closest('tr');
+                    const inputs = row.querySelectorAll('input');
+                    const id = button.getAttribute('data-id');
+                    
+                    // Chuyển đổi giữa chế độ chỉnh sửa và xem
+                    if (button.innerHTML.includes('fa-edit')) {
+                        button.innerHTML = '<i class="fas fa-check"></i>';
+                        button.classList.remove('text-blue-600');
+                        button.classList.add('text-green-600');
+                        inputs.forEach(input => {
+                            input.classList.add('border', 'border-blue-400', 'bg-white');
+                            input.removeAttribute('readonly');
+                        });
+                    } else {
+                        button.innerHTML = '<i class="fas fa-edit"></i>';
+                        button.classList.remove('text-green-600');
+                        button.classList.add('text-blue-600');
+                        inputs.forEach(input => {
+                            input.classList.remove('border', 'border-blue-400', 'bg-white');
+                            input.setAttribute('readonly', true);
+                            
+                            // Gửi yêu cầu cập nhật đến server
+                            const field = input.getAttribute('data-field');
+                            const value = input.value;
+                            
+                            if (field && id) {
+                                updateMonHoc(id, field, value);
+                            }
+                        });
+                    }
+                }
+                
+                // Xử lý xóa môn học
+                if (e.target.closest('.btn-xoa')) {
+                    const button = e.target.closest('.btn-xoa');
+                    const id = button.getAttribute('data-id');
+                    if (id) {
+                        deleteMonHoc(id);
+                    }
+                }
+            });
+            
+            // Xử lý thêm chương trình đào tạo
+            document.getElementById('btn-them').addEventListener('click', function() {
+                document.getElementById('modal-them-chuong-trinh').classList.remove('hidden');
+            });
+            
+            document.getElementById('btn-huy-chuong-trinh').addEventListener('click', function() {
+                document.getElementById('modal-them-chuong-trinh').classList.add('hidden');
+            });
+            
+            document.getElementById('btn-luu-chuong-trinh').addEventListener('click', createCurriculum);
+            
+            // Xử lý import Excel
+            document.getElementById('btn-import').addEventListener('click', function() {
+                document.getElementById('modal-import').classList.remove('hidden');
+            });
+            
+            document.getElementById('btn-huy-import').addEventListener('click', function() {
+                document.getElementById('modal-import').classList.add('hidden');
+            });
+            
+            document.getElementById('btn-luu-import').addEventListener('click', importExcel);
+            
+            // Tải file mẫu
+            document.getElementById('btn-download-template').addEventListener('click', function(e) {
+                e.preventDefault();
+                downloadTemplate();
+            });
+            
+            // Xử lý nút cập nhật
+            document.getElementById('btn-cap-nhat').addEventListener('click', function() {
+                loadFilteredData();
+                alert('Đã cập nhật dữ liệu');
+            });
+            
+            // Thiết lập các ô input ban đầu là readonly
+            document.querySelectorAll('input').forEach(input => {
+                input.setAttribute('readonly', true);
+            });
+        });
+        
+        // Xử lý phím Enter trong modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                // Nếu đang trong modal thêm chương trình
+                if (!document.getElementById('modal-them-chuong-trinh').classList.contains('hidden')) {
+                    createCurriculum();
+                }
+                // Nếu đang trong modal import
+                else if (!document.getElementById('modal-import').classList.contains('hidden')) {
+                    importExcel();
+                }
+            }
+            
+            // ESC để đóng modal
+            if (e.key === 'Escape') {
+                document.getElementById('modal-them-chuong-trinh').classList.add('hidden');
+                document.getElementById('modal-import').classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>

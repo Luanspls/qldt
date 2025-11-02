@@ -137,7 +137,27 @@ class Curriculum(models.Model):
         """Validation logic"""
         if self.total_hours < (self.theory_hours + self.practice_hours):
             raise ValidationError("Tổng số giờ không được nhỏ hơn tổng giờ lý thuyết và thực hành")
+    
+    def get_subjects_by_type(self, subject_type_name=None):
+        """Lấy môn học theo loại"""
+        subjects = self.subjects.all()
+        if subject_type_name:
+            subjects = subjects.filter(subject_type__name=subject_type_name)
+        return subjects
 
+    def get_total_credits(self):
+        """Tính tổng số tín chỉ"""
+        return self.subjects.aggregate(total=models.Sum('credits'))['total'] or 0
+
+    def get_total_hours(self):
+        """Tính tổng số giờ"""
+        return self.subjects.aggregate(total=models.Sum('total_hours'))['total'] or 0
+
+    def update_totals(self):
+        """Cập nhật tổng số tín chỉ và giờ"""
+        self.total_credits = self.get_total_credits()
+        self.total_hours = self.get_total_hours()
+        self.save()
 
 class SubjectType(models.Model):
     code = models.CharField(max_length=20, unique=True, verbose_name="Mã loại môn học")
