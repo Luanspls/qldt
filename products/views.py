@@ -14,8 +14,7 @@ from .supabase_api import supabase_api
 
 
 def home_page(request):
-    # return render(request, 'products/home.html')
-    return HttpResponse("Welcome to the Training Program Management System")
+    return render(request, 'products/home.html')
 
 def users_list(request):
     users = supabase_api.get_users()
