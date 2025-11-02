@@ -125,7 +125,7 @@ db_config.update({
     'CONN_MAX_AGE': 60,  # Giữ connection 60 giây
     'CONN_HEALTH_CHECKS': True,
     'OPTIONS': {
-        # 'sslmode': 'require',
+        'sslmode': 'require',
         'connect_timeout': 30,
         'keepalives': 1,
         'keepalives_idle': 30,

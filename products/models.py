@@ -1,8 +1,11 @@
 # models.py
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Department(models.Model):
     code = models.CharField(max_length=20, unique=True, verbose_name="Mã khoa")
@@ -112,6 +115,16 @@ class Curriculum(models.Model):
         verbose_name_plural = 'Các chương trình đào tạo'
         ordering = ['-academic_year', 'major']
 
+    @property
+    def subject_count(self):
+        """Số lượng môn học trong chương trình"""
+        return self.subjects.count()
+    
+    @property
+    def is_active(self):
+        """Kiểm tra chương trình có đang active không"""
+        return self.status == 'active'
+    
     def __str__(self):
         return f"{self.code} - {self.name} ({self.academic_year})"
 
@@ -119,6 +132,11 @@ class Curriculum(models.Model):
         if self.status == 'approved' and not self.approved_at:
             self.approved_at = timezone.now()
         super().save(*args, **kwargs)
+    
+    def clean(self):
+        """Validation logic"""
+        if self.total_hours < (self.theory_hours + self.practice_hours):
+            raise ValidationError("Tổng số giờ không được nhỏ hơn tổng giờ lý thuyết và thực hành")
 
 
 class SubjectType(models.Model):
@@ -204,6 +222,17 @@ class Subject(models.Model):
     order_number = models.IntegerField(default=0, verbose_name="Thứ tự")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    @property
+    def remaining_hours(self):
+        """Số giờ còn lại sau khi trừ các giờ đã phân bổ"""
+        allocated = self.theory_hours + self.practice_hours + self.exam_hours
+        return max(0, self.total_hours - allocated)
+    
+    def clean(self):
+        """Validation for subject hours"""
+        if self.total_hours < (self.theory_hours + self.practice_hours + self.exam_hours):
+            raise ValidationError("Tổng số giờ không được nhỏ hơn tổng các loại giờ khác")
 
     class Meta:
         db_table = 'subjects'
@@ -221,6 +250,15 @@ class Subject(models.Model):
             self.total_hours = (self.theory_hours or 0) + (self.practice_hours or 0) + (self.exam_hours or 0)
         super().save(*args, **kwargs)
 
+@receiver(post_save, sender=Subject)
+def update_curriculum_credits(sender, instance, **kwargs):
+    """Cập nhật tổng số tín chỉ của chương trình khi môn học thay đổi"""
+    curriculum = instance.curriculum
+    total_credits = curriculum.subjects.aggregate(
+        total=models.Sum('credits')
+    )['total'] or 0
+    curriculum.total_credits = total_credits
+    curriculum.save()
 
 class SemesterAllocation(models.Model):
     subject = models.ForeignKey(
