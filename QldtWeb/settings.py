@@ -11,16 +11,14 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
-DEBUG = os.environ.get('DEBUG', 'False')
-# DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-development-key-for-railway-only')
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 # DEBUG = True
 
 RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_DOMAIN', '').replace('https://', '') or 'qldt.up.railway.app'
 
 # ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = [
-    RAILWAY_DOMAIN,
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
@@ -120,24 +118,12 @@ TEMPLATES = [
 # Lấy DATABASE_URL từ environment variable
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-db_config = dj_database_url.parse(DATABASE_URL)
-
-# Thêm connection options chi tiết
-db_config.update({
-    'CONN_MAX_AGE': 60,  # Giữ connection 60 giây
-    'CONN_HEALTH_CHECKS': True,
-    'OPTIONS': {
-        'sslmode': 'require',
-        'connect_timeout': 30,
-        'keepalives': 1,
-        'keepalives_idle': 30,
-        'keepalives_interval': 10,
-        'keepalives_count': 5,
-    }
-})
-
 DATABASES = {
-    'default': db_config
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
     
 
@@ -163,22 +149,25 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Security
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
 if not DEBUG:
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
     SECURE_SSL_REDIRECT = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
 else:
+    SECURE_HSTS_SECONDS = 0
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
     SECURE_SSL_REDIRECT = False
 
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
@@ -189,20 +178,16 @@ USE_TZ = True
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'products/static'),
-]
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, 'products/static'),
+# ]
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Login/Logout URLs
 LOGIN_URL = '/admin/login/'
 LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/admin/'
 
-# Supabase configuration
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_KEY = os.environ.get('SUPABASE_ANON_KEY')
 
 if DEBUG:
     LOGGING = {
