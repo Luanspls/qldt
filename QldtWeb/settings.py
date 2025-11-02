@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 # DEBUG = True
 
-# RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_DOMAIN', '').replace('https://', '') or 'qldt.up.railway.app'
+RAILWAY_DOMAIN = os.getenv('RAILWAY_PUBLIC_DOMAIN', '') or 'qldt.up.railway.app'
 
 # ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = [
@@ -28,11 +28,10 @@ ALLOWED_HOSTS = [
     # '.onrender.com',  # Cho phép tất cả subdomain onrender
 ]
 
-# CSRF_TRUSTED_ORIGINS = [
-#     f'https://{RAILWAY_DOMAIN}',
-#     f'https://*.{RAILWAY_DOMAIN}',
-#     'https://*.railway.app',
-# ]
+CSRF_TRUSTED_ORIGINS = [
+    f'https://*.{RAILWAY_DOMAIN}',
+    'https://*.railway.app',
+]
 
 # CORS settings cho phép frontend truy 
 # CORS_ALLOWED_ORIGINS = [
