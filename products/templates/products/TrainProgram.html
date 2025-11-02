@@ -53,6 +53,34 @@
         body.modal-open {
             overflow: hidden;
         }
+
+        /* Đảm bảo input trong modal có thể nhập */
+        #modal-them-chuong-trinh input,
+        #modal-them-chuong-trinh select,
+        #modal-them-chuong-trinh textarea {
+            background-color: white !important;
+            cursor: text !important;
+            pointer-events: auto !important;
+        }
+        
+        /* Xóa mọi style có thể chặn input */
+        #modal-them-chuong-trinh input:not([type="submit"]):not([type="button"]),
+        #modal-them-chuong-trinh select,
+        #modal-them-chuong-trinh textarea {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+        }
+        
+        /* Đảm bảo modal không bị ảnh hưởng bởi các style khác */
+        #modal-them-chuong-trinh {
+            pointer-events: auto !important;
+        }
+        
+        #modal-them-chuong-trinh * {
+            pointer-events: auto !important;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -743,22 +771,91 @@
         
         // Mở modal thêm chương trình
         function openThemChuongTrinhModal() {
-            document.getElementById('modal-them-chuong-trinh').classList.remove('hidden');
+            const modal = document.getElementById('modal-them-chuong-trinh');
+            modal.classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
+            
+            // Đảm bảo các input có thể nhập
+            setTimeout(() => {
+                const inputs = modal.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    input.removeAttribute('readonly');
+                    input.removeAttribute('disabled');
+                    input.style.pointerEvents = 'auto';
+                    input.style.userSelect = 'auto';
+                });
+                
+                // Focus vào input đầu tiên
+                const firstInput = modal.querySelector('input');
+                if (firstInput) {
+                    firstInput.focus();
+                }
+            }, 100);
         }
 
         // Đóng modal thêm chương trình
         function closeThemChuongTrinhModal() {
-            document.getElementById('modal-them-chuong-trinh').classList.add('hidden');
+            const modal = document.getElementById('modal-them-chuong-trinh');
+            modal.classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
-            document.getElementById('form-them-chuong-trinh').reset();
+            
+            // Reset form
+            const form = document.getElementById('form-them-chuong-trinh');
+            if (form) {
+                form.reset();
+            }
+        }
+
+        // Hàm kiểm tra và sửa lỗi input trong modal
+        function fixModalInputs() {
+            const modal = document.getElementById('modal-them-chuong-trinh');
+            if (!modal) return;
+            
+            const inputs = modal.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                // Xóa các attribute chặn input
+                input.removeAttribute('readonly');
+                input.removeAttribute('disabled');
+                
+                // Đảm bảo các thuộc tính style đúng
+                input.style.pointerEvents = 'auto';
+                input.style.userSelect = 'auto';
+                input.style.backgroundColor = 'white';
+                input.style.cursor = 'text';
+                
+                // Thêm event listener để debug
+                input.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    console.log('Input clicked:', this.name);
+                });
+                
+                input.addEventListener('focus', function(e) {
+                    e.stopPropagation();
+                    console.log('Input focused:', this.name);
+                    this.style.borderColor = '#3b82f6';
+                    this.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.2)';
+                });
+                
+                input.addEventListener('blur', function(e) {
+                    e.stopPropagation();
+                    this.style.borderColor = '#d1d5db';
+                    this.style.boxShadow = 'none';
+                });
+            });
         }
 
         // Tạo chương trình đào tạo mới
         function createCurriculum() {
             const form = document.getElementById('form-them-chuong-trinh');
+            if (!form) {
+                console.error('Form not found');
+                return;
+            }
+            
             const formData = new FormData(form);
             const data = Object.fromEntries(formData);
+            
+            console.log('Form data:', data);
             
             // Validate dữ liệu
             if (!data.code || !data.name || !data.academic_year || !data.major_id) {
@@ -828,6 +925,29 @@
             initializeDropdowns();
             renderTable();
             
+            console.log('DOM loaded - checking modal inputs...');
+    
+            // Kiểm tra các input trong modal
+            const modalInputs = document.querySelectorAll('#modal-them-chuong-trinh input, #modal-them-chuong-trinh select, #modal-them-chuong-trinh textarea');
+            console.log('Found inputs in modal:', modalInputs.length);
+            
+            modalInputs.forEach(input => {
+                console.log('Input:', input.name, 'Type:', input.type, 'Readonly:', input.readOnly, 'Disabled:', input.disabled);
+                
+                // Xóa các attribute có thể chặn input
+                input.removeAttribute('readonly');
+                input.removeAttribute('disabled');
+                
+                // Thêm event listener để debug
+                input.addEventListener('focus', function() {
+                    console.log('Input focused:', this.name);
+                });
+                
+                input.addEventListener('input', function() {
+                    console.log('Input changed:', this.name, 'Value:', this.value);
+                });
+            });
+
             // Xử lý sự kiện thay đổi dropdown
             document.getElementById('khoa-dao-tao').addEventListener('change', function() {
                 const departmentId = this.value;
@@ -922,6 +1042,16 @@
                 }
             });
             
+            console.log('Initializing modal events...');
+    
+            // Xử lý thêm chương trình đào tạo
+            document.getElementById('btn-them').addEventListener('click', function() {
+                console.log('Open modal button clicked');
+                openThemChuongTrinhModal();
+                // Sửa lỗi input sau khi mở modal
+                setTimeout(fixModalInputs, 50);
+            });
+
             // Xử lý thêm chương trình đào tạo
             document.getElementById('btn-them').addEventListener('click', openThemChuongTrinhModal);
             
@@ -940,6 +1070,14 @@
                     closeThemChuongTrinhModal();
                 }
             });
+
+            // Ngăn sự kiện click trong modal lan ra ngoài
+            document.getElementById('form-them-chuong-trinh').addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // Kiểm tra modal sau khi load
+            setTimeout(fixModalInputs, 1000);
             
             /// Xử lý import Excel
             document.getElementById('btn-import').addEventListener('click', openImportModal);
@@ -1018,7 +1156,7 @@
         <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-gray-900">Thêm chương trình đào tạo mới</h3>
-                <button id="btn-dong-chuong-trinh" class="text-gray-500 hover:text-gray-700">
+                <button type="button" id="btn-dong-chuong-trinh" class="text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -1028,16 +1166,18 @@
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Mã chương trình *</label>
                         <input type="text" name="code" 
-                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                             placeholder="Vd: CNTT_2022"
-                            required>
+                            required
+                            autocomplete="off">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Tên chương trình *</label>
                         <input type="text" name="name" 
-                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                             placeholder="Vd: Chương trình Tin học ứng dụng"
-                            required>
+                            required
+                            autocomplete="off">
                     </div>
                 </div>
                 
@@ -1045,14 +1185,15 @@
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Năm học áp dụng *</label>
                         <input type="text" name="academic_year" 
-                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                             placeholder="Vd: 2022 - 2025"
-                            required>
+                            required
+                            autocomplete="off">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Ngành đào tạo *</label>
                         <select name="major_id" 
-                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                 required>
                             <option value="">-- Chọn ngành --</option>
                             {% for major in majors %}
@@ -1065,9 +1206,10 @@
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2">Mô tả</label>
                     <textarea name="description" 
-                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                             rows="3"
-                            placeholder="Nhập mô tả về chương trình đào tạo..."></textarea>
+                            placeholder="Nhập mô tả về chương trình đào tạo..."
+                            autocomplete="off"></textarea>
                 </div>
                 
                 <div class="bg-blue-50 p-4 rounded-md">
@@ -1080,11 +1222,11 @@
             </form>
             
             <div class="flex justify-end mt-6 space-x-3">
-                <button id="btn-huy-chuong-trinh" 
+                <button type="button" id="btn-huy-chuong-trinh" 
                         class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2.5 px-6 rounded-md transition duration-200">
                     <i class="fas fa-times mr-2"></i>Hủy
                 </button>
-                <button id="btn-luu-chuong-trinh" 
+                <button type="button" id="btn-luu-chuong-trinh" 
                         class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-md transition duration-200">
                     <i class="fas fa-save mr-2"></i>Lưu chương trình
                 </button>
