@@ -116,7 +116,7 @@ TEMPLATES = [
 
 
 # Lấy DATABASE_URL từ environment variable
-DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 db_config = dj_database_url.parse(DATABASE_URL)
 
