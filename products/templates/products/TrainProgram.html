@@ -15,6 +15,44 @@
             max-height: 500px;
             overflow-y: auto;
         }
+        
+        /* Fix z-index cho tất cả modal và header */
+        .fixed.inset-0 {
+            z-index: 1000 !important;
+        }
+        
+        /* Header table phải có z-index thấp hơn modal */
+        .bg-gray-50.sticky {
+            z-index: 10;
+        }
+        
+        /* Modal backdrop */
+        .bg-gray-600.bg-opacity-50 {
+            z-index: 1000;
+        }
+        
+        /* Modal content */
+        .relative.top-10.mx-auto {
+            z-index: 1001;
+        }
+        
+        /* Đảm bảo modal không bị ảnh hưởng bởi các element khác */
+        .modal-overlay {
+            z-index: 1000;
+            position: fixed;
+        }
+        
+        /* Style cho input focus */
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            ring: 2px;
+            ring-color: #3b82f6;
+        }
+        
+        /* Ngăn scroll body khi modal mở */
+        body.modal-open {
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -84,106 +122,84 @@
                 <input type="file" id="file-input" class="hidden" accept=".xlsx, .xls">
             </div>
         </div>
-        
-        <!-- Modal thêm chương trình đào tạo -->
-        <div id="modal-them-chuong-trinh" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-                <div class="mt-3">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Thêm chương trình đào tạo mới</h3>
-                    <form id="form-them-chuong-trinh" class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-2">Mã chương trình *</label>
-                                <input type="text" name="code" class="w-full p-2 border border-gray-300 rounded-md" required>
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-2">Tên chương trình *</label>
-                                <input type="text" name="name" class="w-full p-2 border border-gray-300 rounded-md" required>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-2">Năm học áp dụng *</label>
-                                <input type="text" name="academic_year" class="w-full p-2 border border-gray-300 rounded-md" required>
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-2">Ngành đào tạo *</label>
-                                <select name="major_id" class="w-full p-2 border border-gray-300 rounded-md" required>
-                                    <option value="">-- Chọn ngành --</option>
-                                    {% for major in majors %}
-                                    <option value="{{ major.id }}">{{ major.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-2">Mô tả</label>
-                            <textarea name="description" class="w-full p-2 border border-gray-300 rounded-md" rows="3"></textarea>
-                        </div>
-                    </form>
-                    <div class="flex justify-end mt-4 space-x-2">
-                        <button id="btn-huy-chuong-trinh" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
-                            Hủy
-                        </button>
-                        <button id="btn-luu-chuong-trinh" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                            Lưu
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Modal import Excel -->
-        <div id="modal-import" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-                <div class="mt-3">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Import từ Excel</h3>
-                    <form id="form-import" class="space-y-4" enctype="multipart/form-data">
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-2">Chương trình đào tạo *</label>
-                            <select id="import-curriculum" name="curriculum_id" class="w-full p-2 border border-gray-300 rounded-md" required>
-                                <option value="">-- Chọn chương trình --</option>
-                                {% for curriculum in curricula %}
-                                <option value="{{ curriculum.id }}">{{ curriculum.name }} ({{ curriculum.academic_year }})</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-2">File Excel *</label>
-                            <input type="file" id="excel-file" name="excel_file" accept=".xlsx, .xls" class="w-full p-2 border border-gray-300 rounded-md" required>
-                            <p class="text-xs text-gray-500 mt-1">Chỉ chấp nhận file .xlsx hoặc .xls, tối đa 10MB</p>
-                        </div>
-                        <div class="text-sm text-gray-600">
-                            <p><a href="#" id="btn-download-template" class="text-blue-600 hover:text-blue-800">
-                                <i class="fas fa-download mr-1"></i>Tải file mẫu
-                            </a></p>
-                        </div>
-                    </form>
-                    <div class="flex justify-end mt-4 space-x-2">
-                        <button id="btn-huy-import" type="button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
-                            Hủy
-                        </button>
-                        <button id="btn-luu-import" type="button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                            <i class="fas fa-upload mr-2"></i>Import
-                        </button>
+        <div id="modal-import" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+            <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900">Import từ Excel</h3>
+                    <button id="btn-dong-import" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="form-import" class="space-y-4" enctype="multipart/form-data">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Chương trình đào tạo *</label>
+                        <select id="import-curriculum" name="curriculum_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                required>
+                            <option value="">-- Chọn chương trình --</option>
+                            {% for curriculum in curricula %}
+                            <option value="{{ curriculum.id }}">{{ curriculum.name }} ({{ curriculum.academic_year }})</option>
+                            {% endfor %}
+                        </select>
                     </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">File Excel *</label>
+                        <input type="file" id="excel-file" name="excel_file" accept=".xlsx, .xls" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            required>
+                        <p class="text-xs text-gray-500 mt-1">Chỉ chấp nhận file .xlsx hoặc .xls, tối đa 10MB</p>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <p>
+                            <a href="#" id="btn-download-template" class="text-blue-600 hover:text-blue-800 inline-flex items-center">
+                                <i class="fas fa-download mr-2"></i>Tải file mẫu
+                            </a>
+                        </p>
+                    </div>
+                    
+                    <div class="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+                        <h4 class="text-sm font-semibold text-yellow-800 mb-2">Lưu ý khi import:</h4>
+                        <ul class="text-sm text-yellow-700 list-disc list-inside space-y-1">
+                            <li>File Excel phải theo đúng định dạng mẫu</li>
+                            <li>Các cột bắt buộc: Mã môn học, Tên học phần, Số tín chỉ</li>
+                            <li>Mã môn học không được trùng trong cùng chương trình</li>
+                        </ul>
+                    </div>
+                </form>
+                
+                <div class="flex justify-end mt-6 space-x-3">
+                    <button id="btn-huy-import" type="button" 
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2.5 px-6 rounded-md transition duration-200">
+                        <i class="fas fa-times mr-2"></i>Hủy
+                    </button>
+                    <button id="btn-luu-import" type="button" 
+                            class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-6 rounded-md transition duration-200">
+                        <i class="fas fa-upload mr-2"></i>Import Excel
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Modal hiển thị lỗi import -->
-        <div id="modal-import-errors" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
-                <div class="mt-3">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Chi tiết lỗi khi import</h3>
-                    <div id="import-errors-content" class="max-h-96 overflow-y-auto mb-4 p-4 bg-gray-100 rounded">
-                        <!-- Nội dung lỗi sẽ được điền ở đây -->
-                    </div>
-                    <div class="flex justify-end">
-                        <button id="btn-close-errors" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                            Đóng
-                        </button>
-                    </div>
+        <div id="modal-import-errors" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+            <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900">Chi tiết lỗi khi import</h3>
+                    <button id="btn-dong-errors" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div id="import-errors-content" class="max-h-96 overflow-y-auto mb-4 p-4 bg-gray-100 rounded border">
+                    <!-- Nội dung lỗi sẽ được điền ở đây -->
+                </div>
+                <div class="flex justify-end">
+                    <button id="btn-close-errors" 
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-md transition duration-200">
+                        <i class="fas fa-check mr-2"></i>Đóng
+                    </button>
                 </div>
             </div>
         </div>
@@ -192,7 +208,7 @@
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="table-container">
                 <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50 sticky top-0">
+                    <thead class="bg-gray-50 sticky top-0" style="z-index: 10;">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TT</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã môn học</th>
@@ -590,59 +606,57 @@
             });
         }
         
-        // Import Excel
-        function importExcel() {
-            const form = document.getElementById('form-import');
-            const formData = new FormData(form);
-            const curriculumId = document.getElementById('import-curriculum').value;
-            const fileInput = document.getElementById('excel-file');
-            
-            if (!curriculumId) {
-                alert('Vui lòng chọn chương trình đào tạo');
-                return;
-            }
-            
-            if (!fileInput.files.length) {
-                alert('Vui lòng chọn file Excel');
-                return;
-            }
-            
-            fetch('/import-excel/', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(data.message);
-                    document.getElementById('modal-import').classList.add('hidden');
-                    form.reset();
-                    // Reload data
-                    loadFilteredData();
-                } else {
-                    alert('Lỗi: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Có lỗi xảy ra khi import file');
-            });
+        // Mở modal import Excel
+        function openImportModal() {
+            document.getElementById('modal-import').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
         }
-        
+
+        // Đóng modal import Excel
+        function closeImportModal() {
+            document.getElementById('modal-import').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+            document.getElementById('form-import').reset();
+        }
+
+        // Mở modal lỗi import
+        function openImportErrorsModal() {
+            document.getElementById('modal-import-errors').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        // Đóng modal lỗi import
+        function closeImportErrorsModal() {
+            document.getElementById('modal-import-errors').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
         // Hiển thị lỗi import
         function showImportErrors(errors) {
             const errorsContent = document.getElementById('import-errors-content');
             if (errors && errors.length > 0) {
-                errorsContent.innerHTML = errors.map(error => 
-                    `<div class="text-red-600 py-1 border-b border-gray-300">${error}</div>`
-                ).join('');
+                errorsContent.innerHTML = `
+                    <div class="mb-3 p-3 bg-red-50 border border-red-200 rounded">
+                        <h4 class="font-semibold text-red-800 mb-2">Có ${errors.length} lỗi cần xem xét:</h4>
+                    </div>
+                    <div class="space-y-2">
+                        ${errors.map(error => 
+                            `<div class="flex items-start text-red-700 py-2 border-b border-red-100">
+                                <i class="fas fa-exclamation-circle mt-1 mr-2 text-red-500 flex-shrink-0"></i>
+                                <span class="text-sm">${error}</span>
+                            </div>`
+                        ).join('')}
+                    </div>
+                `;
             } else {
-                errorsContent.innerHTML = '<div class="text-green-600">Không có lỗi nào</div>';
+                errorsContent.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
+                        <div class="text-green-600 font-semibold">Không có lỗi nào trong quá trình import</div>
+                    </div>
+                `;
             }
-            document.getElementById('modal-import-errors').classList.remove('hidden');
+            openImportErrorsModal();
         }
 
         // Import Excel với xử lý lỗi chi tiết
@@ -683,9 +697,8 @@
             })
             .then(data => {
                 if (data.status === 'success') {
-                    alert(data.message);
-                    document.getElementById('modal-import').classList.add('hidden');
-                    form.reset();
+                    alert('✅ ' + data.message);
+                    closeImportModal();
                     
                     // Hiển thị chi tiết lỗi nếu có
                     if (data.data && data.data.errors && data.data.errors.length > 0) {
@@ -695,12 +708,12 @@
                     // Reload data
                     loadFilteredData();
                 } else {
-                    alert('Lỗi: ' + data.message);
+                    alert('❌ Lỗi: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Có lỗi xảy ra khi import file: ' + error.message);
+                alert('❌ Có lỗi xảy ra khi import file: ' + error.message);
             })
             .finally(() => {
                 // Khôi phục trạng thái nút
@@ -708,11 +721,6 @@
                 importBtn.disabled = false;
             });
         }
-
-        // Đóng modal lỗi
-        document.getElementById('btn-close-errors').addEventListener('click', function() {
-            document.getElementById('modal-import-errors').classList.add('hidden');
-        });
 
         // Tải file mẫu
         function downloadTemplate() {
@@ -733,6 +741,72 @@
                 });
         }
         
+        // Mở modal thêm chương trình
+        function openThemChuongTrinhModal() {
+            document.getElementById('modal-them-chuong-trinh').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        // Đóng modal thêm chương trình
+        function closeThemChuongTrinhModal() {
+            document.getElementById('modal-them-chuong-trinh').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+            document.getElementById('form-them-chuong-trinh').reset();
+        }
+
+        // Tạo chương trình đào tạo mới
+        function createCurriculum() {
+            const form = document.getElementById('form-them-chuong-trinh');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            
+            // Validate dữ liệu
+            if (!data.code || !data.name || !data.academic_year || !data.major_id) {
+                alert('Vui lòng điền đầy đủ các trường bắt buộc');
+                return;
+            }
+            
+            // Hiển thị loading
+            const saveBtn = document.getElementById('btn-luu-chuong-trinh');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang tạo...';
+            saveBtn.disabled = true;
+            
+            fetch('/api/curriculum/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('✅ Đã tạo chương trình đào tạo thành công!');
+                    closeThemChuongTrinhModal();
+                    // Reload dropdown curricula
+                    loadCurricula();
+                } else {
+                    alert('❌ Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Có lỗi xảy ra khi tạo chương trình: ' + error.message);
+            })
+            .finally(() => {
+                // Khôi phục trạng thái nút
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            });
+        }
+
         // Hàm lấy CSRF token
         function getCookie(name) {
             let cookieValue = null;
@@ -849,26 +923,51 @@
             });
             
             // Xử lý thêm chương trình đào tạo
-            document.getElementById('btn-them').addEventListener('click', function() {
-                document.getElementById('modal-them-chuong-trinh').classList.remove('hidden');
-            });
+            document.getElementById('btn-them').addEventListener('click', openThemChuongTrinhModal);
             
-            document.getElementById('btn-huy-chuong-trinh').addEventListener('click', function() {
-                document.getElementById('modal-them-chuong-trinh').classList.add('hidden');
-            });
+            // Đóng modal bằng nút hủy
+            document.getElementById('btn-huy-chuong-trinh').addEventListener('click', closeThemChuongTrinhModal);
             
+            // Đóng modal bằng nút X
+            document.getElementById('btn-dong-chuong-trinh').addEventListener('click', closeThemChuongTrinhModal);
+            
+            // Lưu chương trình
             document.getElementById('btn-luu-chuong-trinh').addEventListener('click', createCurriculum);
             
-            // Xử lý import Excel
-            document.getElementById('btn-import').addEventListener('click', function() {
-                document.getElementById('modal-import').classList.remove('hidden');
+            // Đóng modal khi click outside
+            document.getElementById('modal-them-chuong-trinh').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeThemChuongTrinhModal();
+                }
             });
             
-            document.getElementById('btn-huy-import').addEventListener('click', function() {
-                document.getElementById('modal-import').classList.add('hidden');
-            });
+            /// Xử lý import Excel
+            document.getElementById('btn-import').addEventListener('click', openImportModal);
             
+            // Đóng modal import bằng nút hủy
+            document.getElementById('btn-huy-import').addEventListener('click', closeImportModal);
+            // Đóng modal import bằng nút X
+            document.getElementById('btn-dong-import').addEventListener('click', closeImportModal);
+            
+            // Lưu import
             document.getElementById('btn-luu-import').addEventListener('click', importExcel);
+
+            // Đóng modal lỗi
+            document.getElementById('btn-close-errors').addEventListener('click', closeImportErrorsModal);
+            document.getElementById('btn-dong-errors').addEventListener('click', closeImportErrorsModal);
+
+            // Đóng modal khi click outside
+            document.getElementById('modal-import').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeImportModal();
+                }
+            });
+
+            document.getElementById('modal-import-errors').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeImportErrorsModal();
+                }
+            });
             
             // Tải file mẫu
             document.getElementById('btn-download-template').addEventListener('click', function(e) {
@@ -890,23 +989,107 @@
         
         // Xử lý phím Enter trong modal
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                // Nếu đang trong modal thêm chương trình
-                if (!document.getElementById('modal-them-chuong-trinh').classList.contains('hidden')) {
-                    createCurriculum();
-                }
-                // Nếu đang trong modal import
-                else if (!document.getElementById('modal-import').classList.contains('hidden')) {
+             // ESC để đóng tất cả modal
+            if (e.key === 'Escape') {
+                closeThemChuongTrinhModal();
+                closeImportModal();
+                closeImportErrorsModal();
+                document.body.classList.remove('overflow-hidden');
+            }
+            
+            // Enter trong modal import (với Ctrl)
+            if (!document.getElementById('modal-import').classList.contains('hidden')) {
+                if (e.key === 'Enter' && e.ctrlKey) {
                     importExcel();
                 }
             }
             
-            // ESC để đóng modal
-            if (e.key === 'Escape') {
-                document.getElementById('modal-them-chuong-trinh').classList.add('hidden');
-                document.getElementById('modal-import').classList.add('hidden');
-            }
+            // Enter trong modal thêm chương trình (với Ctrl)
+            if (!document.getElementById('modal-them-chuong-trinh').classList.contains('hidden')) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    createCurriculum();
+                }
+            }           
         });
     </script>
+
+    {% comment %} <!-- Modal thêm chương trình đào tạo --> {% endcomment %}
+    <div id="modal-them-chuong-trinh" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Thêm chương trình đào tạo mới</h3>
+                <button id="btn-dong-chuong-trinh" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="form-them-chuong-trinh" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Mã chương trình *</label>
+                        <input type="text" name="code" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Vd: CNTT_2022"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Tên chương trình *</label>
+                        <input type="text" name="name" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Vd: Chương trình Tin học ứng dụng"
+                            required>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Năm học áp dụng *</label>
+                        <input type="text" name="academic_year" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Vd: 2022 - 2025"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Ngành đào tạo *</label>
+                        <select name="major_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                required>
+                            <option value="">-- Chọn ngành --</option>
+                            {% for major in majors %}
+                            <option value="{{ major.id }}">{{ major.name }} ({{ major.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Mô tả</label>
+                    <textarea name="description" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            rows="3"
+                            placeholder="Nhập mô tả về chương trình đào tạo..."></textarea>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-md">
+                    <h4 class="text-sm font-semibold text-blue-800 mb-2">Thông tin bổ sung:</h4>
+                    <p class="text-sm text-blue-700">
+                        • Chương trình sẽ được tạo với trạng thái "Bản nháp"<br>
+                        • Bạn có thể import môn học sau khi tạo chương trình
+                    </p>
+                </div>
+            </form>
+            
+            <div class="flex justify-end mt-6 space-x-3">
+                <button id="btn-huy-chuong-trinh" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2.5 px-6 rounded-md transition duration-200">
+                    <i class="fas fa-times mr-2"></i>Hủy
+                </button>
+                <button id="btn-luu-chuong-trinh" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-md transition duration-200">
+                    <i class="fas fa-save mr-2"></i>Lưu chương trình
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
