@@ -8,6 +8,7 @@ urlpatterns = [
     path('users/', views.users_list, name='users-list'),
     path('health/', health_check, name='health-check'),
     path('train_program/', views.TrainProgramManagerView.as_view(), name='train_program'),
+    path('download-excel-template/', views.ImportExcelView.as_view(), name='download_excel_template'),
     path('import-excel/', views.ImportExcelView.as_view(), name='import_excel'),
     path('download-excel-template/', views.ImportExcelView.as_view(), name='download_excel_template'),
     path('thong-ke/', views.ThongKeView.as_view(), name='thong_ke'),

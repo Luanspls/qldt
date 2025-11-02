@@ -206,61 +206,75 @@ class TrainProgramManagerView(View):
             }
         ]
 
+import io
+from django.http import HttpResponse
+from django.core.files.base import ContentFile
+
 class ImportExcelView(View):
     def get(self, request):
         """Tải file Excel mẫu"""
         try:
-            # Tạo DataFrame mẫu dựa trên file Excel đính kèm
             sample_data = {
-                'TT': [1, 2, 3, 4, 5, 6],
-                'Mã môn học': ['MH01', 'MH02', 'MH03', 'MH04', 'MH05', 'MH06'],
+                'TT': [1, 2, 3, 4, 5, 6, 7, 8],
+                'Mã môn học': ['MH01', 'MH02', 'MH03', 'MH04', 'MH05', 'MH06', 'MH07', 'MH08'],
                 'Tên học phần': [
                     'Giáo dục chính trị', 
                     'Pháp luật', 
                     'Giáo dục thể chất',
                     'GD Quốc phòng và An ninh',
                     'Tin học',
-                    'Tiếng Anh'
+                    'Tiếng Anh',
+                    'GD kỹ năng mềm',
+                    'Chăm sóc khách hàng'
                 ],
-                'Số tín chỉ': [4, 2, 2, 3, 3, 5],
-                'Tổng số giờ': [75, 30, 60, 75, 75, 120],
-                'Lý thuyết': [41, 18, 5, 36, 15, 42],
-                'Thực hành': [29, 10, 51, 36, 58, 72],
-                'Kiểm tra/Thi': [5, 2, 4, 3, 2, 6],
-                'HK1': [4, '', '', '', 3, 5],
-                'HK2': ['', '', 2, '', '', ''],
-                'HK3': ['', '', '', 3, '', ''],
-                'HK4': ['', 2, '', '', '', ''],
-                'HK5': ['', '', '', '', '', ''],
-                'HK6': ['', '', '', '', '', ''],
+                'Số tín chỉ': [4, 2, 2, 3, 3, 5, 3, 2],
+                'Tổng số giờ': [75, 30, 60, 75, 75, 120, 75, 30],
+                'Lý thuyết': [41, 18, 5, 36, 15, 42, 15, 28],
+                'Thực hành': [29, 10, 51, 36, 58, 72, 58, 0],
+                'Kiểm tra/Thi': [5, 2, 4, 3, 2, 6, 2, 2],
+                'HK1': [4, '', '', '', 3, 5, '', ''],
+                'HK2': ['', '', 2, '', '', '', 3, ''],
+                'HK3': ['', '', '', 3, '', '', '', ''],
+                'HK4': ['', 2, '', '', '', '', '', 2],
+                'HK5': ['', '', '', '', '', '', '', ''],
+                'HK6': ['', '', '', '', '', '', '', ''],
                 'Đơn vị': [
                     'Khoa các BMC',
                     'Khoa các BMC', 
                     'Khoa các BMC',
                     'Khoa các BMC',
                     'Tổ Tin học',
-                    'Khoa Ngoại ngữ'
+                    'Khoa Ngoại ngữ',
+                    'Khoa các BMC',
+                    'Khoa KT-KT'
                 ],
                 'Loại môn': [
                     'Bắt buộc', 'Bắt buộc', 'Bắt buộc', 
-                    'Bắt buộc', 'Bắt buộc', 'Bắt buộc'
+                    'Bắt buộc', 'Bắt buộc', 'Bắt buộc',
+                    'Bắt buộc', 'Bắt buộc'
                 ]
             }
             
             df = pd.DataFrame(sample_data)
             
-            # Lưu file tạm
-            file_path = os.path.join(settings.MEDIA_ROOT, 'mau_chuong_trinh_dao_tao.xlsx')
-            df.to_excel(file_path, index=False, sheet_name='Chương trình đào tạo')
+            # Tạo file trong memory
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='Chương trình đào tạo')
+            
+            output.seek(0)
             
             # Trả về file để download
-            with open(file_path, 'rb') as f:
-                response = HttpResponse(f.read(), content_type='application/vnd.ms-excel')
-                response['Content-Disposition'] = 'attachment; filename="mau_chuong_trinh_dao_tao.xlsx"'
+            response = HttpResponse(
+                output.getvalue(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = 'attachment; filename="mau_chuong_trinh_dao_tao.xlsx"'
+            response['Content-Length'] = len(output.getvalue())
             
             return response
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)})
+            return JsonResponse({'status': 'error', 'message': f"Lỗi tạo file mẫu {str(e)}"})
     
     def post(self, request):
         """Xử lý import file Excel"""
@@ -272,11 +286,24 @@ class ImportExcelView(View):
                 if not curriculum_id:
                     return JsonResponse({'status': 'error', 'message': 'Vui lòng chọn chương trình đào tạo'})
                 
-                # Đọc file Excel
-                df = pd.read_excel(excel_file)
+                # Kiểm tra định dạng file
+                if not excel_file.name.endswith(('.xlsx', '.xls')):
+                    return JsonResponse({'status': 'error', 'message': 'File phải có định dạng Excel (.xlsx hoặc .xls)'})
                 
-                # Xử lý dữ liệu và lưu vào database
-                result = self.process_excel_data(df, curriculum_id, request.user)
+                # Kiểm tra kích thước file (tối đa 10MB)
+                if excel_file.size > 10 * 1024 * 1024:
+                    return JsonResponse({'status': 'error', 'message': 'File không được vượt quá 10MB'})
+                
+                try:
+                    # Đọc file Excel
+                    df = pd.read_excel(excel_file)
+                    print(f"File imported successfully, shape: {df.shape}")
+                    
+                except Exception as e:
+                    return JsonResponse({'status': 'error', 'message': f'Không thể đọc file Excel: {str(e)}'})
+                
+                # Xử lý dữ liệu và lưu vào database - TRUYỀN excel_file VÀO
+                result = self.process_excel_data(df, curriculum_id, request.user, excel_file)
                 
                 if result['status'] == 'success':
                     return JsonResponse({
@@ -291,9 +318,10 @@ class ImportExcelView(View):
                 return JsonResponse({'status': 'error', 'message': 'Không tìm thấy file'})
                 
         except Exception as e:
+            print(f"Error in import: {str(e)}")
             return JsonResponse({'status': 'error', 'message': f'Lỗi khi xử lý file: {str(e)}'})
     
-    def process_excel_data(self, df, curriculum_id, user):
+    def process_excel_data(self, df, curriculum_id, user, excel_file):  # THÊM excel_file VÀO THAM SỐ
         """Xử lý dữ liệu từ Excel và lưu vào database"""
         try:
             curriculum = Curriculum.objects.get(id=curriculum_id)
@@ -302,42 +330,101 @@ class ImportExcelView(View):
             processed_data = []
             errors = []
             
+            # Kiểm tra cấu trúc file
+            required_columns = ['Mã môn học', 'Tên học phần', 'Số tín chỉ']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                return {
+                    'status': 'error', 
+                    'message': f'File thiếu các cột bắt buộc: {", ".join(missing_columns)}'
+                }
+            
             for index, row in df.iterrows():
                 try:
                     # Bỏ qua các dòng trống hoặc dòng tiêu đề
-                    if pd.isna(row.get('Mã môn học')) or row.get('Mã môn học') == 'Mã môn học':
+                    if pd.isna(row.get('Mã môn học')) or str(row.get('Mã môn học')).strip() in ['', 'Mã môn học', 'nan']:
                         continue
                     
+                    # Chuẩn hóa dữ liệu
+                    ma_mon_hoc = str(row.get('Mã môn học')).strip()
+                    ten_mon_hoc = str(row.get('Tên học phần')).strip()
+                    
+                    if not ma_mon_hoc or not ten_mon_hoc:
+                        errors.append(f"Dòng {index + 2}: Mã môn học và Tên học phần không được để trống")
+                        continue
+                    
+                    # Xử lý số tín chỉ
+                    try:
+                        so_tin_chi = float(row.get('Số tín chỉ', 0))
+                    except (ValueError, TypeError):
+                        so_tin_chi = 0
+                    
+                    # Xử lý số giờ
+                    try:
+                        tong_so_gio = int(float(row.get('Tổng số giờ', 0)))
+                    except (ValueError, TypeError):
+                        tong_so_gio = 0
+                    
+                    try:
+                        ly_thuyet = int(float(row.get('Lý thuyết', 0)))
+                    except (ValueError, TypeError):
+                        ly_thuyet = 0
+                    
+                    try:
+                        thuc_hanh = int(float(row.get('Thực hành', 0)))
+                    except (ValueError, TypeError):
+                        thuc_hanh = 0
+                    
+                    try:
+                        kiem_tra_thi = int(float(row.get('Kiểm tra/Thi', 0)))
+                    except (ValueError, TypeError):
+                        kiem_tra_thi = 0
+                    
                     # Lấy hoặc tạo department
-                    department_name = row.get('Đơn vị', '').strip()
+                    department_name = str(row.get('Đơn vị', '')).strip()
                     department = None
-                    if department_name:
+                    if department_name and department_name not in ['', 'nan']:
                         department, _ = Department.objects.get_or_create(
                             name=department_name,
-                            defaults={'code': department_name[:10], 'name': department_name}
+                            defaults={
+                                'code': department_name[:10].upper().replace(' ', ''),
+                                'name': department_name
+                            }
                         )
                     
                     # Lấy hoặc tạo subject_type
-                    subject_type_name = row.get('Loại môn', 'Bắt buộc').strip()
+                    subject_type_name = str(row.get('Loại môn', 'Bắt buộc')).strip()
+                    if not subject_type_name or subject_type_name == 'nan':
+                        subject_type_name = 'Bắt buộc'
+                    
                     subject_type, _ = SubjectType.objects.get_or_create(
                         name=subject_type_name,
-                        defaults={'code': subject_type_name[:10], 'name': subject_type_name}
+                        defaults={
+                            'code': subject_type_name[:10].upper().replace(' ', ''),
+                            'name': subject_type_name
+                        }
                     )
+                    
+                    # Xử lý thứ tự
+                    try:
+                        order_number = int(row.get('TT', index + 1))
+                    except (ValueError, TypeError):
+                        order_number = index + 1
                     
                     # Tạo hoặc cập nhật subject
                     subject, created = Subject.objects.update_or_create(
                         curriculum=curriculum,
-                        code=row.get('Mã môn học'),
+                        code=ma_mon_hoc,
                         defaults={
-                            'name': row.get('Tên học phần'),
-                            'credits': float(row.get('Số tín chỉ', 0)),
-                            'total_hours': int(row.get('Tổng số giờ', 0)),
-                            'theory_hours': int(row.get('Lý thuyết', 0)),
-                            'practice_hours': int(row.get('Thực hành', 0)),
-                            'exam_hours': int(row.get('Kiểm tra/Thi', 0)),
+                            'name': ten_mon_hoc,
+                            'credits': so_tin_chi,
+                            'total_hours': tong_so_gio,
+                            'theory_hours': ly_thuyet,
+                            'practice_hours': thuc_hanh,
+                            'exam_hours': kiem_tra_thi,
                             'department': department,
                             'subject_type': subject_type,
-                            'order_number': int(row.get('TT', index + 1))
+                            'order_number': order_number
                         }
                     )
                     
@@ -348,17 +435,19 @@ class ImportExcelView(View):
                     
                     # Xử lý phân bố học kỳ
                     for hk in range(1, 7):
-                        credits = row.get(f'HK{hk}')
-                        if credits and str(credits).strip() and str(credits).strip() != 'nan':
-                            try:
-                                credit_value = float(credits)
-                                SemesterAllocation.objects.update_or_create(
-                                    subject=subject,
-                                    semester=hk,
-                                    defaults={'credits': credit_value}
-                                )
-                            except (ValueError, TypeError):
-                                pass
+                        column_name = f'HK{hk}'
+                        if column_name in df.columns:
+                            credits_value = row.get(column_name)
+                            if credits_value and str(credits_value).strip() and str(credits_value).strip() not in ['', 'nan', 'x', 'X']:
+                                try:
+                                    credit_value = float(credits_value)
+                                    SemesterAllocation.objects.update_or_create(
+                                        subject=subject,
+                                        semester=hk,
+                                        defaults={'credits': credit_value}
+                                    )
+                                except (ValueError, TypeError) as e:
+                                    errors.append(f"Dòng {index + 2} - HK{hk}: Giá trị tín chỉ không hợp lệ: {credits_value}")
                     
                     processed_data.append({
                         'ma_mon_hoc': subject.code,
@@ -368,17 +457,23 @@ class ImportExcelView(View):
                     })
                     
                 except Exception as e:
-                    errors.append(f"Dòng {index + 2}: {str(e)}")
+                    error_msg = f"Dòng {index + 2}: {str(e)}"
+                    errors.append(error_msg)
+                    print(f"Error processing row {index + 2}: {str(e)}")
             
-            # Lưu lịch sử import
+            # Lưu lịch sử import - SỬ DỤNG excel_file ĐÃ ĐƯỢC TRUYỀN VÀO
             ImportHistory.objects.create(
                 curriculum=curriculum,
-                file_name=user.username if user else 'Unknown',
+                file_name=excel_file.name,  # BÂY GIỜ excel_file ĐÃ ĐƯỢC XÁC ĐỊNH
+                file_size=excel_file.size,   # BÂY GIỜ excel_file ĐÃ ĐƯỢC XÁC ĐỊNH
                 imported_by=user,
                 record_count=len(processed_data),
                 status='success' if not errors else 'partial',
                 errors=errors if errors else None
             )
+            
+            # Cập nhật tổng số tín chỉ cho curriculum
+            curriculum.update_totals()
             
             return {
                 'status': 'success',
@@ -388,9 +483,12 @@ class ImportExcelView(View):
                 'errors': errors
             }
             
+        except Curriculum.DoesNotExist:
+            return {'status': 'error', 'message': 'Chương trình đào tạo không tồn tại'}
         except Exception as e:
-            return {'status': 'error', 'message': str(e)}
-
+            print(f"Error in process_excel_data: {str(e)}")
+            return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}
+            
 class ThongKeView(View):
     def get(self, request):
         """API trả về thống kê"""

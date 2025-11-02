@@ -138,7 +138,7 @@
             <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
                 <div class="mt-3">
                     <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Import từ Excel</h3>
-                    <form id="form-import" class="space-y-4">
+                    <form id="form-import" class="space-y-4" enctype="multipart/form-data">
                         <div>
                             <label class="block text-gray-700 text-sm font-bold mb-2">Chương trình đào tạo *</label>
                             <select id="import-curriculum" name="curriculum_id" class="w-full p-2 border border-gray-300 rounded-md" required>
@@ -151,17 +151,37 @@
                         <div>
                             <label class="block text-gray-700 text-sm font-bold mb-2">File Excel *</label>
                             <input type="file" id="excel-file" name="excel_file" accept=".xlsx, .xls" class="w-full p-2 border border-gray-300 rounded-md" required>
+                            <p class="text-xs text-gray-500 mt-1">Chỉ chấp nhận file .xlsx hoặc .xls, tối đa 10MB</p>
                         </div>
                         <div class="text-sm text-gray-600">
-                            <p><a href="#" id="btn-download-template" class="text-blue-600 hover:text-blue-800">Tải file mẫu</a></p>
+                            <p><a href="#" id="btn-download-template" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-download mr-1"></i>Tải file mẫu
+                            </a></p>
                         </div>
                     </form>
                     <div class="flex justify-end mt-4 space-x-2">
-                        <button id="btn-huy-import" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                        <button id="btn-huy-import" type="button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
                             Hủy
                         </button>
-                        <button id="btn-luu-import" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                            Import
+                        <button id="btn-luu-import" type="button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            <i class="fas fa-upload mr-2"></i>Import
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal hiển thị lỗi import -->
+        <div id="modal-import-errors" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Chi tiết lỗi khi import</h3>
+                    <div id="import-errors-content" class="max-h-96 overflow-y-auto mb-4 p-4 bg-gray-100 rounded">
+                        <!-- Nội dung lỗi sẽ được điền ở đây -->
+                    </div>
+                    <div class="flex justify-end">
+                        <button id="btn-close-errors" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Đóng
                         </button>
                     </div>
                 </div>
@@ -612,6 +632,88 @@
             });
         }
         
+        // Hiển thị lỗi import
+        function showImportErrors(errors) {
+            const errorsContent = document.getElementById('import-errors-content');
+            if (errors && errors.length > 0) {
+                errorsContent.innerHTML = errors.map(error => 
+                    `<div class="text-red-600 py-1 border-b border-gray-300">${error}</div>`
+                ).join('');
+            } else {
+                errorsContent.innerHTML = '<div class="text-green-600">Không có lỗi nào</div>';
+            }
+            document.getElementById('modal-import-errors').classList.remove('hidden');
+        }
+
+        // Import Excel với xử lý lỗi chi tiết
+        function importExcel() {
+            const form = document.getElementById('form-import');
+            const formData = new FormData(form);
+            const curriculumId = document.getElementById('import-curriculum').value;
+            const fileInput = document.getElementById('excel-file');
+            
+            if (!curriculumId) {
+                alert('Vui lòng chọn chương trình đào tạo');
+                return;
+            }
+            
+            if (!fileInput.files.length) {
+                alert('Vui lòng chọn file Excel');
+                return;
+            }
+            
+            // Hiển thị loading
+            const importBtn = document.getElementById('btn-luu-import');
+            const originalText = importBtn.innerHTML;
+            importBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang xử lý...';
+            importBtn.disabled = true;
+            
+            fetch('/import-excel/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    document.getElementById('modal-import').classList.add('hidden');
+                    form.reset();
+                    
+                    // Hiển thị chi tiết lỗi nếu có
+                    if (data.data && data.data.errors && data.data.errors.length > 0) {
+                        showImportErrors(data.data.errors);
+                    }
+                    
+                    // Reload data
+                    loadFilteredData();
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi import file: ' + error.message);
+            })
+            .finally(() => {
+                // Khôi phục trạng thái nút
+                importBtn.innerHTML = originalText;
+                importBtn.disabled = false;
+            });
+        }
+
+        // Đóng modal lỗi
+        document.getElementById('btn-close-errors').addEventListener('click', function() {
+            document.getElementById('modal-import-errors').classList.add('hidden');
+        });
+
         // Tải file mẫu
         function downloadTemplate() {
             window.open('/download-excel-template/', '_blank');

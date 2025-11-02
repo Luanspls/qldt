@@ -154,9 +154,19 @@ class Curriculum(models.Model):
         return self.subjects.aggregate(total=models.Sum('total_hours'))['total'] or 0
 
     def update_totals(self):
-        """Cập nhật tổng số tín chỉ và giờ"""
-        self.total_credits = self.get_total_credits()
-        self.total_hours = self.get_total_hours()
+        """Cập nhật tổng số tín chỉ và giờ từ các môn học"""
+        from django.db.models import Sum
+        aggregates = self.subjects.aggregate(
+            total_credits=Sum('credits'),
+            total_hours=Sum('total_hours'),
+            total_theory=Sum('theory_hours'),
+            total_practice=Sum('practice_hours')
+        )
+        
+        self.total_credits = aggregates['total_credits'] or 0
+        self.total_hours = aggregates['total_hours'] or 0
+        self.theory_hours = aggregates['total_theory'] or 0
+        self.practice_hours = aggregates['total_practice'] or 0
         self.save()
 
 class SubjectType(models.Model):
