@@ -16,11 +16,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 DEBUG = True
 
-RAILWAY_DOMAIN = os.getenv('RAILWAY_PUBLIC_DOMAIN', '') or 'qldt.up.railway.app'
+RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_DOMAIN', '').replace('https://', '') or 'qldt.up.railway.app'
 
 # ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = [
-    os.getenv('RAILWAY_PUBLIC_DOMAIN', ''),
+    RAILWAY_DOMAIN,
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
@@ -116,7 +116,7 @@ TEMPLATES = [
 
 
 # Lấy DATABASE_URL từ environment variable
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 db_config = dj_database_url.parse(DATABASE_URL)
 
