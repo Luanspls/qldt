@@ -13,8 +13,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
 # DEBUG = os.environ.get('DEBUG', 'False')
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-# DEBUG = True
+# DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+DEBUG = True
 
 RAILWAY_DOMAIN = os.getenv('RAILWAY_PUBLIC_DOMAIN', '') or 'qldt.up.railway.app'
 
@@ -168,6 +168,8 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
 else:
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
     SECURE_SSL_REDIRECT = False

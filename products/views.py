@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.shortcuts import render
@@ -14,7 +14,8 @@ from .supabase_api import supabase_api
 
 
 def home_page(request):
-    return render(request, 'products/home.html')
+    # return render(request, 'products/home.html')
+    return HttpResponse("Welcome to the Training Program Management System")
 
 def users_list(request):
     users = supabase_api.get_users()
