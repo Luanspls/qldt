@@ -94,117 +94,117 @@ class TrainProgramManagerView(View):
         return JsonResponse({'status': 'error', 'message': 'Invalid request'})
     
     def put(self, request, id=None):
-		"""Cập nhật chương trình đào tạo"""
-		if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-    		try:
-        		data = json.loads(request.body)
+        """Cập nhật chương trình đào tạo"""
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            try:
+                data = json.loads(request.body)
             
-        		if id:
-            		# Cập nhật môn học cụ thể
-            		subject = Subject.objects.get(id=id)
-            		field = data.get('field')
-            		value = data.get('value')
+                if id:
+                    # Cập nhật môn học cụ thể
+                    subject = Subject.objects.get(id=id)
+                    field = data.get('field')
+                    value = data.get('value')
                 
-            		# Xử lý các trường học kỳ (HK1-HK6)
-            		if field and field.startswith('hk'):
-                		semester = int(field.replace('hk', ''))
+                    # Xử lý các trường học kỳ (HK1-HK6)
+                    if field and field.startswith('hk'):
+                        semester = int(field.replace('hk', ''))
                     
-                		# Xử lý giá trị học kỳ
-                		if value == '' or value is None:
-                    		# Xóa phân bố học kỳ nếu tồn tại
-                    		SemesterAllocation.objects.filter(
-                        		subject=subject, 
-                        		semester=semester
-                    		).delete()
-                		else:
-                    		# Cập nhật hoặc tạo mới phân bố học kỳ
-                    		try:
-                        		credits_value = float(value)
-                        		SemesterAllocation.objects.update_or_create(
-                            		subject=subject,
-                            		semester=semester,
-                            		defaults={'credits': credits_value}
-                        		)
-                    		except (ValueError, TypeError):
-                        		return JsonResponse({
-                            		'status': 'error', 
-                            		'message': f'Giá trị tín chỉ không hợp lệ: {value}'
-                        		})
+                        # Xử lý giá trị học kỳ
+                        if value == '' or value is None:
+                            # Xóa phân bố học kỳ nếu tồn tại
+                            SemesterAllocation.objects.filter(
+                                subject=subject, 
+                                semester=semester
+                            ).delete()
+                        else:
+                            # Cập nhật hoặc tạo mới phân bố học kỳ
+                            try:
+                                credits_value = float(value)
+                                SemesterAllocation.objects.update_or_create(
+                                    subject=subject,
+                                    semester=semester,
+                                    defaults={'credits': credits_value}
+                                )
+                            except (ValueError, TypeError):
+                                return JsonResponse({
+                                    'status': 'error', 
+                                    'message': f'Giá trị tín chỉ không hợp lệ: {value}'
+                                })
                     
-                		return JsonResponse({
-                    		'status': 'success', 
-                    		'message': f'Đã cập nhật phân bố học kỳ HK{semester}'
-                		})
+                        return JsonResponse({
+                            'status': 'success', 
+                            'message': f'Đã cập nhật phân bố học kỳ HK{semester}'
+                        })
                 
-            		# Xử lý các trường khác của Subject
-            		elif hasattr(subject, field):
-                		# Xử lý kiểu dữ liệu
-                		if field in ['credits']:
-                    		try:
-                        		value = float(value)
-                    		except (ValueError, TypeError):
-                        		return JsonResponse({
-                            		'status': 'error', 
-                            		'message': f'Giá trị {field} không hợp lệ: {value}'
-                        		})
-                		elif field in ['total_hours', 'theory_hours', 'practice_hours', 'exam_hours', 'order_number']:
-                    		try:
-                        		value = int(value) if value else 0
-                    		except (ValueError, TypeError):
-                        		return JsonResponse({
-                            		'status': 'error', 
-                            		'message': f'Giá trị {field} không hợp lệ: {value}'
-                        		})
+                    # Xử lý các trường khác của Subject
+                    elif hasattr(subject, field):
+                        # Xử lý kiểu dữ liệu
+                        if field in ['credits']:
+                            try:
+                                value = float(value)
+                            except (ValueError, TypeError):
+                                return JsonResponse({
+                                    'status': 'error', 
+                                    'message': f'Giá trị {field} không hợp lệ: {value}'
+                                })
+                        elif field in ['total_hours', 'theory_hours', 'practice_hours', 'exam_hours', 'order_number']:
+                            try:
+                                value = int(value) if value else 0
+                            except (ValueError, TypeError):
+                                return JsonResponse({
+                                    'status': 'error', 
+                                    'message': f'Giá trị {field} không hợp lệ: {value}'
+                                })
                     
-                		setattr(subject, field, value)
-                		subject.save()
+                        setattr(subject, field, value)
+                        subject.save()
                     
-                		return JsonResponse({
-                    		'status': 'success', 
-                    		'message': 'Đã cập nhật môn học thành công'
-                		})
-            		else:
-                		return JsonResponse({
-                    		'status': 'error', 
-                    		'message': f'Trường {field} không tồn tại'
-                		})
+                        return JsonResponse({
+                            'status': 'success', 
+                            'message': 'Đã cập nhật môn học thành công'
+                        })
+                    else:
+                        return JsonResponse({
+                            'status': 'error', 
+                            'message': f'Trường {field} không tồn tại'
+                        })
                     
-        		else:
-            		# Cập nhật thông tin chung của curriculum
-            		curriculum_id = data.get('curriculum_id')
-            		if curriculum_id:
-                		curriculum = Curriculum.objects.get(id=curriculum_id)
-                		curriculum.name = data.get('name', curriculum.name)
-                		curriculum.academic_year = data.get('academic_year', curriculum.academic_year)
-                		curriculum.description = data.get('description', curriculum.description)
-                		curriculum.total_credits = data.get('total_credits', curriculum.total_credits)
-                		curriculum.save()
+                else:
+                    # Cập nhật thông tin chung của curriculum
+                    curriculum_id = data.get('curriculum_id')
+                    if curriculum_id:
+                        curriculum = Curriculum.objects.get(id=curriculum_id)
+                        curriculum.name = data.get('name', curriculum.name)
+                        curriculum.academic_year = data.get('academic_year', curriculum.academic_year)
+                        curriculum.description = data.get('description', curriculum.description)
+                        curriculum.total_credits = data.get('total_credits', curriculum.total_credits)
+                        curriculum.save()
                     
-            		return JsonResponse({
-                		'status': 'success', 
-                		'message': 'Đã cập nhật chương trình thành công'
-            		})
+                    return JsonResponse({
+                        'status': 'success', 
+                        'message': 'Đã cập nhật chương trình thành công'
+                    })
                 
-    		except Subject.DoesNotExist:
-        		return JsonResponse({
-            		'status': 'error', 
-            		'message': 'Môn học không tồn tại'
-        		})
-    		except Curriculum.DoesNotExist:
-        		return JsonResponse({
-            		'status': 'error', 
-            		'message': 'Chương trình đào tạo không tồn tại'
-        		})
-    		except Exception as e:
-        		return JsonResponse({
-            		'status': 'error', 
-            		'message': f'Lỗi khi cập nhật: {str(e)}'
-        		})
-    
-		return JsonResponse({
-    		'status': 'error', 
-    		'message': 'Invalid request'
-		})
+            except Subject.DoesNotExist:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Môn học không tồn tại'
+                })
+            except Curriculum.DoesNotExist:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Chương trình đào tạo không tồn tại'
+                })
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': f'Lỗi khi cập nhật: {str(e)}'
+                })
+
+        return JsonResponse({
+            'status': 'error', 
+            'message': 'Invalid request'
+        })
     
     def get_subject_data(self, curriculum_id=None):
         """Lấy dữ liệu môn học từ database"""
