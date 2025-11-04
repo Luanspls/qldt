@@ -381,113 +381,128 @@
         
         // Render bảng dữ liệu
 		function renderTable() {
-			const tableBody = document.getElementById('table-body');
-			if (!tableBody) return;
-    
-			tableBody.innerHTML = '';
-    
-			if (monHocData.length === 0) {
-    			const row = document.createElement('tr');
-    			row.innerHTML = `<td colspan="17" class="px-4 py-4 text-center text-gray-500">Không có dữ liệu môn học</td>`;
-    			tableBody.appendChild(row);
-    			return;
-			}
-    
-			monHocData.forEach((monHoc, index) => {
-    			const row = document.createElement('tr');
-    			row.className = 'hover:bg-gray-50';
-    			row.innerHTML = `
-        			<td class="px-2 py-2 text-center text-sm col-tt">${index + 1}</td>
-        			<td class="px-2 py-2 col-ma">
-            			<input type="text" value="${monHoc.ma_mon_hoc || ''}" 
-                    			class="editable w-full bg-transparent border-none text-sm" 
-                    			data-field="code" data-id="${monHoc.id}" readonly>
-        			</td>
-        			<td class="px-2 py-2 col-ten wrap-cell">
-            			<input type="text" value="${monHoc.ten_mon_hoc || ''}" 
-                    			class="editable w-full bg-transparent border-none text-sm" 
-                    			data-field="name" data-id="${monHoc.id}" readonly>
-        			</td>
-        			<td class="px-2 py-2 text-center col-tinchi">
-            			<input type="number" value="${monHoc.so_tin_chi || 0}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="credits" data-id="${monHoc.id}" readonly step="0.5" min="0">
-        			</td>
-        			<td class="px-2 py-2 text-center col-gio">
-            			<input type="number" value="${monHoc.tong_so_gio || 0}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="total_hours" data-id="${monHoc.id}" readonly min="0">
-        			</td>
-        			<td class="px-2 py-2 text-center col-lythuyet">
-            			<input type="number" value="${monHoc.ly_thuyet || 0}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="theory_hours" data-id="${monHoc.id}" readonly min="0">
-        			</td>
-        			<td class="px-2 py-2 text-center col-thuchanh">
-            			<input type="number" value="${monHoc.thuc_hanh || 0}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="practice_hours" data-id="${monHoc.id}" readonly min="0">
-        			</td>
-        			<td class="px-2 py-2 text-center col-kiemtra">
-            			<input type="number" value="${monHoc.kiem_tra_thi || 0}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="exam_hours" data-id="${monHoc.id}" readonly min="0">
-        			</td>
-        			<td class="px-2 py-2 text-center col-hk">
-            			<input type="number" value="${monHoc.hk1 || ''}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="hk1" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-">
-        			</td>
-        			<td class="px-2 py-2 text-center col-hk">
-            			<input type="number" value="${monHoc.hk2 || ''}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="hk2" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-">
-        			</td>
-        			<td class="px-2 py-2 text-center col-hk">
-            			<input type="number" value="${monHoc.hk3 || ''}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="hk3" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-">
-        			</td>
-        			<td class="px-2 py-2 text-center col-hk">
-            			<input type="number" value="${monHoc.hk4 || ''}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="hk4" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-">
-        			</td>
-        			<td class="px-2 py-2 text-center col-hk">
-            			<input type="number" value="${monHoc.hk5 || ''}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="hk5" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-">
-        			</td>
-        			<td class="px-2 py-2 text-center col-hk">
-            			<input type="number" value="${monHoc.hk6 || ''}" 
-                    			class="editable w-full bg-transparent border-none text-sm text-center" 
-                    			data-field="hk6" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-">
-        			</td>
-        			<td class="px-2 py-2 col-donvi">
-            			<input type="text" value="${monHoc.don_vi || ''}" 
-                    			class="editable w-full bg-transparent border-none text-sm" 
-                    			data-field="department" data-id="${monHoc.id}" readonly>
-        			</td>
-        			<td class="px-2 py-2 col-giangvien">
-            			<input type="text" value="${monHoc.giang_vien || ''}" 
-                    			class="editable w-full bg-transparent border-none text-sm" 
-                    			data-field="instructor" data-id="${monHoc.id}" readonly>
-        			</td>
-        			<td class="px-2 py-2 text-center col-thaotac">
-            			<button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" data-id="${monHoc.id}" title="Sửa">
-                			<i class="fas fa-edit"></i>
-            			</button>
-            			<button class="btn-xoa text-red-600 hover:text-red-900" data-id="${monHoc.id}" title="Xóa">
-                			<i class="fas fa-trash"></i>
-            			</button>
-        			</td>
-    			`;
-    			tableBody.appendChild(row);
-			});
-    
-			// Cập nhật thống kê
-			updateStatistics();
-		}
+            const tableBody = document.getElementById('table-body');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+            
+            if (monHocData.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="17" class="px-4 py-4 text-center text-gray-500">Không có dữ liệu môn học</td>`;
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            monHocData.forEach((monHoc, index) => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-2 py-2 text-center text-sm col-tt">${index + 1}</td>
+                    <td class="px-2 py-2 col-ma">
+                        <input type="text" value="${monHoc.ma_mon_hoc || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm" 
+                            data-field="code" data-id="${monHoc.id}" readonly
+                            data-original-value="${monHoc.ma_mon_hoc || ''}">
+                    </td>
+                    <td class="px-2 py-2 col-ten wrap-cell">
+                        <input type="text" value="${monHoc.ten_mon_hoc || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm" 
+                            data-field="name" data-id="${monHoc.id}" readonly
+                            data-original-value="${monHoc.ten_mon_hoc || ''}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-tinchi">
+                        <input type="number" value="${monHoc.so_tin_chi || 0}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="credits" data-id="${monHoc.id}" readonly step="0.5" min="0"
+                            data-original-value="${monHoc.so_tin_chi || 0}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-gio">
+                        <input type="number" value="${monHoc.tong_so_gio || 0}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="total_hours" data-id="${monHoc.id}" readonly min="0"
+                            data-original-value="${monHoc.tong_so_gio || 0}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-lythuyet">
+                        <input type="number" value="${monHoc.ly_thuyet || 0}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="theory_hours" data-id="${monHoc.id}" readonly min="0"
+                            data-original-value="${monHoc.ly_thuyet || 0}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-thuchanh">
+                        <input type="number" value="${monHoc.thuc_hanh || 0}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="practice_hours" data-id="${monHoc.id}" readonly min="0"
+                            data-original-value="${monHoc.thuc_hanh || 0}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-kiemtra">
+                        <input type="number" value="${monHoc.kiem_tra_thi || 0}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="exam_hours" data-id="${monHoc.id}" readonly min="0"
+                            data-original-value="${monHoc.kiem_tra_thi || 0}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-hk">
+                        <input type="number" value="${monHoc.hk1 || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="hk1" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                            data-original-value="${monHoc.hk1 || ''}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-hk">
+                        <input type="number" value="${monHoc.hk2 || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="hk2" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                            data-original-value="${monHoc.hk2 || ''}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-hk">
+                        <input type="number" value="${monHoc.hk3 || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="hk3" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                            data-original-value="${monHoc.hk3 || ''}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-hk">
+                        <input type="number" value="${monHoc.hk4 || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="hk4" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                            data-original-value="${monHoc.hk4 || ''}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-hk">
+                        <input type="number" value="${monHoc.hk5 || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="hk5" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                            data-original-value="${monHoc.hk5 || ''}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-hk">
+                        <input type="number" value="${monHoc.hk6 || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="hk6" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                            data-original-value="${monHoc.hk6 || ''}">
+                    </td>
+                    <td class="px-2 py-2 col-donvi">
+                        <input type="text" value="${monHoc.don_vi || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm" 
+                            data-field="department" data-id="${monHoc.id}" readonly
+                            data-original-value="${monHoc.don_vi || ''}">
+                    </td>
+                    <td class="px-2 py-2 col-giangvien">
+                        <input type="text" value="${monHoc.giang_vien || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm" 
+                            data-field="instructor" data-id="${monHoc.id}" readonly
+                            data-original-value="${monHoc.giang_vien || ''}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-thaotac">
+                        <button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" data-id="${monHoc.id}" title="Sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-xoa text-red-600 hover:text-red-900" data-id="${monHoc.id}" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Cập nhật thống kê
+            updateStatistics();
+        }
         
         // Cập nhật thống kê
         function updateStatistics() {
@@ -560,47 +575,21 @@
                 });
         }
 
-		// Cập nhật phân bố học kỳ
-		function updateSemesterAllocation(subjectId, semester, credits) {
-			const data = {
-    			id: subjectId,
-    			field: `hk${semester}`,
-    			value: credits
-			};
-    
-			fetch(`/train-program/${subjectId}/`, {
-    			method: 'PUT',
-    			headers: {
-        			'Content-Type': 'application/json',
-        			'X-CSRFToken': getCookie('csrftoken'),
-        			'X-Requested-With': 'XMLHttpRequest'
-    			},
-    			body: JSON.stringify(data)
-			})
-			.then(response => response.json())
-			.then(data => {
-    			if (data.status !== 'success') {
-        			alert('Có lỗi khi cập nhật học kỳ: ' + data.message);
-        			// Reload data to reset values
-        			loadFilteredData();
-    			} else {
-        			console.log('Cập nhật học kỳ thành công:', data.message);
-    			}
-			})
-			.catch(error => {
-    			console.error('Error:', error);
-    			alert('Có lỗi xảy ra khi cập nhật học kỳ');
-    			loadFilteredData();
-			});
-		}
-        
-        // Cập nhật môn học
+		// Cập nhật môn học
         function updateMonHoc(id, field, value) {
+            // Bỏ qua nếu giá trị không thay đổi hoặc là trường instructor
+            if (field === 'instructor') {
+                console.log('Trường instructor được bỏ qua');
+                return;
+            }
+            
             const data = {
                 id: id,
                 field: field,
                 value: value
             };
+            
+            console.log('Sending update request:', data); // Debug log
             
             fetch(`/train-program/${id}/`, {
                 method: 'PUT',
@@ -611,17 +600,67 @@
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.status !== 'success') {
+                    console.error('Update error:', data.message);
                     alert('Có lỗi khi cập nhật: ' + data.message);
                     // Reload data to reset values
                     loadFilteredData();
+                } else {
+                    console.log('Update success:', data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Có lỗi xảy ra khi cập nhật');
+                alert('Có lỗi xảy ra khi cập nhật: ' + error.message);
+                loadFilteredData();
+            });
+        }
+
+        // Cập nhật phân bố học kỳ
+        function updateSemesterAllocation(subjectId, semester, credits) {
+            const data = {
+                id: subjectId,
+                field: `hk${semester}`,
+                value: credits
+            };
+            
+            console.log('Sending semester update:', data); // Debug log
+            
+            fetch(`/train-program/${subjectId}/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status !== 'success') {
+                    console.error('Semester update error:', data.message);
+                    alert('Có lỗi khi cập nhật học kỳ: ' + data.message);
+                    // Reload data to reset values
+                    loadFilteredData();
+                } else {
+                    console.log('Semester update success:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi cập nhật học kỳ: ' + error.message);
                 loadFilteredData();
             });
         }
@@ -1068,14 +1107,27 @@
                         button.innerHTML = '<i class="fas fa-check"></i>';
                         button.classList.remove('text-blue-600');
                         button.classList.add('text-green-600');
+                        button.title = 'Lưu thay đổi';
+                        
                         inputs.forEach(input => {
                             input.classList.add('border', 'border-blue-400', 'bg-white');
                             input.removeAttribute('readonly');
+                            
+                            // Thêm sự kiện Enter để lưu nhanh
+                            input.addEventListener('keydown', function(e) {
+                                if (e.key === 'Enter') {
+                                    button.click(); // Kích hoạt nút lưu
+                                }
+                            });
                         });
                     } else {
                         button.innerHTML = '<i class="fas fa-edit"></i>';
                         button.classList.remove('text-green-600');
                         button.classList.add('text-blue-600');
+                        button.title = 'Sửa';
+                        
+                        let hasChanges = false;
+                        
                         inputs.forEach(input => {
                             input.classList.remove('border', 'border-blue-400', 'bg-white');
                             input.setAttribute('readonly', true);
@@ -1083,18 +1135,31 @@
                             // Gửi yêu cầu cập nhật đến server
                             const field = input.getAttribute('data-field');
                             const value = input.value;
+                            const originalValue = input.getAttribute('data-original-value');
                             
-                             if (field && id) {
-                				if (field.startsWith('hk')) {
-                    				// Xử lý cập nhật học kỳ
-                    				const semester = parseInt(field.replace('hk', ''));
-                    				updateSemesterAllocation(id, semester, value);
-                				} else {
-                    				// Xử lý cập nhật các trường khác
-                    				updateMonHoc(id, field, value);
-                				}
-            				}
+                            // Kiểm tra xem giá trị có thay đổi không
+                            if (value !== originalValue) {
+                                hasChanges = true;
+                                
+                                if (field && id) {
+                                    if (field.startsWith('hk')) {
+                                        // Xử lý cập nhật học kỳ
+                                        const semester = parseInt(field.replace('hk', ''));
+                                        updateSemesterAllocation(id, semester, value);
+                                    } else {
+                                        // Xử lý cập nhật các trường khác
+                                        updateMonHoc(id, field, value);
+                                    }
+                                }
+                            }
+                            
+                            // Cập nhật giá trị gốc mới
+                            input.setAttribute('data-original-value', value);
                         });
+                        
+                        if (hasChanges) {
+                            console.log('Có thay đổi được gửi đến server');
+                        }
                     }
                 }
                 

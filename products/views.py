@@ -98,17 +98,19 @@ class TrainProgramManagerView(View):
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             try:
                 data = json.loads(request.body)
-            
+                
                 if id:
                     # Cập nhật môn học cụ thể
                     subject = Subject.objects.get(id=id)
                     field = data.get('field')
                     value = data.get('value')
-                
+                    
+                    print(f"Updating field: {field}, value: {value}")  # Debug log
+                    
                     # Xử lý các trường học kỳ (HK1-HK6)
                     if field and field.startswith('hk'):
                         semester = int(field.replace('hk', ''))
-                    
+                        
                         # Xử lý giá trị học kỳ
                         if value == '' or value is None:
                             # Xóa phân bố học kỳ nếu tồn tại
@@ -130,18 +132,42 @@ class TrainProgramManagerView(View):
                                     'status': 'error', 
                                     'message': f'Giá trị tín chỉ không hợp lệ: {value}'
                                 })
-                    
+                        
                         return JsonResponse({
                             'status': 'success', 
                             'message': f'Đã cập nhật phân bố học kỳ HK{semester}'
                         })
-                
+                    
+                    # Xử lý trường department (quan hệ)
+                    elif field == 'department':
+                        # Tìm hoặc tạo department mới
+                        if value and value.strip():
+                            department, created = Department.objects.get_or_create(
+                                name=value.strip(),
+                                defaults={'code': value.strip()[:10].upper().replace(' ', '')}
+                            )
+                            subject.department = department
+                        else:
+                            subject.department = None
+                        subject.save()
+                        return JsonResponse({
+                            'status': 'success', 
+                            'message': 'Đã cập nhật đơn vị quản lý'
+                        })
+                    
+                    # Bỏ qua trường instructor vì không tồn tại trong model
+                    elif field == 'instructor':
+                        return JsonResponse({
+                            'status': 'success', 
+                            'message': 'Trường giảng viên được bỏ qua (chưa được triển khai)'
+                        })
+                    
                     # Xử lý các trường khác của Subject
                     elif hasattr(subject, field):
                         # Xử lý kiểu dữ liệu
                         if field in ['credits']:
                             try:
-                                value = float(value)
+                                value = float(value) if value else 0
                             except (ValueError, TypeError):
                                 return JsonResponse({
                                     'status': 'error', 
@@ -155,20 +181,20 @@ class TrainProgramManagerView(View):
                                     'status': 'error', 
                                     'message': f'Giá trị {field} không hợp lệ: {value}'
                                 })
-                    
+                        
                         setattr(subject, field, value)
                         subject.save()
-                    
+                        
                         return JsonResponse({
                             'status': 'success', 
-                            'message': 'Đã cập nhật môn học thành công'
+                            'message': f'Đã cập nhật {field} thành công'
                         })
                     else:
                         return JsonResponse({
                             'status': 'error', 
                             'message': f'Trường {field} không tồn tại'
                         })
-                    
+                        
                 else:
                     # Cập nhật thông tin chung của curriculum
                     curriculum_id = data.get('curriculum_id')
@@ -179,12 +205,12 @@ class TrainProgramManagerView(View):
                         curriculum.description = data.get('description', curriculum.description)
                         curriculum.total_credits = data.get('total_credits', curriculum.total_credits)
                         curriculum.save()
-                    
+                        
                     return JsonResponse({
                         'status': 'success', 
                         'message': 'Đã cập nhật chương trình thành công'
                     })
-                
+                    
             except Subject.DoesNotExist:
                 return JsonResponse({
                     'status': 'error', 
@@ -196,16 +222,52 @@ class TrainProgramManagerView(View):
                     'message': 'Chương trình đào tạo không tồn tại'
                 })
             except Exception as e:
+                print(f"Error in PUT: {str(e)}")  # Debug log
                 return JsonResponse({
                     'status': 'error', 
                     'message': f'Lỗi khi cập nhật: {str(e)}'
                 })
-
+        
         return JsonResponse({
             'status': 'error', 
             'message': 'Invalid request'
         })
     
+    def delete(self, request, id=None):
+        """Xóa môn học"""
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            try:
+                if id:
+                    subject = Subject.objects.get(id=id)
+                    subject_name = subject.name
+                    subject.delete()
+                    
+                    return JsonResponse({
+                        'status': 'success', 
+                        'message': f'Đã xóa môn học {subject_name}'
+                    })
+                else:
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': 'Thiếu ID môn học'
+                    })
+                    
+            except Subject.DoesNotExist:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Môn học không tồn tại'
+                })
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': f'Lỗi khi xóa: {str(e)}'
+                })
+        
+        return JsonResponse({
+            'status': 'error', 
+            'message': 'Invalid request'
+        })
+        
     def get_subject_data(self, curriculum_id=None):
         """Lấy dữ liệu môn học từ database"""
         try:
