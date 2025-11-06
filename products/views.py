@@ -365,7 +365,7 @@ class ImportExcelView(View):
                     'Tin học',
                     'Tiếng Anh',
                     'GD kỹ năng mềm',
-                    'Chăm sóc khách hàng'
+                    'Tin học văn phòng'
                 ],
                 'Số tín chỉ': [4, 2, 2, 3, 3, 5, 3, 2],
                 'Tổng số giờ': [75, 30, 60, 75, 75, 120, 75, 30],
@@ -392,7 +392,15 @@ class ImportExcelView(View):
                     'Bắt buộc', 'Bắt buộc', 'Bắt buộc', 
                     'Bắt buộc', 'Bắt buộc', 'Bắt buộc',
                     'Bắt buộc', 'Bắt buộc'
-                ]
+                ],
+                'Tổ bộ môn': [
+                    'BM Lý luận chính trị', 'BM Lý luận chính trị', 'BM GD Thể chất & GD Quốc phòng và An ninh',
+                    'BM GD Thể chất & GD Quốc phòng và An ninh', 'BM Công nghệ thông tin', 'BM Tiếng Anh', 
+                    'BM Tâm lý học và Giáo dục học', 'BM Công nghệ thông tin'
+                ],
+                'Điều kiện tiên quyết': ['', '', '', '', '', '', '', ''],
+                'Chuẩn đầu ra': ['', '', '', '', '', '', '', ''],
+                'Mô tả môn học': ['', '', '', '', '', '', '', ''],
             }
             
             df = pd.DataFrame(sample_data)
@@ -545,6 +553,20 @@ class ImportExcelView(View):
                         }
                     )
                     
+                    # Lấy hoặc tạo subject_group nếu có
+                    subject_group = None
+                    subject_group_name = str(row.get('Tổ bộ môn', '')).strip()
+                    if subject_group_name and subject_group_name not in ['', 'nan']:
+                        subject_group, _ = SubjectGroup.objects.get_or_create(
+                            department=department,
+                            name=subject_group_name,
+                            defaults={
+                                'code': subject_group_name[:10].upper().replace(' ', ''),
+                                'name': subject_group_name,
+                                'department': department
+                            }
+                        )
+                    
                     # Xử lý thứ tự
                     try:
                         order_number = int(row.get('TT', index + 1))
@@ -564,6 +586,7 @@ class ImportExcelView(View):
                             'exam_hours': kiem_tra_thi,
                             'department': department,
                             'subject_type': subject_type,
+                            'subject_group': subject_group,
                             'order_number': order_number
                         }
                     )
@@ -585,6 +608,12 @@ class ImportExcelView(View):
                                         subject=subject,
                                         semester=hk,
                                         defaults={'credits': credit_value}
+                                    )
+                                    
+                                    Subject.objects.update_or_create(
+                                        curriculum=curriculum,
+                                        code=ma_mon_hoc,
+                                        semester=hk,
                                     )
                                 except (ValueError, TypeError) as e:
                                     errors.append(f"Dòng {index + 2} - HK{hk}: Giá trị tín chỉ không hợp lệ: {credits_value}")
