@@ -158,23 +158,25 @@
         </div>
         
         <!-- Nút chức năng -->
-        <div class="flex flex-wrap justify-between mb-6">
-            <div class="flex space-x-2 mb-4">
-                <button id="btn-them" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
-                    <i class="fas fa-plus mr-2"></i> Thêm chương trình đào tạo
-                </button>
-                <button id="btn-cap-nhat" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
-                    <i class="fas fa-sync-alt mr-2"></i> Cập nhật
-                </button>
-            </div>
-            
-            <div>
-                <button id="btn-import" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
-                    <i class="fas fa-file-excel mr-2"></i> Import Excel
-                </button>
-                <input type="file" id="file-input" class="hidden" accept=".xlsx, .xls">
-            </div>
-        </div>
+		<div class="flex flex-wrap justify-between mb-6">
+			<div class="flex space-x-2 mb-4">
+    			<button id="btn-them" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+        			<i class="fas fa-plus mr-2"></i> Thêm chương trình đào tạo
+    			</button>
+    			<button id="btn-them-mon-hoc" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+        			<i class="fas fa-book-medical mr-2"></i> Thêm môn học
+    			</button>
+    			<button id="btn-cap-nhat" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+        			<i class="fas fa-sync-alt mr-2"></i> Cập nhật
+    			</button>
+			</div>
+    
+			<div>
+    			<button id="btn-import" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+        			<i class="fas fa-file-excel mr-2"></i> Import Excel
+    			</button>
+			</div>
+		</div>
 
         <!-- Modal import Excel -->
         <div id="modal-import" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
@@ -307,37 +309,6 @@
                 <div class="text-center">
                     <p class="text-gray-600">Tỷ lệ thực hành</p>
                     <p id="ty-le-thuc-hanh" class="text-xl font-bold text-blue-700">0%</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal thêm môn học -->
-    <div id="modal-them" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Thêm môn học mới</h3>
-                <form id="form-them" class="mt-4 text-left">
-                    <!-- Form fields sẽ được thêm ở đây -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="mb-4">
-                            <label class="block text-gray-700 text-sm font-bold mb-2">Mã môn học</label>
-                            <input type="text" name="ma_mon_hoc" class="w-full p-2 border border-gray-300 rounded-md" required>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-gray-700 text-sm font-bold mb-2">Tên học phần</label>
-                            <input type="text" name="ten_mon_hoc" class="w-full p-2 border border-gray-300 rounded-md" required>
-                        </div>
-                    </div>
-                    <!-- Thêm các trường khác tương tự -->
-                </form>
-                <div class="flex justify-end mt-4 space-x-2">
-                    <button id="btn-huy" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
-                        Hủy
-                    </button>
-                    <button id="btn-luu" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                        Lưu
-                    </button>
                 </div>
             </div>
         </div>
@@ -1002,6 +973,155 @@
             });
         }
 
+		// ========== XỬ LÝ MODAL THÊM MÔN HỌC ==========
+
+		// Mở modal thêm môn học
+		function openThemMonHocModal() {
+			const modal = document.getElementById('modal-them-mon-hoc');
+			const selectedCurriculumId = document.getElementById('chuong-trinh-dao-tao').value;
+    
+			// Nếu đã chọn chương trình từ dropdown, set giá trị mặc định
+			if (selectedCurriculumId) {
+    			document.getElementById('them-mon-hoc-curriculum').value = selectedCurriculumId;
+    			// Cập nhật thông tin ngành đào tạo
+    			updateMajorInfo(selectedCurriculumId);
+			}
+    
+			// Reset form và mở modal
+			document.getElementById('form-them-mon-hoc').reset();
+			modal.classList.remove('hidden');
+			document.body.classList.add('overflow-hidden');
+    
+			// Focus vào input đầu tiên
+			setTimeout(() => {
+    			const firstInput = modal.querySelector('input[name="code"]');
+    			if (firstInput) firstInput.focus();
+			}, 100);
+		}
+
+		// Đóng modal thêm môn học
+		function closeThemMonHocModal() {
+			const modal = document.getElementById('modal-them-mon-hoc');
+			modal.classList.add('hidden');
+			document.body.classList.remove('overflow-hidden');
+		}
+
+		// Cập nhật thông tin ngành đào tạo khi chọn chương trình
+		function updateMajorInfo(curriculumId) {
+			const majorField = document.getElementById('them-mon-hoc-major');
+			if (!curriculumId) {
+    			majorField.value = '';
+    			return;
+			}
+    
+			// Tìm thông tin chương trình
+			const curriculum = allCurricula.find(c => c.id == curriculumId);
+			if (curriculum && curriculum.major_id) {
+    			const major = allMajors.find(m => m.id == curriculum.major_id);
+    			if (major) {
+        			majorField.value = `${major.name} (${major.code})`;
+        			return;
+    			}
+			}
+			majorField.value = 'Không xác định';
+		}
+
+		// Tạo môn học mới
+		function createMonHoc() {
+			const form = document.getElementById('form-them-mon-hoc');
+			const formData = new FormData(form);
+			const data = Object.fromEntries(formData);
+    
+			// Validate dữ liệu
+			if (!data.curriculum_id || !data.code || !data.name || !data.credits || !data.subject_type_id) {
+    			alert('Vui lòng điền đầy đủ các trường bắt buộc (*)');
+    			return;
+			}
+    
+			// Chuẩn bị dữ liệu học kỳ
+			const semesterData = {};
+			for (let i = 1; i <= 6; i++) {
+    			const hkValue = data[`hk${i}`];
+    			if (hkValue && hkValue !== '') {
+        			semesterData[`hk${i}`] = parseFloat(hkValue);
+    			}
+			}
+    
+			// Chuẩn bị dữ liệu gửi đi
+			const postData = {
+    			...data,
+    			semester_allocations: semesterData
+			};
+    
+			// Xử lý checkbox
+			postData.is_elective = document.getElementById('is_elective').checked;
+    
+			// Hiển thị loading
+			const saveBtn = document.getElementById('btn-luu-mon-hoc');
+			const originalText = saveBtn.innerHTML;
+			saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang tạo...';
+			saveBtn.disabled = true;
+    
+			fetch('/api/subjects/create/', {
+    			method: 'POST',
+    			headers: {
+        			'Content-Type': 'application/json',
+        			'X-CSRFToken': getCookie('csrftoken'),
+    			},
+    			body: JSON.stringify(postData)
+			})
+			.then(response => {
+    			if (!response.ok) {
+        			throw new Error('Network response was not ok');
+    			}
+    			return response.json();
+			})
+			.then(data => {
+    			if (data.status === 'success') {
+        			alert('✅ Đã tạo môn học thành công!');
+        			closeThemMonHocModal();
+        			// Reload dữ liệu
+        			loadFilteredData();
+    			} else {
+        			alert('❌ Lỗi: ' + data.message);
+    			}
+			})
+			.catch(error => {
+    			console.error('Error:', error);
+    			alert('❌ Có lỗi xảy ra khi tạo môn học: ' + error.message);
+			})
+			.finally(() => {
+    			// Khôi phục trạng thái nút
+    			saveBtn.innerHTML = originalText;
+    			saveBtn.disabled = false;
+			});
+		}
+
+		// Lọc tổ bộ môn theo khoa
+		function filterSubjectGroupsByDepartment(departmentId) {
+			const subjectGroupSelect = document.querySelector('select[name="subject_group_id"]');
+			const options = subjectGroupSelect.querySelectorAll('option');
+    
+			options.forEach(option => {
+    			if (option.value === '') return; // Giữ option "-- Chọn tổ bộ môn --"
+        
+    			const optionDepartmentId = option.getAttribute('data-department');
+    			if (!departmentId || optionDepartmentId == departmentId) {
+        			option.style.display = '';
+    			} else {
+        			option.style.display = 'none';
+    			}
+			});
+    
+			// Reset selection nếu option hiện tại bị ẩn
+			if (subjectGroupSelect.value) {
+    			const selectedOption = subjectGroupSelect.querySelector(`option[value="${subjectGroupSelect.value}"]`);
+    			if (selectedOption && selectedOption.style.display === 'none') {
+        			subjectGroupSelect.value = '';
+    			}
+			}
+		}
+		
         // Hàm lấy CSRF token
         function getCookie(name) {
             let cookieValue = null;
@@ -1255,7 +1375,52 @@
                 input.setAttribute('readonly', true);
             });
         });
-        
+
+		// Xử lý thêm môn học
+		document.getElementById('btn-them-mon-hoc').addEventListener('click', openThemMonHocModal);
+    
+		// Đóng modal bằng nút hủy
+		document.getElementById('btn-huy-mon-hoc').addEventListener('click', closeThemMonHocModal);
+    
+		// Đóng modal bằng nút X
+		document.getElementById('btn-dong-mon-hoc').addEventListener('click', closeThemMonHocModal);
+    
+		// Lưu môn học
+		document.getElementById('btn-luu-mon-hoc').addEventListener('click', createMonHoc);
+    
+		// Đóng modal khi click outside
+		document.getElementById('modal-them-mon-hoc').addEventListener('click', function(e) {
+    		if (e.target === this) {
+        		closeThemMonHocModal();
+    		}
+		});
+    
+		// Cập nhật thông tin ngành khi chọn chương trình trong modal
+		document.getElementById('them-mon-hoc-curriculum').addEventListener('change', function() {
+    		updateMajorInfo(this.value);
+		});
+    
+		// Lọc tổ bộ môn khi chọn đơn vị
+		document.querySelector('select[name="department_id"]').addEventListener('change', function() {
+    		filterSubjectGroupsByDepartment(this.value);
+		});
+    
+		// Tự động tính tổng số giờ
+		const hourInputs = ['theory_hours', 'practice_hours', 'exam_hours'];
+		hourInputs.forEach(field => {
+    		document.querySelector(`input[name="${field}"]`).addEventListener('input', function() {
+        		calculateTotalHours();
+    		});
+		});
+    
+		function calculateTotalHours() {
+    		const theory = parseInt(document.querySelector('input[name="theory_hours"]').value) || 0;
+    		const practice = parseInt(document.querySelector('input[name="practice_hours"]').value) || 0;
+    		const exam = parseInt(document.querySelector('input[name="exam_hours"]').value) || 0;
+    		const total = theory + practice + exam;
+    		document.querySelector('input[name="total_hours"]').value = total || '';
+		}
+
         // Xử lý phím Enter trong modal
         document.addEventListener('keydown', function(e) {
              // ESC để đóng tất cả modal
@@ -1282,8 +1447,240 @@
         });
     </script>
 
-    {% comment %} <!-- Modal thêm chương trình đào tạo --> {% endcomment %}
-    <div id="modal-them-chuong-trinh" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+
+	<!-- Modal thêm môn học -->
+	<div id="modal-them-mon-hoc" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+		<div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+    		<div class="flex justify-between items-center mb-4">
+        		<h3 class="text-xl font-bold text-gray-900">Thêm môn học mới</h3>
+        		<button type="button" id="btn-dong-mon-hoc" class="text-gray-500 hover:text-gray-700">
+            		<i class="fas fa-times text-xl"></i>
+        		</button>
+    		</div>
+        
+    		<form id="form-them-mon-hoc" class="space-y-4">
+        		<!-- Thông tin chương trình -->
+        		<div class="bg-blue-50 p-4 rounded-md">
+            		<h4 class="text-sm font-semibold text-blue-800 mb-2">Thông tin chương trình đào tạo</h4>
+            		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                		<div>
+                    		<label class="block text-gray-700 text-sm font-bold mb-2">Chương trình đào tạo *</label>
+                    		<select id="them-mon-hoc-curriculum" name="curriculum_id" 
+                            		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            		required>
+                        		<option value="">-- Chọn chương trình --</option>
+                        		{% for curriculum in curricula %}
+                        		<option value="{{ curriculum.id }}">{{ curriculum.name }} ({{ curriculum.academic_year }})</option>
+                        		{% endfor %}
+                    		</select>
+                		</div>
+                		<div>
+                    		<label class="block text-gray-700 text-sm font-bold mb-2">Ngành đào tạo</label>
+                    		<input type="text" id="them-mon-hoc-major" 
+                            		class="w-full p-3 border border-gray-300 rounded-md bg-gray-100" 
+                            		readonly>
+                		</div>
+            		</div>
+        		</div>
+
+        		<!-- Thông tin cơ bản môn học -->
+        		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Mã môn học *</label>
+                		<input type="text" name="code" 
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        		placeholder="Vd: MH01"
+                        		required
+                        		autocomplete="off">
+            		</div>
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Tên môn học *</label>
+                		<input type="text" name="name" 
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        		placeholder="Vd: Giáo dục chính trị"
+                        		required
+                        		autocomplete="off">
+            		</div>
+        		</div>
+
+        		<!-- Số tín chỉ và giờ -->
+        		<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Số tín chỉ *</label>
+                		<input type="number" name="credits" step="0.5" min="0" max="10"
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        		placeholder="0"
+                        		required
+                        		autocomplete="off">
+            		</div>
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Tổng số giờ</label>
+                		<input type="number" name="total_hours" min="0"
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        		placeholder="0"
+                        		autocomplete="off">
+            		</div>
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Lý thuyết</label>
+                		<input type="number" name="theory_hours" min="0"
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        		placeholder="0"
+                        		autocomplete="off">
+            		</div>
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Thực hành</label>
+                		<input type="number" name="practice_hours" min="0"
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        		placeholder="0"
+                        		autocomplete="off">
+            		</div>
+        		</div>
+
+        		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Kiểm tra/Thi</label>
+                		<input type="number" name="exam_hours" min="0"
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        		placeholder="0"
+                        		autocomplete="off">
+            		</div>
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Thứ tự</label>
+                		<input type="number" name="order_number" min="0"
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        		placeholder="0"
+                        		autocomplete="off">
+            		</div>
+        		</div>
+
+        		<!-- Phân bố học kỳ -->
+        		<div class="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+            		<h4 class="text-sm font-semibold text-yellow-800 mb-3">Phân bố học kỳ (số tín chỉ)</h4>
+            		<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                		{% for i in "123456" %}
+                		<div>
+                    		<label class="block text-gray-700 text-sm font-medium mb-1">Học kỳ {{ i }}</label>
+                    		<input type="number" name="hk{{ i }}" step="0.5" min="0" max="10"
+                            		class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center" 
+                            		placeholder="-"
+                            		autocomplete="off">
+                		</div>
+                		{% endfor %}
+            		</div>
+        		</div>
+
+        		<!-- Thông tin bổ sung -->
+        		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Đơn vị quản lý</label>
+                		<select name="department_id" 
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    		<option value="">-- Chọn đơn vị --</option>
+                    		{% for department in departments %}
+                    		<option value="{{ department.id }}">{{ department.name }}</option>
+                    		{% endfor %}
+                		</select>
+            		</div>
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Loại môn *</label>
+                		<select name="subject_type_id" 
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        		required>
+                    		<option value="">-- Chọn loại môn --</option>
+                    		{% for subject_type in subject_types %}
+                    		<option value="{{ subject_type.id }}">{{ subject_type.name }}</option>
+                    		{% endfor %}
+                		</select>
+            		</div>
+        		</div>
+
+        		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Tổ bộ môn</label>
+                		<select name="subject_group_id" 
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    		<option value="">-- Chọn tổ bộ môn --</option>
+                    		{% for subject_group in subject_groups %}
+                    		<option value="{{ subject_group.id }}" data-department="{{ subject_group.department_id }}">{{ subject_group.name }}</option>
+                    		{% endfor %}
+                		</select>
+            		</div>
+            		<div>
+                		<label class="block text-gray-700 text-sm font-bold mb-2">Học kỳ mặc định</label>
+                		<select name="semester" 
+                        		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    		<option value="">-- Chọn học kỳ --</option>
+                    		{% for i in "123456" %}
+                    		<option value="{{ i }}">Học kỳ {{ i }}</option>
+                    		{% endfor %}
+                		</select>
+            		</div>
+        		</div>
+
+        		<div>
+            		<label class="block text-gray-700 text-sm font-bold mb-2">Mô tả môn học</label>
+            		<textarea name="description" 
+                        	class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        	rows="3"
+                        	placeholder="Nhập mô tả về môn học..."
+                        	autocomplete="off"></textarea>
+        		</div>
+
+        		<div>
+            		<label class="block text-gray-700 text-sm font-bold mb-2">Điều kiện tiên quyết</label>
+            		<textarea name="prerequisites" 
+                        	class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        	rows="2"
+                        	placeholder="Nhập điều kiện tiên quyết (nếu có)..."
+                        	autocomplete="off"></textarea>
+        		</div>
+
+        		<div>
+            		<label class="block text-gray-700 text-sm font-bold mb-2">Chuẩn đầu ra</label>
+            		<textarea name="learning_outcomes" 
+                        	class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        	rows="2"
+                        	placeholder="Nhập chuẩn đầu ra của môn học..."
+                        	autocomplete="off"></textarea>
+        		</div>
+
+        		<!-- Thông tin môn tự chọn -->
+        		<div class="bg-green-50 p-4 rounded-md border border-green-200">
+            		<h4 class="text-sm font-semibold text-green-800 mb-3">Thông tin môn tự chọn (nếu có)</h4>
+            		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                		<div class="flex items-center">
+                    		<input type="checkbox" name="is_elective" id="is_elective" 
+                            		class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    		<label for="is_elective" class="ml-2 block text-sm text-gray-700 font-medium">
+                        		Là môn tự chọn
+                    		</label>
+                		</div>
+                		<div>
+                    		<label class="block text-gray-700 text-sm font-bold mb-2">Nhóm môn tự chọn</label>
+                    		<input type="text" name="elective_group" 
+                            		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            		placeholder="Vd: Nhóm 1"
+                            		autocomplete="off">
+                		</div>
+            		</div>
+        		</div>
+    		</form>
+        
+    		<div class="flex justify-end mt-6 space-x-3">
+        		<button type="button" id="btn-huy-mon-hoc" 
+                		class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2.5 px-6 rounded-md transition duration-200">
+            		<i class="fas fa-times mr-2"></i>Hủy
+        		</button>
+        		<button type="button" id="btn-luu-mon-hoc" 
+                		class="bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-6 rounded-md transition duration-200">
+            		<i class="fas fa-save mr-2"></i>Lưu môn học
+        		</button>
+    		</div>
+		</div>
+	</div>
+	
+	{% comment %} <!-- Modal thêm chương trình đào tạo --> {% endcomment %}
+	<div id="modal-them-chuong-trinh" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
         <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-gray-900">Thêm chương trình đào tạo mới</h3>
