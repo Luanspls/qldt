@@ -36,7 +36,7 @@ class TrainProgramManagerView(View):
             majors = Major.objects.all().values('id', 'code', 'name')
             
             # Lấy curriculum_id từ request nếu có
-            curriculum_id = request.GET.get('curriculum_id')
+            curriculum_id = request.GET.get('chuong-trinh-dao-tao')
             if curriculum_id:
                 mon_hoc_data = self.get_subject_data(curriculum_id)
             else:
