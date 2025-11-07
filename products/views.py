@@ -776,6 +776,114 @@ def api_subjects(request):
     return JsonResponse(subject_data, safe=False)
 
 @csrf_exempt
+def api_create_subject(request):
+    """API tạo môn học mới"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Kiểm tra các trường bắt buộc
+            required_fields = ['curriculum_id', 'code', 'name', 'credits', 'subject_type_id']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': f'Thiếu trường bắt buộc: {field}'
+                    })
+            
+            # Kiểm tra curriculum tồn tại
+            try:
+                curriculum = Curriculum.objects.get(id=data['curriculum_id'])
+            except Curriculum.DoesNotExist:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Chương trình đào tạo không tồn tại'
+                })
+            
+            # Kiểm tra mã môn học không trùng
+            if Subject.objects.filter(curriculum=curriculum, code=data['code']).exists():
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': f'Mã môn học {data["code"]} đã tồn tại trong chương trình này'
+                })
+            
+            # Xử lý department
+            department = None
+            if data.get('department_id'):
+                try:
+                    department = Department.objects.get(id=data['department_id'])
+                except Department.DoesNotExist:
+                    pass
+            
+            # Xử lý subject_type
+            try:
+                subject_type = SubjectType.objects.get(id=data['subject_type_id'])
+            except SubjectType.DoesNotExist:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Loại môn học không tồn tại'
+                })
+            
+            # Xử lý subject_group
+            subject_group = None
+            if data.get('subject_group_id'):
+                try:
+                    subject_group = SubjectGroup.objects.get(id=data['subject_group_id'])
+                except SubjectGroup.DoesNotExist:
+                    pass
+            
+            # Tạo môn học
+            subject = Subject.objects.create(
+                curriculum=curriculum,
+                code=data['code'],
+                name=data['name'],
+                credits=float(data['credits']),
+                total_hours=int(data.get('total_hours', 0) or 0),
+                theory_hours=int(data.get('theory_hours', 0) or 0),
+                practice_hours=int(data.get('practice_hours', 0) or 0),
+                exam_hours=int(data.get('exam_hours', 0) or 0),
+                semester=int(data.get('semester', 0) or None),
+                is_elective=bool(data.get('is_elective', False)),
+                elective_group=data.get('elective_group', ''),
+                department=department,
+                subject_group=subject_group,
+                subject_type=subject_type,
+                prerequisites=data.get('prerequisites', ''),
+                learning_outcomes=data.get('learning_outcomes', ''),
+                description=data.get('description', ''),
+                order_number=int(data.get('order_number', 0) or 0)
+            )
+            
+            # Tạo phân bố học kỳ
+            semester_allocations = data.get('semester_allocations', {})
+            for semester_str, credits_value in semester_allocations.items():
+                semester = int(semester_str.replace('hk', ''))
+                if credits_value and float(credits_value) > 0:
+                    SemesterAllocation.objects.create(
+                        subject=subject,
+                        semester=semester,
+                        credits=float(credits_value)
+                    )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã tạo môn học thành công',
+                'id': subject.id
+            })
+            
+        except Exception as e:
+            print(f"Error creating subject: {str(e)}")
+            return JsonResponse({
+                'status': 'error', 
+                'message': f'Lỗi khi tạo môn học: {str(e)}'
+            })
+    
+    return JsonResponse({
+        'status': 'error', 
+        'message': 'Method not allowed'
+    })
+    
+@csrf_exempt
 def api_subject_types(request):
     """API lấy danh sách loại môn học"""
     subject_types = SubjectType.objects.all().values('id', 'code', 'name')
