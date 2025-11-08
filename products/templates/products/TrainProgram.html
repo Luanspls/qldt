@@ -350,7 +350,20 @@
         let allCourses = {{ courses|safe }};
         let allSubjectTypes = {{ subject_types|safe }};
         let allMajors = {{ majors|safe }};
+
+        // let monHocData = JSON.parse('{{ mon_hoc_data|escapejs }}');
         let monHocData = {{ mon_hoc_data|safe }};
+        
+        // Đảm bảo dữ liệu là JSON hợp lệ
+        if (typeof monHocData === 'string') {
+            try {
+                monHocData = JSON.parse(monHocData);
+            } catch (e) {
+                console.error('Error parsing monHocData:', e);
+                monHocData = [];
+            }
+        }
+
         
         // Khởi tạo dropdowns
         function initializeDropdowns() {

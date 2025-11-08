@@ -2,6 +2,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.shortcuts import render, get_object_or_404
+from django.core.serializers import serialize
 from django.views import View
 from .models import Department, SubjectGroup, Curriculum, Course, Subject, CurriculumSubject, SubjectType, SemesterAllocation, Major, ImportHistory
 from django.db.models import Q
@@ -50,7 +51,9 @@ class TrainProgramManagerView(View):
                 'subject_types': list(subject_types),
                 'majors': list(majors),
                 'mon_hoc_data': mon_hoc_data
+                # 'mon_hoc_data': json.dumps(mon_hoc_data, default=str)  # Serialize với default=str
             }
+            
             return render(request, self.template_name, context)
         except Exception as e:
             print(f"Error in get: {str(e)}")
@@ -64,6 +67,7 @@ class TrainProgramManagerView(View):
                 'majors': [],
                 'mon_hoc_data': self.get_sample_data()
             }
+            
             return render(request, self.template_name, context)
     
     def post(self, request):
@@ -310,8 +314,9 @@ class TrainProgramManagerView(View):
                     'giang_vien': self.get_instructors_for_subject(cs),
                     'loai_mon': cs.subject.subject_type.name if cs.subject.subject_type else '',
                     'order_number': cs.order_number,
-                    'curriculum': cs.curriculum,
-                    'curriculum_name': cs.curriculum.name if cs.curriculum else '',
+                    'curriculum_id': cs.curriculum.id if cs.curriculum else None,
+                    'curriculum_code': cs.curriculum.code if cs.curriculum else '',
+                    'curriculum_academic_year': cs.curriculum.academic_year if cs.curriculum else '',
                     'subject_id': cs.subject.id
                 })
             
@@ -794,13 +799,26 @@ def api_subjects(request):
             'don_vi': cs.subject.department.name if cs.subject.department else '',
             'giang_vien': '',
             'loai_mon': cs.subject.subject_type.name if cs.subject.subject_type else '',
-            'curriculum_id': cs.curriculum,
+            'curriculum_id': cs.curriculum.id if cs.curriculum else None,
             'curriculum_name': cs.curriculum.name if cs.curriculum else '',
+            'curriculum_code': cs.curriculum.code if cs.curriculum else '',
             'subject_id': cs.subject.id
         })
     
     return JsonResponse(subject_data, safe=False)
 
+def serialize_curriculum_data(data):
+    """Serialize curriculum data to ensure JSON compatibility"""
+    if isinstance(data, list):
+        return [serialize_curriculum_data(item) for item in data]
+    elif isinstance(data, dict):
+        return {key: serialize_curriculum_data(value) for key, value in data.items()}
+    elif hasattr(data, '__dict__'):
+        # Handle model instances
+        return str(data)
+    else:
+        return data
+    
 @csrf_exempt
 def api_all_subjects(request):
     """API lấy tất cả môn học (cho dropdown chọn môn học có sẵn)"""
