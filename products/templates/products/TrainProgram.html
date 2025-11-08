@@ -1410,10 +1410,16 @@
             });
 
             // Xử lý thêm chương trình đào tạo
-            document.getElementById('btn-them').addEventListener('click', openThemChuongTrinhModal);
+            document.getElementById('btn-them').addEventListener('click', function() {
+                console.log('Button Them clicked');
+                openThemChuongTrinhModal();
+            });
             
             // Đóng modal bằng nút hủy
-            document.getElementById('btn-huy-chuong-trinh').addEventListener('click', closeThemChuongTrinhModal);
+            document.getElementById('btn-huy-chuong-trinh').addEventListener('click', function() {
+                console.log('Button Hủy thêm chương trình clicked');
+                closeThemChuongTrinhModal();
+            });
             
             // Đóng modal bằng nút X
             document.getElementById('btn-dong-chuong-trinh').addEventListener('click', closeThemChuongTrinhModal);
@@ -1437,7 +1443,10 @@
             setTimeout(fixModalInputs, 1000);
             
             /// Xử lý import Excel
-            document.getElementById('btn-import').addEventListener('click', openImportModal);
+            document.getElementById('btn-import').addEventListener('click', function() {
+                console.log('Button Import clicked');
+                openImportModal();
+            });
             
             // Đóng modal import bằng nút hủy
             document.getElementById('btn-huy-import').addEventListener('click', closeImportModal);
@@ -1483,12 +1492,10 @@
 
             // Xử lý thêm môn học
             const btnThemMonHoc = document.getElementById('btn-them-mon-hoc');
-            if (btnThemMonHoc) {
-                btnThemMonHoc.addEventListener('click', openThemMonHocModal);
-            } else {
-                console.error('Button them mon hoc not found');
-            }
-            
+            btnThemMonHoc.addEventListener('click', function() {
+                console.log('Button Thêm môn học clicked');
+                openThemMonHocModal();
+            });           
             // Đóng modal bằng nút hủy
             const btnHuyMonHoc = document.getElementById('btn-huy-mon-hoc');
             if (btnHuyMonHoc) {
@@ -1500,34 +1507,22 @@
             
             // Đóng modal bằng nút X
             const btnDongMonHoc = document.getElementById('btn-dong-mon-hoc');
-            if (btnDongMonHoc) {
-                btnDongMonHoc.addEventListener('click', closeThemMonHocModal);
-                console.log('Registered event for btn-dong-mon-hoc');
-            } else {
-                console.error('Button dong mon hoc not found');
-            }
+            btnDongMonHoc.addEventListener('click', closeThemMonHocModal);
+            console.log('Registered event for btn-dong-mon-hoc');
             
             // Lưu môn học
             const btnLuuMonHoc = document.getElementById('btn-luu-mon-hoc');
-            if (btnLuuMonHoc) {
-                btnLuuMonHoc.addEventListener('click', createMonHoc);
-                console.log('Registered event for btn-luu-mon-hoc');
-            } else {
-                console.error('Button luu mon hoc not found');
-            }
+            btnLuuMonHoc.addEventListener('click', createMonHoc);
+            console.log('Registered event for btn-luu-mon-hoc');
             
             // Đóng modal khi click outside
             const modalThemMonHoc = document.getElementById('modal-them-mon-hoc');
-            if (modalThemMonHoc) {
-                modalThemMonHoc.addEventListener('click', function(e) {
-                    if (e.target === this) {
-                        closeThemMonHocModal();
-                    }
-                });
-                console.log('Registered outside click for modal-them-mon-hoc');
-            } else {
-                console.error('Modal them mon hoc not found');
-            }
+            modalThemMonHoc.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeThemMonHocModal();
+                }
+            });
+            console.log('Registered outside click for modal-them-mon-hoc');
             
             // Cập nhật thông tin ngành khi chọn chương trình trong modal
             const themMonHocCurriculum = document.getElementById('them-mon-hoc-curriculum');
