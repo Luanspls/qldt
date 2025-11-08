@@ -896,8 +896,8 @@ def api_create_subject(request):
             
             # Tạo CurriculumSubject
             curriculum_subject = CurriculumSubject.objects.create(
-                curriculum=curriculum.id,
-                subject=subject.id,
+                curriculum=curriculum,
+                subject=subject,
                 credits=float(data['credits']),
                 total_hours=int(data.get('total_hours', 0) or 0),
                 theory_hours=int(data.get('theory_hours', 0) or 0),
