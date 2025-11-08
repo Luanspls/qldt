@@ -276,7 +276,7 @@ class TrainProgramManagerView(View):
             
             if curriculum_id:
                 curriculum_subjects = CurriculumSubject.objects.select_related('subject__subject_type', 'subject__department', 'subject__subject_group', 'curriculum'
-                ).filter(curriculum_id=curriculum_id)
+                ).filter(curriculum=curriculum_id)
             else:
                 # Lấy tất cả CurriculumSubject
                 curriculum_subjects = CurriculumSubject.objects.select_related(
