@@ -519,45 +519,6 @@
             document.getElementById('ty-le-thuc-hanh').textContent = `${tyLeThucHanh}%`;
         }
         
-        // Load dữ liệu theo bộ lọc
-        function loadFilteredData() {
-            const departmentId = document.getElementById('khoa-dao-tao').value;
-            const subjectGroupId = document.getElementById('to-bo-mon').value;
-            const curriculumId = document.getElementById('chuong-trinh-dao-tao').value;
-            const courseId = document.getElementById('khoa-hoc').value;
-            
-            let url = '/api/subjects/?';
-            const params = [];
-            
-            if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
-            if (departmentId) params.push(`department_id=${departmentId}`);
-            if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
-            if (courseId) params.push(`course_id=${courseId}`);
-            
-            url += params.join('&');
-            
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    monHocData = data;
-                    renderTable();
-                    
-                    // Load thống kê nếu có curriculum
-                    if (curriculumId) {
-                        loadThongKe(curriculumId);
-                    } else {
-                        updateStatistics();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading filtered data:', error);
-                    alert('Có lỗi xảy ra khi tải dữ liệu');
-                });
-        }
-        
         // Load thống kê
         function loadThongKe(curriculumId) {
             fetch(`/thong-ke/?curriculum_id=${curriculumId}`)
@@ -578,7 +539,6 @@
         function updateMonHoc(id, field, value) {
             // Bỏ qua nếu giá trị không thay đổi hoặc là trường instructor
             if (field === 'instructor') {
-                console.log('Trường instructor được bỏ qua');
                 return;
             }
             
@@ -587,9 +547,7 @@
                 field: field,
                 value: value
             };
-            
-            console.log('Sending update request:', data); // Debug log
-            
+                        
             fetch(`/train-program/${id}/`, {
                 method: 'PUT',
                 headers: {
@@ -623,16 +581,16 @@
         }
 
         // Cập nhật phân bố học kỳ
-        function updateSemesterAllocation(subjectId, semester, credits) {
+        function updateSemesterAllocation(curriculumSubjectId, semester, credits) {
             const data = {
-                id: subjectId,
+                id: curriculumSubjectId,
                 field: `hk${semester}`,
                 value: credits
             };
             
             console.log('Sending semester update:', data); // Debug log
             
-            fetch(`/train-program/${subjectId}/`, {
+            fetch(`/train-program/${curriculumSubjectId}/`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -693,6 +651,143 @@
             });
         }
         
+        // Load dữ liệu theo bộ lọc
+        function loadFilteredData() {
+            const departmentId = document.getElementById('khoa-dao-tao').value;
+            const subjectGroupId = document.getElementById('to-bo-mon').value;
+            const curriculumId = document.getElementById('chuong-trinh-dao-tao').value;
+            const courseId = document.getElementById('khoa-hoc').value;
+            
+            let url = '/api/subjects/?';
+            const params = [];
+            
+            if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
+            if (departmentId) params.push(`department_id=${departmentId}`);
+            if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
+            
+            url += params.join('&');
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    monHocData = data;
+                    renderTable();
+                    
+                    // Load thống kê nếu có curriculum
+                    if (curriculumId) {
+                        loadThongKe(curriculumId);
+                    } else {
+                        updateStatistics();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading filtered data:', error);
+                    alert('Có lỗi xảy ra khi tải dữ liệu');
+                });
+        }
+
+        // Thêm hàm để tải danh sách môn học có sẵn
+        function loadExistingSubjects() {
+            fetch('/api/all-subjects/')
+                .then(response => response.json())
+                .then(subjects => {
+                    const select = document.getElementById('select-existing-subject');
+                    select.innerHTML = '<option value="">-- Chọn môn học có sẵn --</option>';
+                    
+                    subjects.forEach(subject => {
+                        const option = document.createElement('option');
+                        option.value = subject.id;
+                        option.textContent = `${subject.code} - ${subject.name}`;
+                        option.setAttribute('data-name', subject.name);
+                        option.setAttribute('data-code', subject.code);
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading existing subjects:', error);
+                });
+        }
+
+        // Tạo môn học mới
+        function createMonHoc() {
+            const form = document.getElementById('form-them-mon-hoc');
+            if (!form) {
+                console.error('Form them mon hoc not found');
+                alert('Không tìm thấy form thêm môn học');
+                return;
+            }
+            
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+                        
+            // Validate dữ liệu
+            if (!data.curriculum_id || !data.code || !data.name || !data.credits || !data.subject_type_id) {
+                alert('Vui lòng điền đầy đủ các trường bắt buộc (*)');
+                return;
+            }
+            
+            // Chuẩn bị dữ liệu học kỳ
+            const semesterData = {};
+            for (let i = 1; i <= 6; i++) {
+                const hkValue = data[`hk${i}`];
+                if (hkValue && hkValue !== '') {
+                    try {
+                        semesterData[`hk${i}`] = parseFloat(hkValue);
+                    } catch (e) {
+                        console.error(`Error parsing HK${i} value:`, hkValue);
+                    }
+                }
+            }
+            
+            // Chuẩn bị dữ liệu gửi đi
+            const postData = {
+                ...data,
+                semester_allocations: semesterData
+            };
+                        
+            // Hiển thị loading
+            const saveBtn = document.getElementById('btn-luu-mon-hoc');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang tạo...';
+            saveBtn.disabled = true;
+            
+            fetch('/api/subjects/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify(postData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('✅ Đã tạo môn học thành công!');
+                    closeThemMonHocModal();
+                    // Reload dữ liệu
+                    loadFilteredData();
+                } else {
+                    alert('❌ Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('❌ Có lỗi xảy ra khi tạo môn học: ' + error.message);
+            })
+            .finally(() => {
+                // Khôi phục trạng thái nút
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            });
+        }
+
         // Tạo chương trình đào tạo mới
         function createCurriculum() {
             const form = document.getElementById('form-them-chuong-trinh');
@@ -1078,84 +1173,6 @@
             majorField.value = 'Không xác định';
         }
 
-        // Tạo môn học mới
-        function createMonHoc() {
-            const form = document.getElementById('form-them-mon-hoc');
-            if (!form) {
-                console.error('Form them mon hoc not found');
-                alert('Không tìm thấy form thêm môn học');
-                return;
-            }
-            
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-                        
-            // Validate dữ liệu
-            if (!data.curriculum_id || !data.code || !data.name || !data.credits || !data.subject_type_id) {
-                alert('Vui lòng điền đầy đủ các trường bắt buộc (*)');
-                return;
-            }
-            
-            // Chuẩn bị dữ liệu học kỳ
-            const semesterData = {};
-            for (let i = 1; i <= 6; i++) {
-                const hkValue = data[`hk${i}`];
-                if (hkValue && hkValue !== '') {
-                    try {
-                        semesterData[`hk${i}`] = parseFloat(hkValue);
-                    } catch (e) {
-                        console.error(`Error parsing HK${i} value:`, hkValue);
-                    }
-                }
-            }
-            
-            // Chuẩn bị dữ liệu gửi đi
-            const postData = {
-                ...data,
-                semester_allocations: semesterData,
-                is_elective: document.getElementById('is_elective').checked
-            };
-                        
-            // Hiển thị loading
-            const saveBtn = document.getElementById('btn-luu-mon-hoc');
-            const originalText = saveBtn.innerHTML;
-            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang tạo...';
-            saveBtn.disabled = true;
-            
-            fetch('/api/subjects/create/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-                body: JSON.stringify(postData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    alert('✅ Đã tạo môn học thành công!');
-                    closeThemMonHocModal();
-                    // Reload dữ liệu
-                    loadFilteredData();
-                } else {
-                    alert('❌ Lỗi: ' + data.message);
-                }
-            })
-            .catch(error => {
-                alert('❌ Có lỗi xảy ra khi tạo môn học: ' + error.message);
-            })
-            .finally(() => {
-                // Khôi phục trạng thái nút
-                saveBtn.innerHTML = originalText;
-                saveBtn.disabled = false;
-            });
-        }
-
         // Lọc tổ bộ môn theo khoa
         function filterSubjectGroupsByDepartment(departmentId) {
             const subjectGroupSelect = document.querySelector('select[name="subject_group_id"]');
@@ -1181,28 +1198,6 @@
                     subjectGroupSelect.value = '';
                 }
             }
-        }
-
-        // Thêm hàm để tải danh sách môn học có sẵn
-        function loadExistingSubjects() {
-            fetch('/api/all-subjects/')
-                .then(response => response.json())
-                .then(subjects => {
-                    const select = document.getElementById('select-existing-subject');
-                    select.innerHTML = '<option value="">-- Chọn môn học có sẵn --</option>';
-                    
-                    subjects.forEach(subject => {
-                        const option = document.createElement('option');
-                        option.value = subject.id;
-                        option.textContent = `${subject.code} - ${subject.name}`;
-                        option.setAttribute('data-name', subject.name);
-                        option.setAttribute('data-code', subject.code);
-                        select.appendChild(option);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error loading existing subjects:', error);
-                });
         }
 
         // Hàm xử lý khi chọn môn học có sẵn

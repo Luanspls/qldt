@@ -101,12 +101,10 @@ class TrainProgramManagerView(View):
                 
                 if id:
                     # Cập nhật môn học cụ thể
-                    subject = Subject.objects.get(id=id)
+                    curriculum_subject = CurriculumSubject.objects.get(id=id)
                     field = data.get('field')
                     value = data.get('value')
-                    
-                    print(f"Updating field: {field}, value: {value}")  # Debug log
-                    
+                                        
                     # Xử lý các trường học kỳ (HK1-HK6)
                     if field and field.startswith('hk'):
                         semester = int(field.replace('hk', ''))
@@ -115,7 +113,7 @@ class TrainProgramManagerView(View):
                         if value == '' or value is None:
                             # Xóa phân bố học kỳ nếu tồn tại
                             SemesterAllocation.objects.filter(
-                                subject=subject, 
+                                curriculum_subject=curriculum_subject, 
                                 semester=semester
                             ).delete()
                         else:
@@ -123,7 +121,7 @@ class TrainProgramManagerView(View):
                             try:
                                 credits_value = float(value)
                                 SemesterAllocation.objects.update_or_create(
-                                    subject=subject,
+                                    curriculum_subject=curriculum_subject,
                                     semester=semester,
                                     defaults={'credits': credits_value}
                                 )
@@ -146,10 +144,11 @@ class TrainProgramManagerView(View):
                                 name=value.strip(),
                                 defaults={'code': value.strip()[:10].upper().replace(' ', '')}
                             )
-                            subject.department = department
+                            curriculum_subject.subject.department = department
+                            curriculum_subject.subject.save()
                         else:
-                            subject.department = None
-                        subject.save()
+                            curriculum_subject.subject.department = None
+                            curriculum_subject.subject.save()
                         return JsonResponse({
                             'status': 'success', 
                             'message': 'Đã cập nhật đơn vị quản lý'
@@ -163,7 +162,7 @@ class TrainProgramManagerView(View):
                         })
                     
                     # Xử lý các trường khác của Subject
-                    elif hasattr(subject, field):
+                    elif hasattr(curriculum_subject, field):
                         # Xử lý kiểu dữ liệu
                         if field in ['credits']:
                             try:
@@ -173,7 +172,7 @@ class TrainProgramManagerView(View):
                                     'status': 'error', 
                                     'message': f'Giá trị {field} không hợp lệ: {value}'
                                 })
-                        elif field in ['total_hours', 'theory_hours', 'practice_hours', 'exam_hours', 'order_number']:
+                        elif field in ['total_hours', 'theory_hours', 'practice_hours', 'exam_hours', 'order_number', 'semester']:
                             try:
                                 value = int(value) if value else 0
                             except (ValueError, TypeError):
@@ -182,8 +181,8 @@ class TrainProgramManagerView(View):
                                     'message': f'Giá trị {field} không hợp lệ: {value}'
                                 })
                         
-                        setattr(subject, field, value)
-                        subject.save()
+                        setattr(curriculum_subject, field, value)
+                        curriculum_subject.save()
                         
                         return JsonResponse({
                             'status': 'success', 
@@ -211,7 +210,7 @@ class TrainProgramManagerView(View):
                         'message': 'Đã cập nhật chương trình thành công'
                     })
                     
-            except Subject.DoesNotExist:
+            except CurriculumSubject.DoesNotExist:
                 return JsonResponse({
                     'status': 'error', 
                     'message': 'Môn học không tồn tại'
@@ -238,9 +237,9 @@ class TrainProgramManagerView(View):
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             try:
                 if id:
-                    subject = Subject.objects.get(id=id)
-                    subject_name = subject.name
-                    subject.delete()
+                    curriculum_subject = CurriculumSubject.objects.get(id=id)
+                    subject_name = curriculum_subject.subject.name
+                    curriculum_subject.delete()
                     
                     return JsonResponse({
                         'status': 'success', 
@@ -252,10 +251,10 @@ class TrainProgramManagerView(View):
                         'message': 'Thiếu ID môn học'
                     })
                     
-            except Subject.DoesNotExist:
+            except CurriculumSubject.DoesNotExist:
                 return JsonResponse({
                     'status': 'error', 
-                    'message': 'Môn học không tồn tại'
+                    'message': 'Môn học trong Chươgn trình không tồn tại'
                 })
             except Exception as e:
                 return JsonResponse({
@@ -271,42 +270,49 @@ class TrainProgramManagerView(View):
     def get_subject_data(self, curriculum_id=None):
         """Lấy dữ liệu môn học từ database"""
         try:
-            subjects = Subject.objects.select_related(
-                'subject_type', 'department', 'subject_group', 'curriculum'
-            )
+            # subjects = Subject.objects.select_related(
+            #     'subject_type', 'department', 'subject_group', 'curriculum'
+            # )
             
             if curriculum_id:
-                subjects = subjects.filter(curriculum_id=curriculum_id)
-            
-            subjects = subjects.order_by('subject_type__id', 'order_number')
+                curriculum_subjects = CurriculumSubject.objects.select_related('subject__subject_type', 'subject__department', 'subject__subject_group', 'curriculum'
+                ).filter(curriculum_id=curriculum_id)
+            else:
+                # Lấy tất cả CurriculumSubject
+                curriculum_subjects = CurriculumSubject.objects.select_related(
+                    'subject__subject_type', 'subject__department', 'subject__subject_group', 'curriculum'
+                ).all()
+                
+            curriculum_subjects = curriculum_subjects.order_by('order_number')
             
             subject_data = []
-            for subject in subjects:
+            for cs in curriculum_subjects:
                 # Lấy phân bố học kỳ
-                semester_allocations = SemesterAllocation.objects.filter(subject=subject)
+                semester_allocations = SemesterAllocation.objects.filter(curriculum_subject=cs)
                 semester_data = {f'hk{alloc.semester}': float(alloc.credits) for alloc in semester_allocations}
                 
                 subject_data.append({
-                    'id': subject.id,
-                    'ma_mon_hoc': subject.code,
-                    'ten_mon_hoc': subject.name,
-                    'so_tin_chi': float(subject.credits),
-                    'tong_so_gio': subject.total_hours,
-                    'ly_thuyet': subject.theory_hours,
-                    'thuc_hanh': subject.practice_hours,
-                    'kiem_tra_thi': subject.exam_hours,
+                    'id': cs.id,
+                    'ma_mon_hoc': cs.subject.code,
+                    'ten_mon_hoc': cs.subject.name,
+                    'so_tin_chi': float(cs.credits),
+                    'tong_so_gio': cs.total_hours,
+                    'ly_thuyet': cs.theory_hours,
+                    'thuc_hanh': cs.practice_hours,
+                    'kiem_tra_thi': cs.exam_hours,
                     'hk1': semester_data.get('hk1', ''),
                     'hk2': semester_data.get('hk2', ''),
                     'hk3': semester_data.get('hk3', ''),
                     'hk4': semester_data.get('hk4', ''),
                     'hk5': semester_data.get('hk5', ''),
                     'hk6': semester_data.get('hk6', ''),
-                    'don_vi': subject.department.name if subject.department else '',
-                    'giang_vien': self.get_instructors_for_subject(subject),
-                    'loai_mon': subject.subject_type.name if subject.subject_type else '',
-                    'order_number': subject.order_number,
-                    'curriculum_id': subject.curriculum_id,
-                    'curriculum_name': subject.curriculum.name if subject.curriculum else ''
+                    'don_vi': cs.subject.department.name if cs.subject.department else '',
+                    'giang_vien': self.get_instructors_for_subject(cs),
+                    'loai_mon': cs.subject.subject_type.name if cs.subject.subject_type else '',
+                    'order_number': cs.order_number,
+                    'curriculum_id': cs.curriculum,
+                    'curriculum_name': cs.curriculum.name if cs.curriculum else '',
+                    'subject_id': cs.subject.id
                 })
             
             return subject_data
@@ -314,7 +320,7 @@ class TrainProgramManagerView(View):
             print(f"Error in get_subject_data: {str(e)}")
             return self.get_sample_data()
     
-    def get_instructors_for_subject(self, subject):
+    def get_instructors_for_subject(self, curriculum_subject):
         """Lấy danh sách giảng viên cho môn học"""
         # Triển khai logic lấy giảng viên từ TeachingAssignment
         return ""
@@ -342,7 +348,8 @@ class TrainProgramManagerView(View):
                 'loai_mon': 'Bắt buộc',
                 'order_number': 1,
                 'curriculum_id': 1,
-                'curriculum_name': 'Chương trình mẫu'
+                'curriculum_name': 'Chương trình mẫu',
+                'subject_id': 1
             }
         ]
 
@@ -575,7 +582,6 @@ class ImportExcelView(View):
                     
                     # Tạo hoặc cập nhật subject
                     subject, created = Subject.objects.update_or_create(
-                        curriculum=curriculum,
                         code=ma_mon_hoc,
                         defaults={
                             'name': ten_mon_hoc,
@@ -587,6 +593,19 @@ class ImportExcelView(View):
                             'department': department,
                             'subject_type': subject_type,
                             'subject_group': subject_group,
+                        }
+                    )
+                    
+                    # Tạo hoặc cập nhật CurriculumSubject
+                    curriculum_subject, cs_created = CurriculumSubject.objects.update_or_create(
+                        curriculum=curriculum,
+                        subject=subject,
+                        defaults={
+                            'credits': so_tin_chi,
+                            'total_hours': tong_so_gio,
+                            'theory_hours': ly_thuyet,
+                            'practice_hours': thuc_hanh,
+                            'exam_hours': kiem_tra_thi,
                             'order_number': order_number
                         }
                     )
@@ -605,30 +624,29 @@ class ImportExcelView(View):
                                 try:
                                     credit_value = float(credits_value)
                                     SemesterAllocation.objects.update_or_create(
-                                        subject=subject,
+                                        curriculum_subject=curriculum_subject,
                                         semester=hk,
                                         defaults={'credits': credit_value}
                                     )
                                     
-                                    Subject.objects.update_or_create(
-                                        curriculum=curriculum,
-                                        code=ma_mon_hoc,
-                                        semester=hk,
-                                    )
+                                    # Subject.objects.update_or_create(
+                                    #     curriculum=curriculum,
+                                    #     code=ma_mon_hoc,
+                                    #     semester=hk,
+                                    # )
                                 except (ValueError, TypeError) as e:
                                     errors.append(f"Dòng {index + 2} - HK{hk}: Giá trị tín chỉ không hợp lệ: {credits_value}")
                     
                     processed_data.append({
                         'ma_mon_hoc': subject.code,
                         'ten_mon_hoc': subject.name,
-                        'so_tin_chi': float(subject.credits),
-                        'tong_so_gio': subject.total_hours,
+                        'so_tin_chi': float(curriculum_subject.credits),
+                        'tong_so_gio': curriculum_subject.total_hours,
                     })
                     
                 except Exception as e:
                     error_msg = f"Dòng {index + 2}: {str(e)}"
                     errors.append(error_msg)
-                    print(f"Error processing row {index + 2}: {str(e)}")
             
             # Lưu lịch sử import - SỬ DỤNG excel_file ĐÃ ĐƯỢC TRUYỀN VÀO
             ImportHistory.objects.create(
@@ -665,14 +683,19 @@ class ThongKeView(View):
             curriculum_id = request.GET.get('curriculum_id')
             
             if curriculum_id:
-                subjects = Subject.objects.filter(curriculum_id=curriculum_id)
+                # Tính tổng từ CurriculumSubject
+                curriculum_subjects = CurriculumSubject.objects.filter(curriculum_id=curriculum_id)
+                total_credits = sum(float(cs.credits) for cs in curriculum_subjects)
+                total_hours = sum(cs.total_hours for cs in curriculum_subjects)
+                total_theory = sum(cs.theory_hours for cs in curriculum_subjects)
+                total_practice = sum(cs.practice_hours for cs in curriculum_subjects)
             else:
-                subjects = Subject.objects.all()
-            
-            total_credits = sum(float(subject.credits) for subject in subjects)
-            total_hours = sum(subject.total_hours for subject in subjects)
-            total_theory = sum(subject.theory_hours for subject in subjects)
-            total_practice = sum(subject.practice_hours for subject in subjects)
+                # Tính tổng từ tất cả CurriculumSubject
+                curriculum_subjects = CurriculumSubject.objects.all()
+                total_credits = sum(float(cs.credits) for cs in curriculum_subjects)
+                total_hours = sum(cs.total_hours for cs in curriculum_subjects)
+                total_theory = sum(cs.theory_hours for cs in curriculum_subjects)
+                total_practice = sum(cs.practice_hours for cs in curriculum_subjects)
             
             ty_le_ly_thuyet = (total_theory / total_hours * 100) if total_hours > 0 else 0
             ty_le_thuc_hanh = (total_practice / total_hours * 100) if total_hours > 0 else 0
@@ -732,69 +755,48 @@ def api_subjects(request):
     curriculum_id = request.GET.get('curriculum_id')
     department_id = request.GET.get('department_id')
     subject_group_id = request.GET.get('subject_group_id')
-    course_id = request.GET.get('course_id')
     
-    subjects = Subject.objects.all()
+    # subjects = Subject.objects.all()
+    curriculum_subjects = CurriculumSubject.objects.select_related(
+        'subject__subject_type', 'subject__department', 'curriculum'
+    ).all()
     
     if curriculum_id:
-        curriculum_subjects = CurriculumSubject.objects.filter(curriculum_id=curriculum_id)
-        subject_ids = curriculum_subjects.values_list('subject_id', flat=True)
-        subjects = subjects.filter(id__in=subject_ids)
+        curriculum_subjects = curriculum_subjects.filter(curriculum_id=curriculum_id)
     if department_id:
-        subjects = subjects.filter(department_id=department_id)
+        curriculum_subjects = curriculum_subjects.filter(subject__department_id=department_id)
     if subject_group_id:
-        subjects = subjects.filter(subject_group_id=subject_group_id)
+        curriculum_subjects = curriculum_subjects.filter(subject__subject_group_id=subject_group_id)
     
     # Sắp xếp theo loại môn và thứ tự
-    subjects = subjects.order_by('code')
+    curriculum_subjects = curriculum_subjects.order_by('order_number')
     
     subject_data = []
-    for subject in subjects:
-        # Lấy thông tin từ CurriculumSubject nếu có curriculum_id
-        curriculum_info = {}
-        if curriculum_id:
-            try:
-                cs = CurriculumSubject.objects.get(curriculum_id=curriculum_id, subject=subject)
-                curriculum_info = {
-                    'credits': float(cs.credits),
-                    'total_hours': cs.total_hours,
-                    'theory_hours': cs.theory_hours,
-                    'practice_hours': cs.practice_hours,
-                    'exam_hours': cs.exam_hours,
-                    'order_number': cs.order_number,
-                    'semester': cs.semester
-                }
-            except CurriculumSubject.DoesNotExist:
-                curriculum_info = {}
-        
-        # Lấy phân bố học kỳ
-        semester_allocations = SemesterAllocation.objects.filter(
-            curriculum_subject__curriculum_id=curriculum_id,
-            curriculum_subject__subject=subject
-        ) if curriculum_id else SemesterAllocation.objects.none()
-        
+    for cs in curriculum_subjects:
+        semester_allocations = SemesterAllocation.objects.filter(curriculum_subject=cs)
         semester_data = {f'hk{alloc.semester}': float(alloc.credits) for alloc in semester_allocations}
         
         subject_data.append({
-            'id': subject.id,
-            'ma_mon_hoc': subject.code,
-            'ten_mon_hoc': subject.name,
-            'so_tin_chi': curriculum_info.get('credits', 0),
-            'tong_so_gio': curriculum_info.get('total_hours', 0),
-            'ly_thuyet': curriculum_info.get('theory_hours', 0),
-            'thuc_hanh': curriculum_info.get('practice_hours', 0),
-            'kiem_tra_thi': curriculum_info.get('exam_hours', 0),
+            'id': cs.id,  # Sử dụng ID của CurriculumSubject
+            'ma_mon_hoc': cs.subject.code,
+            'ten_mon_hoc': cs.subject.name,
+            'so_tin_chi': float(cs.credits),
+            'tong_so_gio': cs.total_hours,
+            'ly_thuyet': cs.theory_hours,
+            'thuc_hanh': cs.practice_hours,
+            'kiem_tra_thi': cs.exam_hours,
             'hk1': semester_data.get('hk1', ''),
             'hk2': semester_data.get('hk2', ''),
             'hk3': semester_data.get('hk3', ''),
             'hk4': semester_data.get('hk4', ''),
             'hk5': semester_data.get('hk5', ''),
             'hk6': semester_data.get('hk6', ''),
-            'don_vi': subject.department.name if subject.department else '',
+            'don_vi': cs.subject.department.name if cs.subject.department else '',
             'giang_vien': '',
-            'loai_mon': subject.subject_type.name if subject.subject_type else '',
-            'curriculum_id': curriculum_id,
-            'is_existing': bool(curriculum_info)  # Đánh dấu đã có trong chương trình
+            'loai_mon': cs.subject.subject_type.name if cs.subject.subject_type else '',
+            'curriculum_id': cs.curriculum,
+            'curriculum_name': cs.curriculum.name if cs.curriculum else '',
+            'subject_id': cs.subject.id
         })
     
     return JsonResponse(subject_data, safe=False)
@@ -830,13 +832,6 @@ def api_create_subject(request):
                     'message': 'Chương trình đào tạo không tồn tại'
                 })
             
-            # Kiểm tra mã môn học không trùng
-            if Subject.objects.filter(curriculum=curriculum, code=data['code']).exists():
-                return JsonResponse({
-                    'status': 'error', 
-                    'message': f'Mã môn học {data["code"]} đã tồn tại trong chương trình này'
-                })
-            
             # Xử lý department
             department = None
             if data.get('department_id'):
@@ -862,25 +857,35 @@ def api_create_subject(request):
                 except SubjectGroup.DoesNotExist:
                     pass
             
-            # Tạo môn học
-            subject = Subject.objects.create(
-                curriculum=curriculum,
+            # Tạo hoặc lấy Subject
+            subject, subject_created = Subject.objects.get_or_create(
                 code=data['code'],
-                name=data['name'],
+                defaults={
+                    'name': data['name'],
+                    'credits': float(data['credits']),
+                    'total_hours': int(data.get('total_hours', 0) or 0),
+                    'theory_hours': int(data.get('theory_hours', 0) or 0),
+                    'practice_hours': int(data.get('practice_hours', 0) or 0),
+                    'exam_hours': int(data.get('exam_hours', 0) or 0),
+                    'department': department,
+                    'subject_group': subject_group,
+                    'subject_type': subject_type,
+                    'prerequisites': data.get('prerequisites', ''),
+                    'learning_outcomes': data.get('learning_outcomes', ''),
+                    'description': data.get('description', ''),
+                }
+            )
+            
+            # Tạo CurriculumSubject
+            curriculum_subject = CurriculumSubject.objects.create(
+                curriculum=curriculum,
+                subject=subject,
                 credits=float(data['credits']),
                 total_hours=int(data.get('total_hours', 0) or 0),
                 theory_hours=int(data.get('theory_hours', 0) or 0),
                 practice_hours=int(data.get('practice_hours', 0) or 0),
                 exam_hours=int(data.get('exam_hours', 0) or 0),
                 semester=int(data.get('semester', 0) or None),
-                is_elective=bool(data.get('is_elective', False)),
-                elective_group=data.get('elective_group', ''),
-                department=department,
-                subject_group=subject_group,
-                subject_type=subject_type,
-                prerequisites=data.get('prerequisites', ''),
-                learning_outcomes=data.get('learning_outcomes', ''),
-                description=data.get('description', ''),
                 order_number=int(data.get('order_number', 0) or 0)
             )
             
@@ -890,7 +895,7 @@ def api_create_subject(request):
                 semester = int(semester_str.replace('hk', ''))
                 if credits_value and float(credits_value) > 0:
                     SemesterAllocation.objects.create(
-                        subject=subject,
+                        curriculum_subject=curriculum_subject,
                         semester=semester,
                         credits=float(credits_value)
                     )
@@ -898,7 +903,7 @@ def api_create_subject(request):
             return JsonResponse({
                 'status': 'success',
                 'message': 'Đã tạo môn học thành công',
-                'id': subject.id
+                'id': curriculum_subject.id
             })
             
         except Exception as e:
@@ -949,111 +954,3 @@ def create_curriculum(request):
             return JsonResponse({'status': 'error', 'message': str(e)})
     
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'})
-
-@csrf_exempt
-def api_create_subject(request):
-    """API tạo môn học mới"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            
-            # Kiểm tra các trường bắt buộc
-            required_fields = ['curriculum_id', 'code', 'name', 'credits', 'subject_type_id']
-            for field in required_fields:
-                if not data.get(field):
-                    return JsonResponse({
-                        'status': 'error', 
-                        'message': f'Thiếu trường bắt buộc: {field}'
-                    })
-            
-            # Kiểm tra curriculum tồn tại
-            try:
-                curriculum = Curriculum.objects.get(id=data['curriculum_id'])
-            except Curriculum.DoesNotExist:
-                return JsonResponse({
-                    'status': 'error', 
-                    'message': 'Chương trình đào tạo không tồn tại'
-                })
-            
-            # Kiểm tra mã môn học không trùng
-            if Subject.objects.filter(curriculum=curriculum, code=data['code']).exists():
-                return JsonResponse({
-                    'status': 'error', 
-                    'message': f'Mã môn học {data["code"]} đã tồn tại trong chương trình này'
-                })
-            
-            # Xử lý department
-            department = None
-            if data.get('department_id'):
-                try:
-                    department = Department.objects.get(id=data['department_id'])
-                except Department.DoesNotExist:
-                    pass
-            
-            # Xử lý subject_type
-            try:
-                subject_type = SubjectType.objects.get(id=data['subject_type_id'])
-            except SubjectType.DoesNotExist:
-                return JsonResponse({
-                    'status': 'error', 
-                    'message': 'Loại môn học không tồn tại'
-                })
-            
-            # Xử lý subject_group
-            subject_group = None
-            if data.get('subject_group_id'):
-                try:
-                    subject_group = SubjectGroup.objects.get(id=data['subject_group_id'])
-                except SubjectGroup.DoesNotExist:
-                    pass
-            
-            # Tạo môn học
-            subject = Subject.objects.create(
-                curriculum=curriculum,
-                code=data['code'],
-                name=data['name'],
-                credits=float(data['credits']),
-                total_hours=int(data.get('total_hours', 0) or 0),
-                theory_hours=int(data.get('theory_hours', 0) or 0),
-                practice_hours=int(data.get('practice_hours', 0) or 0),
-                exam_hours=int(data.get('exam_hours', 0) or 0),
-                semester=int(data.get('semester', 0) or None),
-                is_elective=bool(data.get('is_elective', False)),
-                elective_group=data.get('elective_group', ''),
-                department=department,
-                subject_group=subject_group,
-                subject_type=subject_type,
-                prerequisites=data.get('prerequisites', ''),
-                learning_outcomes=data.get('learning_outcomes', ''),
-                description=data.get('description', ''),
-                order_number=int(data.get('order_number', 0) or 0)
-            )
-            
-            # Tạo phân bố học kỳ
-            semester_allocations = data.get('semester_allocations', {})
-            for semester_str, credits_value in semester_allocations.items():
-                semester = int(semester_str.replace('hk', ''))
-                if credits_value and float(credits_value) > 0:
-                    SemesterAllocation.objects.create(
-                        subject=subject,
-                        semester=semester,
-                        credits=float(credits_value)
-                    )
-            
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Đã tạo môn học thành công',
-                'id': subject.id
-            })
-            
-        except Exception as e:
-            print(f"Error creating subject: {str(e)}")
-            return JsonResponse({
-                'status': 'error', 
-                'message': f'Lỗi khi tạo môn học: {str(e)}'
-            })
-    
-    return JsonResponse({
-        'status': 'error', 
-        'message': 'Method not allowed'
-    })
