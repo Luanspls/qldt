@@ -344,21 +344,21 @@
 
     <script>
         // Biến toàn cục lưu trữ dữ liệu
-        {% comment %} let allDepartments = {{ departments|safe }};
+        let allDepartments = {{ departments|safe }};
         let allSubjectGroups = {{ subject_groups|safe }};
         let allCurricula = {{ curricula|safe }};
         let allCourses = {{ courses|safe }};
         let allSubjectTypes = {{ subject_types|safe }};
-        let allMajors = {{ majors|safe }}; {% endcomment %}
-        let monHocData = {{ mon_hoc_data|safe }};
+        let allMajors = {{ majors|safe }};
+        {% comment %} let monHocData = {{ mon_hoc_data|safe }}; {% endcomment %}
 
-        let allDepartments = [];
+        {% comment %} let allDepartments = [];
         let allSubjectGroups = [];
         let allCurricula = [];
         let allCourses = [];
         let allSubjectTypes = [];
-        let allMajors = [];
-        {% comment %} let monHocData = []; {% endcomment %}
+        let allMajors = []; {% endcomment %}
+        let monHocData = [];
         
         // Khởi tạo dropdowns
         function initializeDropdowns() {
