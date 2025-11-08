@@ -331,7 +331,7 @@ class CurriculumSubject(models.Model):
 def update_curriculum_credits(sender, instance, **kwargs):
     """Cập nhật tổng số tín chỉ của chương trình khi môn học thay đổi"""
     curriculum = instance.curriculum
-    curriculum.update_totals()
+    # curriculum.update_totals()
 
 class SemesterAllocation(models.Model):
     curriculum_subject = models.ForeignKey(
