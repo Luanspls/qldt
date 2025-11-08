@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.shortcuts import render, get_object_or_404
 from django.views import View
-from .models import Department, SubjectGroup, Curriculum, Course, Subject, SubjectType, SemesterAllocation, Major, ImportHistory
+from .models import Department, SubjectGroup, Curriculum, Course, Subject, CurriculumSubject, SubjectType, SemesterAllocation, Major, ImportHistory
 from django.db.models import Q
 import pandas as pd
 from django.core.files.storage import default_storage
@@ -734,32 +734,56 @@ def api_subjects(request):
     subject_group_id = request.GET.get('subject_group_id')
     course_id = request.GET.get('course_id')
     
-    subjects = Subject.objects.select_related('subject_type', 'department', 'curriculum').all()
+    subjects = Subject.objects.all()
     
     if curriculum_id:
-        subjects = subjects.filter(curriculum_id=curriculum_id)
+        curriculum_subjects = CurriculumSubject.objects.filter(curriculum_id=curriculum_id)
+        subject_ids = curriculum_subjects.values_list('subject_id', flat=True)
+        subjects = subjects.filter(id__in=subject_ids)
     if department_id:
         subjects = subjects.filter(department_id=department_id)
     if subject_group_id:
         subjects = subjects.filter(subject_group_id=subject_group_id)
     
     # Sắp xếp theo loại môn và thứ tự
-    subjects = subjects.order_by('subject_type__id', 'order_number')
+    subjects = subjects.order_by('code')
     
     subject_data = []
     for subject in subjects:
-        semester_allocations = SemesterAllocation.objects.filter(subject=subject)
+        # Lấy thông tin từ CurriculumSubject nếu có curriculum_id
+        curriculum_info = {}
+        if curriculum_id:
+            try:
+                cs = CurriculumSubject.objects.get(curriculum_id=curriculum_id, subject=subject)
+                curriculum_info = {
+                    'credits': float(cs.credits),
+                    'total_hours': cs.total_hours,
+                    'theory_hours': cs.theory_hours,
+                    'practice_hours': cs.practice_hours,
+                    'exam_hours': cs.exam_hours,
+                    'order_number': cs.order_number,
+                    'semester': cs.semester
+                }
+            except CurriculumSubject.DoesNotExist:
+                curriculum_info = {}
+        
+        # Lấy phân bố học kỳ
+        semester_allocations = SemesterAllocation.objects.filter(
+            curriculum_subject__curriculum_id=curriculum_id,
+            curriculum_subject__subject=subject
+        ) if curriculum_id else SemesterAllocation.objects.none()
+        
         semester_data = {f'hk{alloc.semester}': float(alloc.credits) for alloc in semester_allocations}
         
         subject_data.append({
             'id': subject.id,
             'ma_mon_hoc': subject.code,
             'ten_mon_hoc': subject.name,
-            'so_tin_chi': float(subject.credits),
-            'tong_so_gio': subject.total_hours,
-            'ly_thuyet': subject.theory_hours,
-            'thuc_hanh': subject.practice_hours,
-            'kiem_tra_thi': subject.exam_hours,
+            'so_tin_chi': curriculum_info.get('credits', 0),
+            'tong_so_gio': curriculum_info.get('total_hours', 0),
+            'ly_thuyet': curriculum_info.get('theory_hours', 0),
+            'thuc_hanh': curriculum_info.get('practice_hours', 0),
+            'kiem_tra_thi': curriculum_info.get('exam_hours', 0),
             'hk1': semester_data.get('hk1', ''),
             'hk2': semester_data.get('hk2', ''),
             'hk3': semester_data.get('hk3', ''),
@@ -769,11 +793,17 @@ def api_subjects(request):
             'don_vi': subject.department.name if subject.department else '',
             'giang_vien': '',
             'loai_mon': subject.subject_type.name if subject.subject_type else '',
-            'curriculum_id': subject.curriculum_id,
-            'curriculum_name': subject.curriculum.name if subject.curriculum else ''
+            'curriculum_id': curriculum_id,
+            'is_existing': bool(curriculum_info)  # Đánh dấu đã có trong chương trình
         })
     
     return JsonResponse(subject_data, safe=False)
+
+@csrf_exempt
+def api_all_subjects(request):
+    """API lấy tất cả môn học (cho dropdown chọn môn học có sẵn)"""
+    subjects = Subject.objects.all().values('id', 'code', 'name', 'department__name')
+    return JsonResponse(list(subjects), safe=False)
 
 @csrf_exempt
 def api_create_subject(request):

@@ -1183,6 +1183,62 @@
             }
         }
 
+        // Thêm hàm để tải danh sách môn học có sẵn
+        function loadExistingSubjects() {
+            fetch('/api/all-subjects/')
+                .then(response => response.json())
+                .then(subjects => {
+                    const select = document.getElementById('select-existing-subject');
+                    select.innerHTML = '<option value="">-- Chọn môn học có sẵn --</option>';
+                    
+                    subjects.forEach(subject => {
+                        const option = document.createElement('option');
+                        option.value = subject.id;
+                        option.textContent = `${subject.code} - ${subject.name}`;
+                        option.setAttribute('data-name', subject.name);
+                        option.setAttribute('data-code', subject.code);
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading existing subjects:', error);
+                });
+        }
+
+        // Hàm xử lý khi chọn môn học có sẵn
+        function handleUseExistingSubject() {
+            const select = document.getElementById('select-existing-subject');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if (!selectedOption.value) {
+                alert('Vui lòng chọn một môn học');
+                return;
+            }
+            
+            // Hiển thị thông tin môn học đã chọn
+            document.getElementById('existing-subject-info').classList.remove('hidden');
+            document.getElementById('selected-subject-name').textContent = 
+                `${selectedOption.getAttribute('data-code')} - ${selectedOption.getAttribute('data-name')}`;
+            
+            // Điền thông tin vào form
+            document.querySelector('input[name="code"]').value = selectedOption.getAttribute('data-code');
+            document.querySelector('input[name="name"]').value = selectedOption.getAttribute('data-name');
+            
+            // Disable các trường mã và tên để tránh chỉnh sửa
+            document.querySelector('input[name="code"]').setAttribute('readonly', 'true');
+            document.querySelector('input[name="name"]').setAttribute('readonly', 'true');
+        }
+
+        // Hàm xóa lựa chọn
+        function clearSubjectSelection() {
+            document.getElementById('existing-subject-info').classList.add('hidden');
+            document.getElementById('select-existing-subject').value = '';
+            document.querySelector('input[name="code"]').removeAttribute('readonly');
+            document.querySelector('input[name="name"]').removeAttribute('readonly');
+            document.querySelector('input[name="code"]').value = '';
+            document.querySelector('input[name="name"]').value = '';
+        }
+
         // Hàm lấy CSRF token
         function getCookie(name) {
             let cookieValue = null;
@@ -1507,6 +1563,15 @@
                         calculateTotalHours();
                     });
                 }
+            });
+
+            // Thêm cho chức năng chọn môn học có sẵn
+            document.getElementById('btn-use-existing').addEventListener('click', handleUseExistingSubject);
+            document.getElementById('btn-clear-selection').addEventListener('click', clearSubjectSelection);
+            
+            // Tải danh sách môn học có sẵn khi mở modal
+            document.getElementById('btn-them-mon-hoc').addEventListener('click', function() {
+                setTimeout(loadExistingSubjects, 100);
             });
             
             function calculateTotalHours() {
@@ -1878,7 +1943,34 @@
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            
+            <div class="bg-blue-50 p-4 rounded-md mb-4">
+                <h4 class="text-sm font-semibold text-blue-800 mb-2">Chọn từ môn học có sẵn</h4>
+                <div class="flex space-x-2">
+                    <select id="select-existing-subject" class="flex-1 p-2 border border-gray-300 rounded-md">
+                        <option value="">-- Chọn môn học có sẵn --</option>
+                        <!-- Options sẽ được điền bằng JavaScript -->
+                    </select>
+                    <button type="button" id="btn-use-existing" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-check mr-1"></i> Chọn
+                    </button>
+                </div>
+                <p class="text-xs text-blue-600 mt-1">Chọn môn học từ danh sách có sẵn để thêm vào chương trình này</p>
+            </div>
+
+            <!-- Thêm phần hiển thị thông tin môn học đã chọn -->
+            <div id="existing-subject-info" class="bg-green-50 p-3 rounded-md border border-green-200 hidden mb-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="text-sm font-semibold text-green-800">Đã chọn môn học có sẵn</h4>
+                        <p class="text-sm text-green-700" id="selected-subject-name"></p>
+                    </div>
+                    <button type="button" id="btn-clear-selection" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
             <form id="form-them-mon-hoc" class="space-y-4">
                 <!-- Thông tin chương trình -->
                 <div class="bg-blue-50 p-4 rounded-md">
