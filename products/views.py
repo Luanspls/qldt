@@ -310,7 +310,7 @@ class TrainProgramManagerView(View):
                     'giang_vien': self.get_instructors_for_subject(cs),
                     'loai_mon': cs.subject.subject_type.name if cs.subject.subject_type else '',
                     'order_number': cs.order_number,
-                    'curriculum_id': cs.curriculum,
+                    'curriculum': cs.curriculum,
                     'curriculum_name': cs.curriculum.name if cs.curriculum else '',
                     'subject_id': cs.subject.id
                 })

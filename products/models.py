@@ -114,10 +114,10 @@ class Curriculum(models.Model):
         verbose_name_plural = 'Các chương trình đào tạo'
         ordering = ['-academic_year', 'major']
 
-    @property
-    def subject_count(self):
-        """Số lượng môn học trong chương trình"""
-        return self.subjects.count()
+    # @property
+    # def subject_count(self):
+    #     """Số lượng môn học trong chương trình"""
+    #     return self.subjects.count()
     
     @property
     def is_active(self):
@@ -137,36 +137,36 @@ class Curriculum(models.Model):
         if self.total_hours < (self.theory_hours + self.practice_hours):
             raise ValidationError("Tổng số giờ không được nhỏ hơn tổng giờ lý thuyết và thực hành")
     
-    def get_subjects_by_type(self, subject_type_name=None):
-        """Lấy môn học theo loại"""
-        subjects = self.subjects.all()
-        if subject_type_name:
-            subjects = subjects.filter(subject_type__name=subject_type_name)
-        return subjects
+    # def get_subjects_by_type(self, subject_type_name=None):
+    #     """Lấy môn học theo loại"""
+    #     subjects = self.subjects.all()
+    #     if subject_type_name:
+    #         subjects = subjects.filter(subject_type__name=subject_type_name)
+    #     return subjects
 
-    def get_total_credits(self):
-        """Tính tổng số tín chỉ"""
-        return self.curriculum_subjects.aggregate(total=models.Sum('credits'))['total'] or 0
+    # def get_total_credits(self):
+    #     """Tính tổng số tín chỉ"""
+    #     return self.curriculum_subjects.aggregate(total=models.Sum('credits'))['total'] or 0
 
-    def get_total_hours(self):
-        """Tính tổng số giờ"""
-        return self.curriculum_subjects.aggregate(total=models.Sum('total_hours'))['total'] or 0
+    # def get_total_hours(self):
+    #     """Tính tổng số giờ"""
+    #     return self.curriculum_subjects.aggregate(total=models.Sum('total_hours'))['total'] or 0
 
-    def update_totals(self):
-        """Cập nhật tổng số tín chỉ và giờ từ các môn học"""
-        from django.db.models import Sum
-        aggregates = self.curriculum_subjects.aggregate(
-            total_credits=Sum('credits'),
-            total_hours=Sum('total_hours'),
-            total_theory=Sum('theory_hours'),
-            total_practice=Sum('practice_hours')
-        )
+    # def update_totals(self):
+    #     """Cập nhật tổng số tín chỉ và giờ từ các môn học"""
+    #     from django.db.models import Sum
+    #     aggregates = self.curriculum_subjects.aggregate(
+    #         total_credits=Sum('credits'),
+    #         total_hours=Sum('total_hours'),
+    #         total_theory=Sum('theory_hours'),
+    #         total_practice=Sum('practice_hours')
+    #     )
         
-        self.total_credits = aggregates['total_credits'] or 0
-        self.total_hours = aggregates['total_hours'] or 0
-        self.theory_hours = aggregates['total_theory'] or 0
-        self.practice_hours = aggregates['total_practice'] or 0
-        self.save()
+    #     self.total_credits = aggregates['total_credits'] or 0
+    #     self.total_hours = aggregates['total_hours'] or 0
+    #     self.theory_hours = aggregates['total_theory'] or 0
+    #     self.practice_hours = aggregates['total_practice'] or 0
+    #     self.save()
 
 class SubjectType(models.Model):
     code = models.CharField(max_length=20, unique=True, verbose_name="Mã loại môn học")
