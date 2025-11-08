@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/curricula/', views.api_curricula, name='api_curricula'),
     path('api/courses/', views.api_courses, name='api_courses'),
     path('api/subjects/', views.api_subjects, name='api_subjects'),
+    path('api/all-subjects/', views.api_all_subjects, name='api_all_subjects'),
     path('api/subjects/create/', views.api_create_subject, name='api_create_subject'),
     path('api/subject-types/', views.api_subject_types, name='api_subject_types'),
     path('api/majors/', views.api_majors, name='api_majors'),

@@ -349,16 +349,16 @@
         let allCurricula = {{ curricula|safe }};
         let allCourses = {{ courses|safe }};
         let allSubjectTypes = {{ subject_types|safe }};
-        let allMajors = {{ majors|safe }};
-        let monHocData = {{ mon_hoc_data|safe }}; {% endcomment %}
-        
+        let allMajors = {{ majors|safe }}; {% endcomment %}
+        let monHocData = {{ mon_hoc_data|safe }};
+
         let allDepartments = [];
         let allSubjectGroups = [];
         let allCurricula = [];
         let allCourses = [];
         let allSubjectTypes = [];
         let allMajors = [];
-        let monHocData = [];
+        {% comment %} let monHocData = []; {% endcomment %}
         
         // Khởi tạo dropdowns
         function initializeDropdowns() {
