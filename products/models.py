@@ -339,7 +339,7 @@ class SemesterAllocation(models.Model):
         on_delete=models.CASCADE, 
         related_name='semester_allocations',
         verbose_name="Môn học trong chương trình",
-        db_column="curriculum_subject_id"
+        db_column="subject_id"
     )
     semester = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(12)],
@@ -405,7 +405,7 @@ class TeachingAssignment(models.Model):
         on_delete=models.CASCADE, 
         related_name='teaching_assignments',
         verbose_name="Môn học trong chương trình",
-        db_column="curriculum_subject_id"
+        db_column="subject_id"
     )
     instructor = models.ForeignKey(
         Instructor, 
