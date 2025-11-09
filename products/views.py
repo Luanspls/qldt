@@ -1148,6 +1148,60 @@ def api_teaching_statistics(request):
         'department_statistics': list(department_stats)
     })
 
+# @csrf_exempt
+# def api_create_teaching_assignment(request):
+#     """API tạo phân công giảng dạy mới"""
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+            
+#             # Kiểm tra các trường bắt buộc
+#             required_fields = ['curriculum_subject_id', 'instructor_id', 'academic_year', 'semester']
+#             for field in required_fields:
+#                 if not data.get(field):
+#                     return JsonResponse({
+#                         'status': 'error', 
+#                         'message': f'Thiếu trường bắt buộc: {field}'
+#                     })
+            
+#             # Kiểm tra xem có class_obj hay combined_class
+#             if not data.get('class_obj_id') and not data.get('combined_class_id'):
+#                 return JsonResponse({
+#                     'status': 'error', 
+#                     'message': 'Phải chọn lớp học thường hoặc lớp học ghép'
+#                 })
+            
+#             # Tạo phân công giảng dạy
+#             teaching_assignment = TeachingAssignment.objects.create(
+#                 curriculum_subject_id=data['curriculum_subject_id'],
+#                 instructor_id=data['instructor_id'],
+#                 class_obj_id=data.get('class_obj_id'),
+#                 combined_class_id=data.get('combined_class_id'),
+#                 academic_year=data['academic_year'],
+#                 semester=data['semester'],
+#                 is_main_instructor=data.get('is_main_instructor', True),
+#                 student_count=data.get('student_count', 0),
+#                 teaching_hours=data.get('teaching_hours', 0)
+#             )
+            
+#             return JsonResponse({
+#                 'status': 'success',
+#                 'message': 'Đã tạo phân công giảng dạy thành công',
+#                 'id': teaching_assignment.id
+#             })
+            
+#         except Exception as e:
+#             print(f"Error creating teaching assignment: {str(e)}")
+#             return JsonResponse({
+#                 'status': 'error', 
+#                 'message': f'Lỗi khi tạo phân công giảng dạy: {str(e)}'
+#             })
+    
+#     return JsonResponse({
+#         'status': 'error', 
+#         'message': 'Method not allowed'
+#     })
+
 @csrf_exempt
 def api_create_teaching_assignment(request):
     """API tạo phân công giảng dạy mới"""
@@ -1156,7 +1210,7 @@ def api_create_teaching_assignment(request):
             data = json.loads(request.body)
             
             # Kiểm tra các trường bắt buộc
-            required_fields = ['curriculum_subject_id', 'instructor_id', 'academic_year', 'semester']
+            required_fields = ['instructor_id', 'curriculum_subject_id', 'academic_year', 'semester']
             for field in required_fields:
                 if not data.get(field):
                     return JsonResponse({
@@ -1173,8 +1227,8 @@ def api_create_teaching_assignment(request):
             
             # Tạo phân công giảng dạy
             teaching_assignment = TeachingAssignment.objects.create(
-                curriculum_subject_id=data['curriculum_subject_id'],
                 instructor_id=data['instructor_id'],
+                curriculum_subject_id=data['curriculum_subject_id'],
                 class_obj_id=data.get('class_obj_id'),
                 combined_class_id=data.get('combined_class_id'),
                 academic_year=data['academic_year'],
@@ -1191,7 +1245,6 @@ def api_create_teaching_assignment(request):
             })
             
         except Exception as e:
-            print(f"Error creating teaching assignment: {str(e)}")
             return JsonResponse({
                 'status': 'error', 
                 'message': f'Lỗi khi tạo phân công giảng dạy: {str(e)}'
@@ -1201,7 +1254,7 @@ def api_create_teaching_assignment(request):
         'status': 'error', 
         'message': 'Method not allowed'
     })
-
+    
 class TeachingManagementView(View):
     """View quản lý phân công giảng dạy"""
     template_name = 'products/teaching_management.html'
@@ -1271,6 +1324,77 @@ def api_create_class(request):
             return JsonResponse({
                 'status': 'error', 
                 'message': f'Lỗi khi tạo lớp học: {str(e)}'
+            })
+    
+    return JsonResponse({
+        'status': 'error', 
+        'message': 'Method not allowed'
+    })
+
+@csrf_exempt
+def api_curriculum_subjects(request):
+    """API lấy danh sách môn học trong chương trình"""
+    curriculum_id = request.GET.get('curriculum_id')
+    
+    curriculum_subjects = CurriculumSubject.objects.select_related(
+        'subject', 'curriculum'
+    )
+    
+    if curriculum_id:
+        curriculum_subjects = curriculum_subjects.filter(curriculum_id=curriculum_id)
+    
+    subjects_data = []
+    for cs in curriculum_subjects:
+        subjects_data.append({
+            'id': cs.id,
+            'subject_id': cs.subject.id,
+            'subject_code': cs.subject.code,
+            'subject_name': cs.subject.name,
+            'curriculum_id': cs.curriculum.id,
+            'curriculum_name': cs.curriculum.name,
+            'credits': float(cs.credits)
+        })
+    
+    return JsonResponse(subjects_data, safe=False)
+
+@csrf_exempt
+def api_create_combined_class(request):
+    """API tạo lớp học ghép mới"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Kiểm tra các trường bắt buộc
+            required_fields = ['code', 'name', 'curriculum_id', 'classes']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': f'Thiếu trường bắt buộc: {field}'
+                    })
+            
+            # Tạo lớp học ghép
+            combined_class = CombinedClass.objects.create(
+                code=data.get('code'),
+                name=data.get('name'),
+                curriculum_id=data.get('curriculum_id'),
+                description=data.get('description')
+            )
+            
+            # Thêm các lớp thành phần
+            classes = Class.objects.filter(id__in=data.get('classes', []))
+            combined_class.classes.set(classes)
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã tạo lớp học ghép thành công',
+                'id': combined_class.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error', 
+                'message': f'Lỗi khi tạo lớp học ghép: {str(e)}'
             })
     
     return JsonResponse({

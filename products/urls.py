@@ -14,6 +14,7 @@ urlpatterns = [
     path('download-excel-template/', views.ImportExcelView.as_view(), name='download_excel_template'),
     path('thong-ke/', views.ThongKeView.as_view(), name='thong_ke'),
     path('mon-hoc/<int:id>/', views.TrainProgramManagerView.as_view(), name='update_mon_hoc'),
+    path('teaching-management/', views.TeachingManagementView.as_view(), name='teaching_management'),
     
     # API endpoints
     path('api/departments/', views.api_departments, name='api_departments'),
@@ -29,11 +30,12 @@ urlpatterns = [
     
     # URL mới cho quản lý lớp học và phân công giảng dạy
     path('api/classes/', views.api_classes, name='api_classes'),
-    path('api/combined-classes/', views.api_combined_classes, name='api_combined_classes'),
-    path('api/teaching-assignments/', views.api_teaching_assignments, name='api_teaching_assignments'),
-    path('api/teaching-statistics/', views.api_teaching_statistics, name='api_teaching_statistics'),
-    path('api/teaching-assignments/create/', views.api_create_teaching_assignment, name='api_create_teaching_assignment'),
-    path('teaching-management/', views.TeachingManagementView.as_view(), name='teaching_management'),
-    path('api/instructors/', views.api_instructors, name='api_instructors'),
     path('api/classes/create/', views.api_create_class, name='api_create_class'),
+    path('api/combined-classes/', views.api_combined_classes, name='api_combined_classes'),
+    path('api/combined-classes/create/', views.api_create_combined_class, name='api_create_combined_class'),
+    path('api/teaching-assignments/', views.api_teaching_assignments, name='api_teaching_assignments'),
+    path('api/teaching-assignments/create/', views.api_create_teaching_assignment, name='api_create_teaching_assignment'),
+    path('api/teaching-statistics/', views.api_teaching_statistics, name='api_teaching_statistics'),
+    path('api/instructors/', views.api_instructors, name='api_instructors'),
+    path('api/curriculum-subjects/', views.api_curriculum_subjects, name='api_curriculum_subjects'),
 ]
