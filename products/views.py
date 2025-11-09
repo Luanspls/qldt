@@ -666,10 +666,7 @@ class ImportExcelView(View):
                 status='success' if not errors else 'partial',
                 errors=errors if errors else None
             )
-            
-            # Cập nhật tổng số tín chỉ cho curriculum
-            curriculum.update_totals()
-            
+                        
             return {
                 'status': 'success',
                 'created_count': created_count,
