@@ -54,9 +54,14 @@
             <div id="classes-tab" class="tab-panel active">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold">Quản lý lớp học</h3>
-                    <button id="btn-them-lop-hoc" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
-                        <i class="fas fa-plus mr-2"></i> Thêm lớp học
-                    </button>
+                    <div class="flex space-x-2">
+                        <button id="btn-them-lop-hoc" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Thêm lớp học
+                        </button>
+                        <button onclick="openImportModal('class')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                            <i class="fas fa-file-excel mr-2"></i> Import Excel
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Bộ lọc lớp học -->
@@ -112,9 +117,14 @@
             <div id="combined-classes-tab" class="tab-panel hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold">Quản lý lớp học ghép</h3>
-                    <button id="btn-them-lop-ghep" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
-                        <i class="fas fa-plus mr-2"></i> Thêm lớp ghép
-                    </button>
+                    <div class="flex space-x-2">
+                        <button id="btn-them-lop-ghep" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Thêm lớp ghép
+                        </button>
+                        <button onclick="openImportModal('combined-class')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                            <i class="fas fa-file-excel mr-2"></i> Import Excel
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Bộ lọc lớp ghép -->
@@ -155,9 +165,14 @@
             <div id="teaching-assignments-tab" class="tab-panel hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold">Phân công giảng dạy</h3>
-                    <button id="btn-them-phan-cong" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
-                        <i class="fas fa-plus mr-2"></i> Thêm phân công
-                    </button>
+                    <div class="flex space-x-2">
+                        <button id="btn-them-phan-cong" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Thêm phân công
+                        </button>
+                        <button onclick="openImportModal('teaching-assignment')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                            <i class="fas fa-file-excel mr-2"></i> Import Excel
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Bộ lọc -->
@@ -518,6 +533,79 @@
         </div>
     </div>
 
+
+    <!-- Modal import dữ liệu -->
+    <div id="modal-import" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900" id="import-modal-title">Import dữ liệu</h3>
+                <button type="button" id="btn-dong-import" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="form-import" class="space-y-4" enctype="multipart/form-data">
+                <input type="hidden" id="import-object-type" name="object_type" value="">
+                
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">File Excel *</label>
+                    <input type="file" id="excel-file" name="excel_file" accept=".xlsx, .xls" 
+                        class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                        required>
+                    <p class="text-xs text-gray-500 mt-1">Chỉ chấp nhận file .xlsx hoặc .xls, tối đa 10MB</p>
+                </div>
+                
+                <div class="text-sm text-gray-600">
+                    <p>
+                        <a href="#" id="btn-download-template" class="text-blue-600 hover:text-blue-800 inline-flex items-center">
+                            <i class="fas fa-download mr-2"></i>Tải file mẫu
+                        </a>
+                    </p>
+                </div>
+                
+                <div class="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+                    <h4 class="text-sm font-semibold text-yellow-800 mb-2" id="import-notes-title">Lưu ý khi import:</h4>
+                    <ul class="text-sm text-yellow-700 list-disc list-inside space-y-1" id="import-notes-list">
+                        <!-- Nội dung sẽ được điền bằng JavaScript -->
+                    </ul>
+                </div>
+            </form>
+            
+            <div class="flex justify-end mt-6 space-x-3">
+                <button type="button" id="btn-huy-import" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2.5 px-6 rounded-md">
+                    <i class="fas fa-times mr-2"></i>Hủy
+                </button>
+                <button type="button" id="btn-luu-import" 
+                        class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-6 rounded-md">
+                    <i class="fas fa-upload mr-2"></i>Import Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal hiển thị lỗi import -->
+    <div id="modal-import-errors" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Chi tiết lỗi khi import</h3>
+                <button id="btn-dong-errors" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="import-errors-content" class="max-h-96 overflow-y-auto mb-4 p-4 bg-gray-100 rounded border">
+                <!-- Nội dung lỗi sẽ được điền ở đây -->
+            </div>
+            <div class="flex justify-end">
+                <button id="btn-close-errors" 
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-md">
+                    <i class="fas fa-check mr-2"></i>Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         // Biến toàn cục lưu trữ dữ liệu
         let allInstructors = [];
@@ -670,6 +758,32 @@
             // Điền dữ liệu dropdown khi mở modal thêm lớp học
             document.getElementById('btn-them-lop-hoc').addEventListener('click', function() {
                 setTimeout(populateClassModalDropdowns, 100);
+            });
+
+            // Xử lý import
+            document.getElementById('btn-download-template').addEventListener('click', function(e) {
+                e.preventDefault();
+                downloadTemplate();
+            });
+
+            document.getElementById('btn-huy-import').addEventListener('click', closeImportModal);
+            document.getElementById('btn-dong-import').addEventListener('click', closeImportModal);
+            document.getElementById('btn-luu-import').addEventListener('click', importExcel);
+
+            document.getElementById('btn-close-errors').addEventListener('click', closeImportErrorsModal);
+            document.getElementById('btn-dong-errors').addEventListener('click', closeImportErrorsModal);
+
+            // Đóng modal khi click outside
+            document.getElementById('modal-import').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeImportModal();
+                }
+            });
+
+            document.getElementById('modal-import-errors').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeImportErrorsModal();
+                }
             });
         }
 
@@ -1330,6 +1444,178 @@
             });
         }
 
+        // Biến lưu trữ loại đối tượng đang import
+        let currentImportObjectType = '';
+
+        // Hàm mở modal import
+        function openImportModal(objectType) {
+            currentImportObjectType = objectType;
+            
+            // Đặt tiêu đề và nội dung theo loại đối tượng
+            const modalTitle = document.getElementById('import-modal-title');
+            const notesTitle = document.getElementById('import-notes-title');
+            const notesList = document.getElementById('import-notes-list');
+            
+            let title = '';
+            let notes = [];
+            
+            switch(objectType) {
+                case 'class':
+                    title = 'Import Lớp học';
+                    notes = [
+                        'File Excel phải theo đúng định dạng mẫu',
+                        'Các cột bắt buộc: Mã lớp*, Tên lớp*, Mã chương trình*, Mã khóa học*',
+                        'Mã lớp không được trùng',
+                        'Mã chương trình và Mã khóa học phải tồn tại trong hệ thống'
+                    ];
+                    break;
+                case 'combined-class':
+                    title = 'Import Lớp học ghép';
+                    notes = [
+                        'File Excel phải theo đúng định dạng mẫu',
+                        'Các cột bắt buộc: Mã lớp ghép*, Tên lớp ghép*, Mã chương trình*, Mã các lớp thành phần*',
+                        'Mã lớp ghép không được trùng',
+                        'Mã chương trình và các mã lớp thành phần phải tồn tại trong hệ thống',
+                        'Các mã lớp thành phần phân cách bằng dấu phẩy'
+                    ];
+                    break;
+                case 'teaching-assignment':
+                    title = 'Import Phân công giảng dạy';
+                    notes = [
+                        'File Excel phải theo đúng định dạng mẫu',
+                        'Các cột bắt buộc: Mã giảng viên*, Mã môn học*, Mã lớp*, Loại lớp*, Năm học*, Học kỳ*',
+                        'Mã giảng viên, Mã môn học, Mã lớp phải tồn tại trong hệ thống',
+                        'Loại lớp phải là "Thường" hoặc "Ghép"',
+                        'Học kỳ phải là số từ 1 đến 12'
+                    ];
+                    break;
+            }
+            
+            modalTitle.textContent = title;
+            notesTitle.textContent = `Lưu ý khi import ${title.toLowerCase()}:`;
+            notesList.innerHTML = notes.map(note => `<li>${note}</li>`).join('');
+            
+            document.getElementById('modal-import').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        // Hàm đóng modal import
+        function closeImportModal() {
+            document.getElementById('modal-import').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+            document.getElementById('form-import').reset();
+        }
+
+        // Hàm tải template
+        function downloadTemplate() {
+            if (!currentImportObjectType) return;
+            
+            const url = `/import-teaching-data/${currentImportObjectType}/`;
+            window.open(url, '_blank');
+        }
+
+        // Hàm import Excel
+        function importExcel() {
+            const form = document.getElementById('form-import');
+            const formData = new FormData(form);
+            const fileInput = document.getElementById('excel-file');
+            
+            if (!fileInput.files.length) {
+                alert('Vui lòng chọn file Excel');
+                return;
+            }
+            
+            // Hiển thị loading
+            const importBtn = document.getElementById('btn-luu-import');
+            const originalText = importBtn.innerHTML;
+            importBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang xử lý...';
+            importBtn.disabled = true;
+            
+            fetch(`/import-teaching-data/${currentImportObjectType}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('✅ ' + data.message);
+                    closeImportModal();
+                    
+                    // Hiển thị chi tiết lỗi nếu có
+                    if (data.errors && data.errors.length > 0) {
+                        showImportErrors(data.errors);
+                    }
+                    
+                    // Reload dữ liệu theo tab hiện tại
+                    const activeTab = document.querySelector('.tab-panel.active');
+                    if (activeTab.id === 'classes-tab') {
+                        loadClassesData();
+                    } else if (activeTab.id === 'combined-classes-tab') {
+                        loadCombinedClassesData();
+                    } else if (activeTab.id === 'teaching-assignments-tab') {
+                        loadTeachingAssignmentsData();
+                    }
+                } else {
+                    alert('❌ Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Có lỗi xảy ra khi import file: ' + error.message);
+            })
+            .finally(() => {
+                // Khôi phục trạng thái nút
+                importBtn.innerHTML = originalText;
+                importBtn.disabled = false;
+            });
+        }
+
+        // Hàm hiển thị lỗi import
+        function showImportErrors(errors) {
+            const errorsContent = document.getElementById('import-errors-content');
+            if (errors && errors.length > 0) {
+                errorsContent.innerHTML = `
+                    <div class="mb-3 p-3 bg-red-50 border border-red-200 rounded">
+                        <h4 class="font-semibold text-red-800 mb-2">Có ${errors.length} lỗi cần xem xét:</h4>
+                    </div>
+                    <div class="space-y-2">
+                        ${errors.map(error => 
+                            `<div class="flex items-start text-red-700 py-2 border-b border-red-100">
+                                <i class="fas fa-exclamation-circle mt-1 mr-2 text-red-500 flex-shrink-0"></i>
+                                <span class="text-sm">${error}</span>
+                            </div>`
+                        ).join('')}
+                    </div>
+                `;
+            } else {
+                errorsContent.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
+                        <div class="text-green-600 font-semibold">Không có lỗi nào trong quá trình import</div>
+                    </div>
+                `;
+            }
+            openImportErrorsModal();
+        }
+
+        // Hàm mở/đóng modal lỗi
+        function openImportErrorsModal() {
+            document.getElementById('modal-import-errors').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeImportErrorsModal() {
+            document.getElementById('modal-import-errors').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
         // Hàm lấy CSRF token
         function getCookie(name) {
             let cookieValue = null;

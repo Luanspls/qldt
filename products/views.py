@@ -1425,3 +1425,541 @@ def api_create_combined_class(request):
         'status': 'error', 
         'message': 'Method not allowed'
     })
+
+# Thêm import cần thiết
+import pandas as pd
+import io
+from django.core.files.base import ContentFile
+
+class ImportTeachingDataView(View):
+    def get(self, request, object_type):
+        """Tải file Excel mẫu cho từng loại đối tượng"""
+        try:
+            if object_type == 'class':
+                sample_data = self.get_class_template()
+                filename = "mau_import_lop_hoc.xlsx"
+            elif object_type == 'combined-class':
+                sample_data = self.get_combined_class_template()
+                filename = "mau_import_lop_hoc_ghep.xlsx"
+            elif object_type == 'teaching-assignment':
+                sample_data = self.get_teaching_assignment_template()
+                filename = "mau_import_phan_cong_giang_day.xlsx"
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
+            
+            df = pd.DataFrame(sample_data)
+            
+            # Tạo file trong memory
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='Data')
+            
+            output.seek(0)
+            
+            # Trả về file để download
+            response = HttpResponse(
+                output.getvalue(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            response['Content-Length'] = len(output.getvalue())
+            
+            return response
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f"Lỗi tạo file mẫu: {str(e)}"})
+    
+    def post(self, request, object_type):
+        """Xử lý import file Excel"""
+        try:
+            if request.FILES.get('excel_file'):
+                excel_file = request.FILES['excel_file']
+                
+                # Kiểm tra định dạng file
+                if not excel_file.name.endswith(('.xlsx', '.xls')):
+                    return JsonResponse({'status': 'error', 'message': 'File phải có định dạng Excel (.xlsx hoặc .xls)'})
+                
+                # Kiểm tra kích thước file (tối đa 10MB)
+                if excel_file.size > 10 * 1024 * 1024:
+                    return JsonResponse({'status': 'error', 'message': 'File không được vượt quá 10MB'})
+                
+                try:
+                    # Đọc file Excel
+                    df = pd.read_excel(excel_file)
+                    print(f"File imported successfully, shape: {df.shape}")
+                    
+                except Exception as e:
+                    return JsonResponse({'status': 'error', 'message': f'Không thể đọc file Excel: {str(e)}'})
+                
+                # Xử lý dữ liệu theo loại đối tượng
+                if object_type == 'class':
+                    result = self.process_class_import(df, request.user, excel_file)
+                elif object_type == 'combined-class':
+                    result = self.process_combined_class_import(df, request.user, excel_file)
+                elif object_type == 'teaching-assignment':
+                    result = self.process_teaching_assignment_import(df, request.user, excel_file)
+                else:
+                    return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
+                
+                if result['status'] == 'success':
+                    return JsonResponse({
+                        'status': 'success', 
+                        'message': result['message'],
+                        'data': result.get('processed_data', []),
+                        'errors': result.get('errors', [])
+                    })
+                else:
+                    return JsonResponse({'status': 'error', 'message': result['message']})
+                    
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Không tìm thấy file'})
+                
+        except Exception as e:
+            print(f"Error in import: {str(e)}")
+            return JsonResponse({'status': 'error', 'message': f'Lỗi khi xử lý file: {str(e)}'})
+    
+    def get_class_template(self):
+        """Tạo template cho import lớp học"""
+        return {
+            'Mã lớp*': ['DHTI001', 'DHTI002', 'DHTI003'],
+            'Tên lớp*': ['Lớp Công nghệ Thông tin 001', 'Lớp Công nghệ Thông tin 002', 'Lớp Công nghệ Thông tin 003'],
+            'Mã chương trình*': ['CNTT_2023', 'CNTT_2023', 'CNTT_2023'],
+            'Mã khóa học*': ['K2023', 'K2023', 'K2023'],
+            'Ngày bắt đầu': ['2023-09-01', '2023-09-01', '2023-09-01'],
+            'Ngày kết thúc': ['2027-06-30', '2027-06-30', '2027-06-30'],
+            'Là lớp ghép': ['Không', 'Không', 'Có'],
+            'Mã lớp ghép (nếu có)': ['', '', 'GHÉP001'],
+            'Mô tả': ['', '', 'Lớp ghép cho các môn chung']
+        }
+    
+    def get_combined_class_template(self):
+        """Tạo template cho import lớp học ghép"""
+        return {
+            'Mã lớp ghép*': ['GHÉP001', 'GHÉP002'],
+            'Tên lớp ghép*': ['Lớp ghép Công nghệ Thông tin', 'Lớp ghép Kỹ thuật phần mềm'],
+            'Mã chương trình*': ['CNTT_2023', 'KTPM_2023'],
+            'Mã các lớp thành phần*': ['DHTI001,DHTI002', 'DHTI003,DHTI004'],
+            'Mô tả': ['Lớp ghép cho các môn đại cương', 'Lớp ghép cho các môn chuyên ngành']
+        }
+    
+    def get_teaching_assignment_template(self):
+        """Tạo template cho import phân công giảng dạy"""
+        return {
+            'Mã giảng viên*': ['GV001', 'GV002', 'GV001'],
+            'Mã môn học*': ['MH001', 'MH002', 'MH003'],
+            'Mã lớp*': ['DHTI001', 'DHTI002', 'GHÉP001'],
+            'Loại lớp*': ['Thường', 'Thường', 'Ghép'],
+            'Năm học*': ['2023-2024', '2023-2024', '2023-2024'],
+            'Học kỳ*': [1, 1, 2],
+            'Là giảng viên chính*': ['Có', 'Có', 'Không'],
+            'Số lượng sinh viên': [40, 35, 80],
+            'Số giờ giảng dạy': [45, 60, 30]
+        }
+    
+    def process_class_import(self, df, user, excel_file):
+        """Xử lý import lớp học"""
+        try:
+            created_count = 0
+            updated_count = 0
+            errors = []
+            processed_data = []
+            
+            # Kiểm tra cấu trúc file
+            required_columns = ['Mã lớp*', 'Tên lớp*', 'Mã chương trình*', 'Mã khóa học*']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                return {
+                    'status': 'error', 
+                    'message': f'File thiếu các cột bắt buộc: {", ".join(missing_columns)}'
+                }
+            
+            for index, row in df.iterrows():
+                try:
+                    # Bỏ qua các dòng trống
+                    if pd.isna(row.get('Mã lớp*')) or str(row.get('Mã lớp*')).strip() in ['', 'Mã lớp*', 'nan']:
+                        continue
+                    
+                    # Chuẩn hóa dữ liệu
+                    code = str(row.get('Mã lớp*')).strip()
+                    name = str(row.get('Tên lớp*')).strip()
+                    curriculum_code = str(row.get('Mã chương trình*')).strip()
+                    course_code = str(row.get('Mã khóa học*')).strip()
+                    
+                    if not code or not name or not curriculum_code or not course_code:
+                        errors.append(f"Dòng {index + 2}: Thiếu thông tin bắt buộc")
+                        continue
+                    
+                    # Tìm curriculum và course
+                    try:
+                        curriculum = Curriculum.objects.get(code=curriculum_code)
+                    except Curriculum.DoesNotExist:
+                        errors.append(f"Dòng {index + 2}: Không tìm thấy chương trình với mã '{curriculum_code}'")
+                        continue
+                    
+                    try:
+                        course = Course.objects.get(code=course_code)
+                    except Course.DoesNotExist:
+                        errors.append(f"Dòng {index + 2}: Không tìm thấy khóa học với mã '{course_code}'")
+                        continue
+                    
+                    # Xử lý ngày tháng
+                    start_date = None
+                    end_date = None
+                    
+                    start_date_str = str(row.get('Ngày bắt đầu', '')).strip()
+                    if start_date_str and start_date_str not in ['', 'nan']:
+                        try:
+                            start_date = pd.to_datetime(start_date_str).date()
+                        except:
+                            errors.append(f"Dòng {index + 2}: Định dạng ngày bắt đầu không hợp lệ: {start_date_str}")
+                    
+                    end_date_str = str(row.get('Ngày kết thúc', '')).strip()
+                    if end_date_str and end_date_str not in ['', 'nan']:
+                        try:
+                            end_date = pd.to_datetime(end_date_str).date()
+                        except:
+                            errors.append(f"Dòng {index + 2}: Định dạng ngày kết thúc không hợp lệ: {end_date_str}")
+                    
+                    # Xử lý lớp ghép
+                    is_combined_str = str(row.get('Là lớp ghép', 'Không')).strip()
+                    is_combined = is_combined_str.lower() in ['có', 'yes', 'true', '1']
+                    
+                    combined_class_code = str(row.get('Mã lớp ghép (nếu có)', '')).strip()
+                    if combined_class_code in ['', 'nan']:
+                        combined_class_code = None
+                    
+                    description = str(row.get('Mô tả', '')).strip()
+                    if description in ['', 'nan']:
+                        description = None
+                    
+                    # Tạo hoặc cập nhật lớp học
+                    class_obj, created = Class.objects.update_or_create(
+                        code=code,
+                        defaults={
+                            'name': name,
+                            'curriculum': curriculum,
+                            'course': course,
+                            'start_date': start_date,
+                            'end_date': end_date,
+                            'is_combined': is_combined,
+                            'combined_class_code': combined_class_code,
+                            'description': description
+                        }
+                    )
+                    
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+                    
+                    processed_data.append({
+                        'code': class_obj.code,
+                        'name': class_obj.name,
+                        'curriculum': curriculum.name,
+                        'course': course.name
+                    })
+                    
+                except Exception as e:
+                    errors.append(f"Dòng {index + 2}: {str(e)}")
+            
+            # Lưu lịch sử import
+            ImportHistory.objects.create(
+                file_name=excel_file.name,
+                file_size=excel_file.size,
+                imported_by=user,
+                record_count=len(processed_data),
+                status='success' if not errors else 'partial',
+                errors=errors if errors else None
+            )
+            
+            return {
+                'status': 'success',
+                'message': f'Import thành công: {created_count} lớp học được tạo, {updated_count} lớp học được cập nhật',
+                'created_count': created_count,
+                'updated_count': updated_count,
+                'processed_data': processed_data,
+                'errors': errors
+            }
+            
+        except Exception as e:
+            print(f"Error in process_class_import: {str(e)}")
+            return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}
+    
+    def process_combined_class_import(self, df, user, excel_file):
+        """Xử lý import lớp học ghép"""
+        try:
+            created_count = 0
+            updated_count = 0
+            errors = []
+            processed_data = []
+            
+            # Kiểm tra cấu trúc file
+            required_columns = ['Mã lớp ghép*', 'Tên lớp ghép*', 'Mã chương trình*', 'Mã các lớp thành phần*']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                return {
+                    'status': 'error', 
+                    'message': f'File thiếu các cột bắt buộc: {", ".join(missing_columns)}'
+                }
+            
+            for index, row in df.iterrows():
+                try:
+                    # Bỏ qua các dòng trống
+                    if pd.isna(row.get('Mã lớp ghép*')) or str(row.get('Mã lớp ghép*')).strip() in ['', 'Mã lớp ghép*', 'nan']:
+                        continue
+                    
+                    # Chuẩn hóa dữ liệu
+                    code = str(row.get('Mã lớp ghép*')).strip()
+                    name = str(row.get('Tên lớp ghép*')).strip()
+                    curriculum_code = str(row.get('Mã chương trình*')).strip()
+                    classes_codes_str = str(row.get('Mã các lớp thành phần*')).strip()
+                    
+                    if not code or not name or not curriculum_code or not classes_codes_str:
+                        errors.append(f"Dòng {index + 2}: Thiếu thông tin bắt buộc")
+                        continue
+                    
+                    # Tìm curriculum
+                    try:
+                        curriculum = Curriculum.objects.get(code=curriculum_code)
+                    except Curriculum.DoesNotExist:
+                        errors.append(f"Dòng {index + 2}: Không tìm thấy chương trình với mã '{curriculum_code}'")
+                        continue
+                    
+                    # Xử lý các lớp thành phần
+                    class_codes = [c.strip() for c in classes_codes_str.split(',')]
+                    classes = []
+                    for class_code in class_codes:
+                        try:
+                            class_obj = Class.objects.get(code=class_code)
+                            classes.append(class_obj)
+                        except Class.DoesNotExist:
+                            errors.append(f"Dòng {index + 2}: Không tìm thấy lớp với mã '{class_code}'")
+                    
+                    if not classes:
+                        errors.append(f"Dòng {index + 2}: Không có lớp thành phần hợp lệ")
+                        continue
+                    
+                    description = str(row.get('Mô tả', '')).strip()
+                    if description in ['', 'nan']:
+                        description = None
+                    
+                    # Tạo hoặc cập nhật lớp học ghép
+                    combined_class, created = CombinedClass.objects.update_or_create(
+                        code=code,
+                        defaults={
+                            'name': name,
+                            'curriculum': curriculum,
+                            'description': description
+                        }
+                    )
+                    
+                    # Cập nhật các lớp thành phần
+                    combined_class.classes.set(classes)
+                    
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+                    
+                    processed_data.append({
+                        'code': combined_class.code,
+                        'name': combined_class.name,
+                        'curriculum': curriculum.name,
+                        'classes_count': len(classes)
+                    })
+                    
+                except Exception as e:
+                    errors.append(f"Dòng {index + 2}: {str(e)}")
+            
+            # Lưu lịch sử import
+            ImportHistory.objects.create(
+                file_name=excel_file.name,
+                file_size=excel_file.size,
+                imported_by=user,
+                record_count=len(processed_data),
+                status='success' if not errors else 'partial',
+                errors=errors if errors else None
+            )
+            
+            return {
+                'status': 'success',
+                'message': f'Import thành công: {created_count} lớp ghép được tạo, {updated_count} lớp ghép được cập nhật',
+                'created_count': created_count,
+                'updated_count': updated_count,
+                'processed_data': processed_data,
+                'errors': errors
+            }
+            
+        except Exception as e:
+            print(f"Error in process_combined_class_import: {str(e)}")
+            return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}
+    
+    def process_teaching_assignment_import(self, df, user, excel_file):
+        """Xử lý import phân công giảng dạy"""
+        try:
+            created_count = 0
+            updated_count = 0
+            errors = []
+            processed_data = []
+            
+            # Kiểm tra cấu trúc file
+            required_columns = ['Mã giảng viên*', 'Mã môn học*', 'Mã lớp*', 'Loại lớp*', 'Năm học*', 'Học kỳ*']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                return {
+                    'status': 'error', 
+                    'message': f'File thiếu các cột bắt buộc: {", ".join(missing_columns)}'
+                }
+            
+            for index, row in df.iterrows():
+                try:
+                    # Bỏ qua các dòng trống
+                    if pd.isna(row.get('Mã giảng viên*')) or str(row.get('Mã giảng viên*')).strip() in ['', 'Mã giảng viên*', 'nan']:
+                        continue
+                    
+                    # Chuẩn hóa dữ liệu
+                    instructor_code = str(row.get('Mã giảng viên*')).strip()
+                    subject_code = str(row.get('Mã môn học*')).strip()
+                    class_code = str(row.get('Mã lớp*')).strip()
+                    class_type = str(row.get('Loại lớp*')).strip()
+                    academic_year = str(row.get('Năm học*')).strip()
+                    semester = str(row.get('Học kỳ*')).strip()
+                    
+                    if not instructor_code or not subject_code or not class_code or not class_type or not academic_year or not semester:
+                        errors.append(f"Dòng {index + 2}: Thiếu thông tin bắt buộc")
+                        continue
+                    
+                    # Tìm giảng viên
+                    try:
+                        instructor = Instructor.objects.get(code=instructor_code)
+                    except Instructor.DoesNotExist:
+                        errors.append(f"Dòng {index + 2}: Không tìm thấy giảng viên với mã '{instructor_code}'")
+                        continue
+                    
+                    # Tìm môn học (CurriculumSubject)
+                    try:
+                        curriculum_subject = CurriculumSubject.objects.get(
+                            subject__code=subject_code
+                        )
+                    except CurriculumSubject.DoesNotExist:
+                        errors.append(f"Dòng {index + 2}: Không tìm thấy môn học với mã '{subject_code}'")
+                        continue
+                    except CurriculumSubject.MultipleObjectsReturned:
+                        curriculum_subjects = CurriculumSubject.objects.filter(
+                            subject__code=subject_code
+                        )
+                        curriculum_subject = curriculum_subjects.first()
+                        errors.append(f"Dòng {index + 2}: Có nhiều môn học với mã '{subject_code}', sử dụng môn học đầu tiên")
+                    
+                    # Tìm lớp học
+                    class_obj = None
+                    combined_class = None
+                    
+                    if class_type.lower() in ['thường', 'regular', 'thuong']:
+                        try:
+                            class_obj = Class.objects.get(code=class_code)
+                        except Class.DoesNotExist:
+                            errors.append(f"Dòng {index + 2}: Không tìm thấy lớp thường với mã '{class_code}'")
+                            continue
+                    elif class_type.lower() in ['ghép', 'combined', 'ghep']:
+                        try:
+                            combined_class = CombinedClass.objects.get(code=class_code)
+                        except CombinedClass.DoesNotExist:
+                            errors.append(f"Dòng {index + 2}: Không tìm thấy lớp ghép với mã '{class_code}'")
+                            continue
+                    else:
+                        errors.append(f"Dòng {index + 2}: Loại lớp không hợp lệ: {class_type}. Phải là 'Thường' hoặc 'Ghép'")
+                        continue
+                    
+                    # Xử lý học kỳ
+                    try:
+                        semester = int(semester)
+                    except ValueError:
+                        errors.append(f"Dòng {index + 2}: Học kỳ phải là số: {semester}")
+                        continue
+                    
+                    # Xử lý giảng viên chính
+                    is_main_instructor_str = str(row.get('Là giảng viên chính*', 'Có')).strip()
+                    is_main_instructor = is_main_instructor_str.lower() in ['có', 'yes', 'true', '1']
+                    
+                    # Xử lý số lượng sinh viên và giờ giảng dạy
+                    student_count = 0
+                    teaching_hours = 0
+                    
+                    try:
+                        student_count = int(row.get('Số lượng sinh viên', 0))
+                    except (ValueError, TypeError):
+                        pass
+                    
+                    try:
+                        teaching_hours = int(row.get('Số giờ giảng dạy', 0))
+                    except (ValueError, TypeError):
+                        pass
+                    
+                    # Tạo hoặc cập nhật phân công giảng dạy
+                    if class_obj:
+                        # Phân công cho lớp thường
+                        teaching_assignment, created = TeachingAssignment.objects.update_or_create(
+                            instructor=instructor,
+                            curriculum_subject=curriculum_subject,
+                            class_obj=class_obj,
+                            academic_year=academic_year,
+                            semester=semester,
+                            defaults={
+                                'is_main_instructor': is_main_instructor,
+                                'student_count': student_count,
+                                'teaching_hours': teaching_hours
+                            }
+                        )
+                    else:
+                        # Phân công cho lớp ghép
+                        teaching_assignment, created = TeachingAssignment.objects.update_or_create(
+                            instructor=instructor,
+                            curriculum_subject=curriculum_subject,
+                            combined_class=combined_class,
+                            academic_year=academic_year,
+                            semester=semester,
+                            defaults={
+                                'is_main_instructor': is_main_instructor,
+                                'student_count': student_count,
+                                'teaching_hours': teaching_hours
+                            }
+                        )
+                    
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+                    
+                    processed_data.append({
+                        'instructor': instructor.full_name,
+                        'subject': curriculum_subject.subject.name,
+                        'class_code': class_code,
+                        'academic_year': academic_year,
+                        'semester': semester
+                    })
+                    
+                except Exception as e:
+                    errors.append(f"Dòng {index + 2}: {str(e)}")
+            
+            # Lưu lịch sử import
+            ImportHistory.objects.create(
+                file_name=excel_file.name,
+                file_size=excel_file.size,
+                imported_by=user,
+                record_count=len(processed_data),
+                status='success' if not errors else 'partial',
+                errors=errors if errors else None
+            )
+            
+            return {
+                'status': 'success',
+                'message': f'Import thành công: {created_count} phân công được tạo, {updated_count} phân công được cập nhật',
+                'created_count': created_count,
+                'updated_count': updated_count,
+                'processed_data': processed_data,
+                'errors': errors
+            }
+            
+        except Exception as e:
+            print(f"Error in process_teaching_assignment_import: {str(e)}")
+            return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}

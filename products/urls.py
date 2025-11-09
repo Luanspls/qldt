@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/subject-types/', views.api_subject_types, name='api_subject_types'),
     path('api/majors/', views.api_majors, name='api_majors'),
     path('api/curriculum/create/', views.create_curriculum, name='create_curriculum'),
+    path('import-teaching-data/<str:object_type>/', views.ImportTeachingDataView.as_view(), name='import_teaching_data'),
     
     # URL mới cho quản lý lớp học và phân công giảng dạy
     path('api/classes/', views.api_classes, name='api_classes'),
