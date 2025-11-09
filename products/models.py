@@ -473,6 +473,24 @@ class Class(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.name}"
+    
+    def clean(self):
+        """Validation logic"""
+        # Chuyển chuỗi rỗng thành None cho các trường có thể null
+        if self.start_date == '':
+            self.start_date = None
+        if self.end_date == '':
+            self.end_date = None
+        if self.combined_class_code == '':
+            self.combined_class_code = None
+            
+        # Kiểm tra ngày kết thúc phải sau ngày bắt đầu
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValidationError("Ngày kết thúc phải sau ngày bắt đầu")
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
 class CombinedClass(models.Model):
     """Lớp học ghép - quản lý các lớp học được ghép với nhau"""

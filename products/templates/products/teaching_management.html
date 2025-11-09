@@ -1106,13 +1106,47 @@
         function createLopHoc() {
             const form = document.getElementById('form-them-lop-hoc');
             const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
+            
+            // Chuẩn bị dữ liệu
+            const data = {
+                code: formData.get('code'),
+                name: formData.get('name'),
+                curriculum_id: formData.get('curriculum_id'),
+                course_id: formData.get('course_id'),
+                is_combined: formData.get('is_combined') === 'on',
+                description: formData.get('description')
+            };
+            
+            // Xử lý ngày tháng - chỉ thêm nếu có giá trị
+            const startDate = formData.get('start_date');
+            if (startDate) {
+                data.start_date = startDate;
+            }
+            
+            const endDate = formData.get('end_date');
+            if (endDate) {
+                data.end_date = endDate;
+            }
+            
+            // Xử lý mã lớp ghép - chỉ thêm nếu có giá trị và là lớp ghép
+            if (data.is_combined) {
+                const combinedClassCode = formData.get('combined_class_code');
+                if (combinedClassCode) {
+                    data.combined_class_code = combinedClassCode;
+                }
+            }
             
             // Validate
             if (!data.code || !data.name || !data.curriculum_id || !data.course_id) {
                 alert('Vui lòng điền đầy đủ các trường bắt buộc');
                 return;
             }
+
+            // Hiển thị loading
+            const saveBtn = document.getElementById('btn-luu-lop-hoc');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang tạo...';
+            saveBtn.disabled = true;
             
             // Gửi request tạo lớp học
             fetch('/api/classes/create/', {
@@ -1123,19 +1157,29 @@
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
-                    alert('Đã tạo lớp học thành công');
+                    alert('✅ Đã tạo lớp học thành công!');
                     closeThemLopHocModal();
                     loadClassesData();
                 } else {
-                    alert('Lỗi: ' + data.message);
+                    alert('❌ Lỗi: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Có lỗi xảy ra khi tạo lớp học');
+                alert('❌ Có lỗi xảy ra khi tạo lớp học: ' + error.message);
+            })
+            .finally(() => {
+                // Khôi phục trạng thái nút
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
             });
         }
 
@@ -1160,15 +1204,26 @@
                 code: formData.get('code'),
                 name: formData.get('name'),
                 curriculum_id: formData.get('curriculum_id'),
-                classes: Array.from(formData.getAll('classes')).map(id => parseInt(id)),
-                description: formData.get('description')
+                classes: Array.from(formData.getAll('classes')).map(id => parseInt(id))
             };
+
+            // Xử lý description - chỉ thêm nếu có giá trị
+            const description = formData.get('description');
+            if (description) {
+                data.description = description;
+            }
 
             // Validate
             if (!data.code || !data.name || !data.curriculum_id || data.classes.length === 0) {
                 alert('Vui lòng điền đầy đủ các trường bắt buộc');
                 return;
             }
+
+            // Hiển thị loading
+            const saveBtn = document.getElementById('btn-luu-lop-ghep');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang tạo...';
+            saveBtn.disabled = true;
 
             // Gửi request tạo lớp ghép
             fetch('/api/combined-classes/create/', {
@@ -1179,19 +1234,29 @@
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
-                    alert('Đã tạo lớp ghép thành công');
+                    alert('✅ Đã tạo lớp ghép thành công!');
                     closeThemLopGhepModal();
                     loadCombinedClassesData();
                 } else {
-                    alert('Lỗi: ' + data.message);
+                    alert('❌ Lỗi: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Có lỗi xảy ra khi tạo lớp ghép');
+                alert('❌ Có lỗi xảy ra khi tạo lớp ghép: ' + error.message);
+            })
+            .finally(() => {
+                // Khôi phục trạng thái nút
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
             });
         }
 

@@ -1301,16 +1301,35 @@ def api_create_class(request):
                         'message': f'Thiếu trường bắt buộc: {field}'
                     })
             
+            # Xử lý trường ngày tháng - chuyển chuỗi rỗng thành None
+            start_date = data.get('start_date')
+            if start_date == '':
+                start_date = None
+                
+            end_date = data.get('end_date')
+            if end_date == '':
+                end_date = None
+            
+            # Xử lý trường boolean
+            is_combined = data.get('is_combined', False)
+            if isinstance(is_combined, str):
+                is_combined = is_combined.lower() == 'true'
+            
+            # Xử lý combined_class_code - chuỗi rỗng thành None
+            combined_class_code = data.get('combined_class_code')
+            if combined_class_code == '':
+                combined_class_code = None
+            
             # Tạo lớp học
             class_obj = Class.objects.create(
                 code=data.get('code'),
                 name=data.get('name'),
                 curriculum_id=data.get('curriculum_id'),
                 course_id=data.get('course_id'),
-                start_date=data.get('start_date'),
-                end_date=data.get('end_date'),
-                is_combined=data.get('is_combined', False),
-                combined_class_code=data.get('combined_class_code'),
+                start_date=start_date,
+                end_date=end_date,
+                is_combined=is_combined,
+                combined_class_code=combined_class_code,
                 description=data.get('description')
             )
             
@@ -1373,12 +1392,17 @@ def api_create_combined_class(request):
                         'message': f'Thiếu trường bắt buộc: {field}'
                     })
             
+             # Xử lý description - chuỗi rỗng thành None
+            description = data.get('description')
+            if description == '':
+                description = None
+            
             # Tạo lớp học ghép
             combined_class = CombinedClass.objects.create(
                 code=data.get('code'),
                 name=data.get('name'),
                 curriculum_id=data.get('curriculum_id'),
-                description=data.get('description')
+                description=description
             )
             
             # Thêm các lớp thành phần
