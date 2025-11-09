@@ -1,11 +1,14 @@
 from django.http import JsonResponse, HttpResponse
+from django.db.models import Count, Sum, F, Q, Case, When, IntegerField
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.shortcuts import render, get_object_or_404
 from django.core.serializers import serialize
 from django.views import View
-from .models import Department, SubjectGroup, Curriculum, Course, Subject, CurriculumSubject, SubjectType, SemesterAllocation, Major, ImportHistory
-from django.db.models import Q
+from .models import (
+    Department, SubjectGroup, Curriculum, Course, Subject, CurriculumSubject, SubjectType, 
+    SemesterAllocation, Major, ImportHistory, Class, CombinedClass, TeachingAssignment, Instructor
+)
 import pandas as pd
 from django.core.files.storage import default_storage
 import os
@@ -972,3 +975,305 @@ def create_curriculum(request):
             return JsonResponse({'status': 'error', 'message': str(e)})
     
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'})
+
+@csrf_exempt
+def api_classes(request):
+    """API lấy danh sách lớp học"""
+    curriculum_id = request.GET.get('curriculum_id')
+    course_id = request.GET.get('course_id')
+    is_combined = request.GET.get('is_combined')
+    
+    classes = Class.objects.select_related('curriculum', 'course')
+    
+    if curriculum_id:
+        classes = classes.filter(curriculum_id=curriculum_id)
+    if course_id:
+        classes = classes.filter(course_id=course_id)
+    if is_combined:
+        classes = classes.filter(is_combined=(is_combined.lower() == 'true'))
+    
+    class_data = list(classes.values('id', 'code', 'name', 'curriculum_id', 'course_id', 'is_combined'))
+    return JsonResponse(class_data, safe=False)
+
+@csrf_exempt
+def api_combined_classes(request):
+    """API lấy danh sách lớp học ghép"""
+    curriculum_id = request.GET.get('curriculum_id')
+    
+    combined_classes = CombinedClass.objects.select_related('curriculum').prefetch_related('classes')
+    
+    if curriculum_id:
+        combined_classes = combined_classes.filter(curriculum_id=curriculum_id)
+    
+    combined_class_data = []
+    for cc in combined_classes:
+        combined_class_data.append({
+            'id': cc.id,
+            'code': cc.code,
+            'name': cc.name,
+            'curriculum_id': cc.curriculum_id,
+            'classes_count': cc.classes.count(),
+            'class_codes': [c.code for c in cc.classes.all()]
+        })
+    
+    return JsonResponse(combined_class_data, safe=False)
+
+@csrf_exempt
+def api_teaching_assignments(request):
+    """API lấy danh sách phân công giảng dạy với thông tin lớp học"""
+    instructor_id = request.GET.get('instructor_id')
+    curriculum_id = request.GET.get('curriculum_id')
+    department_id = request.GET.get('department_id')
+    class_id = request.GET.get('class_id')
+    combined_class_id = request.GET.get('combined_class_id')
+    academic_year = request.GET.get('academic_year')
+    semester = request.GET.get('semester')
+    
+    teaching_assignments = TeachingAssignment.objects.select_related(
+        'instructor', 
+        'curriculum_subject__subject',
+        'curriculum_subject__curriculum',
+        'class_obj',
+        'combined_class'
+    )
+    
+    if instructor_id:
+        teaching_assignments = teaching_assignments.filter(instructor_id=instructor_id)
+    if curriculum_id:
+        teaching_assignments = teaching_assignments.filter(curriculum_subject__curriculum_id=curriculum_id)
+    if department_id:
+        teaching_assignments = teaching_assignments.filter(
+            Q(instructor__department_id=department_id) |
+            Q(curriculum_subject__subject__department_id=department_id)
+        )
+    if class_id:
+        teaching_assignments = teaching_assignments.filter(class_obj_id=class_id)
+    if combined_class_id:
+        teaching_assignments = teaching_assignments.filter(combined_class_id=combined_class_id)
+    if academic_year:
+        teaching_assignments = teaching_assignments.filter(academic_year=academic_year)
+    if semester:
+        teaching_assignments = teaching_assignments.filter(semester=semester)
+    
+    assignments_data = []
+    for assignment in teaching_assignments:
+        assignment_data = {
+            'id': assignment.id,
+            'instructor_id': assignment.instructor.id,
+            'instructor_name': assignment.instructor.full_name,
+            'instructor_code': assignment.instructor.code,
+            'subject_id': assignment.curriculum_subject.subject.id,
+            'subject_code': assignment.curriculum_subject.subject.code,
+            'subject_name': assignment.curriculum_subject.subject.name,
+            'curriculum_id': assignment.curriculum_subject.curriculum.id,
+            'curriculum_name': assignment.curriculum_subject.curriculum.name,
+            'academic_year': assignment.academic_year,
+            'semester': assignment.semester,
+            'is_main_instructor': assignment.is_main_instructor,
+            'student_count': assignment.student_count,
+            'teaching_hours': assignment.teaching_hours,
+            'class_type': assignment.class_type,
+            'class_name': assignment.class_name,
+            'class_code': assignment.class_code,
+        }
+        
+        # Thêm thông tin lớp học cụ thể
+        if assignment.class_obj:
+            assignment_data['class_id'] = assignment.class_obj.id
+            assignment_data['class_is_combined'] = assignment.class_obj.is_combined
+        elif assignment.combined_class:
+            assignment_data['combined_class_id'] = assignment.combined_class.id
+        
+        assignments_data.append(assignment_data)
+    
+    return JsonResponse(assignments_data, safe=False)
+
+@csrf_exempt
+def api_teaching_statistics(request):
+    """API thống kê phân công giảng dạy"""
+    # Thống kê theo giảng viên
+    instructor_stats = TeachingAssignment.objects.values(
+        'instructor__id', 
+        'instructor__full_name',
+        'instructor__code'
+    ).annotate(
+        total_assignments=Count('id'),
+        total_students=Sum('student_count'),
+        total_hours=Sum('teaching_hours'),
+        subject_count=Count('curriculum_subject__subject', distinct=True),
+        regular_class_count=Count(
+            Case(
+                When(class_obj__isnull=False, then=1),
+                output_field=IntegerField(),
+            ),
+            distinct=True
+        ),
+        # Đếm lớp học ghép
+        combined_class_count=Count(
+            Case(
+                When(combined_class__isnull=False, then=1),
+                output_field=IntegerField(),
+            ),
+            distinct=True
+        )
+    ).annotate(
+        class_count=F('regular_class_count') + F('combined_class_count')
+    )
+    
+    # Thống kê theo chương trình đào tạo
+    curriculum_stats = TeachingAssignment.objects.values(
+        'curriculum_subject__curriculum__id',
+        'curriculum_subject__curriculum__name',
+        'curriculum_subject__curriculum__code'
+    ).annotate(
+        total_assignments=Count('id'),
+        total_instructors=Count('instructor', distinct=True),
+        total_subjects=Count('curriculum_subject__subject', distinct=True)
+    )
+    
+    # Thống kê theo đơn vị
+    department_stats = TeachingAssignment.objects.values(
+        'instructor__department__id',
+        'instructor__department__name',
+        'instructor__department__code'
+    ).annotate(
+        total_assignments=Count('id'),
+        total_instructors=Count('instructor', distinct=True),
+        total_hours=Sum('teaching_hours')
+    )
+    
+    return JsonResponse({
+        'instructor_statistics': list(instructor_stats),
+        'curriculum_statistics': list(curriculum_stats),
+        'department_statistics': list(department_stats)
+    })
+
+@csrf_exempt
+def api_create_teaching_assignment(request):
+    """API tạo phân công giảng dạy mới"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Kiểm tra các trường bắt buộc
+            required_fields = ['curriculum_subject_id', 'instructor_id', 'academic_year', 'semester']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': f'Thiếu trường bắt buộc: {field}'
+                    })
+            
+            # Kiểm tra xem có class_obj hay combined_class
+            if not data.get('class_obj_id') and not data.get('combined_class_id'):
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Phải chọn lớp học thường hoặc lớp học ghép'
+                })
+            
+            # Tạo phân công giảng dạy
+            teaching_assignment = TeachingAssignment.objects.create(
+                curriculum_subject_id=data['curriculum_subject_id'],
+                instructor_id=data['instructor_id'],
+                class_obj_id=data.get('class_obj_id'),
+                combined_class_id=data.get('combined_class_id'),
+                academic_year=data['academic_year'],
+                semester=data['semester'],
+                is_main_instructor=data.get('is_main_instructor', True),
+                student_count=data.get('student_count', 0),
+                teaching_hours=data.get('teaching_hours', 0)
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã tạo phân công giảng dạy thành công',
+                'id': teaching_assignment.id
+            })
+            
+        except Exception as e:
+            print(f"Error creating teaching assignment: {str(e)}")
+            return JsonResponse({
+                'status': 'error', 
+                'message': f'Lỗi khi tạo phân công giảng dạy: {str(e)}'
+            })
+    
+    return JsonResponse({
+        'status': 'error', 
+        'message': 'Method not allowed'
+    })
+
+class TeachingManagementView(View):
+    """View quản lý phân công giảng dạy"""
+    template_name = 'products/teaching_management.html'
+    
+    def get(self, request):
+        # Lấy dữ liệu cho các dropdown
+        instructors = Instructor.objects.all().values('id', 'code', 'full_name', 'department__name')
+        curricula = Curriculum.objects.all().values('id', 'code', 'name', 'academic_year')
+        departments = Department.objects.all().values('id', 'code', 'name')
+        courses = Course.objects.all().values('id', 'code', 'name')
+        subject_types = SubjectType.objects.all().values('id', 'code', 'name')
+        majors = Major.objects.all().values('id', 'code', 'name')
+        
+        context = {
+            'instructors': list(instructors),
+            'curricula': list(curricula),
+            'departments': list(departments),
+            'courses': list(courses),
+            'subject_types': list(subject_types),
+            'majors': list(majors),
+        }
+        
+        return render(request, self.template_name, context)
+
+@csrf_exempt
+def api_instructors(request):
+    """API lấy danh sách giảng viên"""
+    instructors = Instructor.objects.all().values('id', 'code', 'full_name', 'department__name')
+    return JsonResponse(list(instructors), safe=False)
+
+@csrf_exempt
+def api_create_class(request):
+    """API tạo lớp học mới"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Kiểm tra các trường bắt buộc
+            required_fields = ['code', 'name', 'curriculum_id', 'course_id']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': f'Thiếu trường bắt buộc: {field}'
+                    })
+            
+            # Tạo lớp học
+            class_obj = Class.objects.create(
+                code=data.get('code'),
+                name=data.get('name'),
+                curriculum_id=data.get('curriculum_id'),
+                course_id=data.get('course_id'),
+                start_date=data.get('start_date'),
+                end_date=data.get('end_date'),
+                is_combined=data.get('is_combined', False),
+                combined_class_code=data.get('combined_class_code'),
+                description=data.get('description')
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã tạo lớp học thành công',
+                'id': class_obj.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error', 
+                'message': f'Lỗi khi tạo lớp học: {str(e)}'
+            })
+    
+    return JsonResponse({
+        'status': 'error', 
+        'message': 'Method not allowed'
+    })

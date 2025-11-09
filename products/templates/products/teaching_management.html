@@ -1,0 +1,836 @@
+<!-- products/teaching_management.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Phân công Giảng dạy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .tab-button.active {
+            border-bottom-color: #3b82f6;
+            color: #2563eb;
+        }
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+        .editable:focus {
+            outline: 2px solid #3b82f6;
+            background-color: #f0f9ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8 text-blue-800">QUẢN LÝ LỚP HỌC VÀ PHÂN CÔNG GIẢNG DẠY</h1>
+        
+        <!-- Tab navigation -->
+        <div class="mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button id="tab-classes" class="tab-button py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600 active">
+                        Lớp học
+                    </button>
+                    <button id="tab-combined-classes" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        Lớp học ghép
+                    </button>
+                    <button id="tab-teaching-assignments" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        Phân công giảng dạy
+                    </button>
+                    <button id="tab-statistics" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        Thống kê
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Tab content -->
+        <div id="tab-content">
+            <!-- Lớp học -->
+            <div id="classes-tab" class="tab-panel active">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Quản lý lớp học</h3>
+                    <button id="btn-them-lop-hoc" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Thêm lớp học
+                    </button>
+                </div>
+                
+                <!-- Bộ lọc lớp học -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Chương trình</label>
+                        <select id="filter-class-curriculum" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả chương trình</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Khóa học</label>
+                        <select id="filter-class-course" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả khóa học</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Loại lớp</label>
+                        <select id="filter-class-type" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả</option>
+                            <option value="false">Lớp thường</option>
+                            <option value="true">Lớp ghép</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="btn-filter-classes" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md w-full">
+                            Lọc
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã lớp</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên lớp</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chương trình</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khóa học</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày bắt đầu</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classes-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Lớp học ghép -->
+            <div id="combined-classes-tab" class="tab-panel hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Quản lý lớp học ghép</h3>
+                    <button id="btn-them-lop-ghep" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Thêm lớp ghép
+                    </button>
+                </div>
+                
+                <!-- Bộ lọc lớp ghép -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Chương trình</label>
+                        <select id="filter-combined-curriculum" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả chương trình</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="btn-filter-combined" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md w-full">
+                            Lọc
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã lớp ghép</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên lớp ghép</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chương trình</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lớp ghép</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Các lớp thành phần</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="combined-classes-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Phân công giảng dạy -->
+            <div id="teaching-assignments-tab" class="tab-panel hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Phân công giảng dạy</h3>
+                    <button id="btn-them-phan-cong" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Thêm phân công
+                    </button>
+                </div>
+                
+                <!-- Bộ lọc -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Giảng viên</label>
+                        <select id="filter-instructor" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả giảng viên</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Chương trình</label>
+                        <select id="filter-curriculum" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả chương trình</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Loại lớp</label>
+                        <select id="filter-class-type-assignment" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả</option>
+                            <option value="regular">Lớp thường</option>
+                            <option value="combined">Lớp ghép</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Năm học</label>
+                        <input type="text" id="filter-academic-year" class="w-full p-2 border border-gray-300 rounded-md" placeholder="VD: 2023-2024">
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giảng viên</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Môn học</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lớp học</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Năm học</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HK</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số SV</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giờ dạy</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teaching-assignments-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Thống kê -->
+            <div id="statistics-tab" class="tab-panel hidden">
+                <h3 class="text-lg font-semibold mb-4">Thống kê phân công giảng dạy</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-2">Theo giảng viên</h4>
+                        <div id="instructor-stats" class="space-y-2 max-h-80 overflow-y-auto">
+                            <!-- Thống kê sẽ được thêm bằng JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <h4 class="text-lg font-semibold text-green-800 mb-2">Theo chương trình</h4>
+                        <div id="curriculum-stats" class="space-y-2 max-h-80 overflow-y-auto">
+                            <!-- Thống kê sẽ được thêm bằng JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <h4 class="text-lg font-semibold text-purple-800 mb-2">Theo đơn vị</h4>
+                        <div id="department-stats" class="space-y-2 max-h-80 overflow-y-auto">
+                            <!-- Thống kê sẽ được thêm bằng JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal thêm lớp học -->
+    <div id="modal-them-lop-hoc" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Thêm lớp học mới</h3>
+                <button type="button" id="btn-dong-lop-hoc" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="form-them-lop-hoc" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Mã lớp *</label>
+                        <input type="text" name="code" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Vd: DHTI001"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Tên lớp *</label>
+                        <input type="text" name="name" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Vd: Lớp Công nghệ Thông tin 001"
+                            required>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Chương trình đào tạo *</label>
+                        <select name="curriculum_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                required>
+                            <option value="">-- Chọn chương trình --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Khóa học *</label>
+                        <select name="course_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                required>
+                            <option value="">-- Chọn khóa học --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Ngày bắt đầu</label>
+                        <input type="date" name="start_date" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Ngày kết thúc</label>
+                        <input type="date" name="end_date" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_combined" id="is_combined" 
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="is_combined" class="ml-2 block text-sm text-gray-700 font-medium">
+                        Là lớp ghép
+                    </label>
+                </div>
+                
+                <div id="combined-class-fields" class="hidden">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Mã lớp ghép</label>
+                    <input type="text" name="combined_class_code" 
+                        class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                        placeholder="Vd: GHÉP001">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Mô tả</label>
+                    <textarea name="description" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            rows="3"
+                            placeholder="Nhập mô tả về lớp học..."></textarea>
+                </div>
+            </form>
+            
+            <div class="flex justify-end mt-6 space-x-3">
+                <button type="button" id="btn-huy-lop-hoc" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2.5 px-6 rounded-md">
+                    <i class="fas fa-times mr-2"></i>Hủy
+                </button>
+                <button type="button" id="btn-luu-lop-hoc" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-md">
+                    <i class="fas fa-save mr-2"></i>Lưu lớp học
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Biến toàn cục lưu trữ dữ liệu
+        let allInstructors = [];
+        let allCurricula = [];
+        let allDepartments = [];
+        let allCourses = [];
+        let allClasses = [];
+        let allCombinedClasses = [];
+
+        // Khởi tạo khi trang tải xong
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInitialData();
+            setupEventListeners();
+            loadClassesData();
+        });
+
+        // Tải dữ liệu ban đầu
+        function loadInitialData() {
+            // Tải danh sách giảng viên
+            fetch('/api/instructors/')
+                .then(response => response.json())
+                .then(data => {
+                    allInstructors = data;
+                    populateDropdown('filter-instructor', data, 'full_name');
+                });
+
+            // Tải danh sách chương trình
+            fetch('/api/curricula/')
+                .then(response => response.json())
+                .then(data => {
+                    allCurricula = data;
+                    populateDropdown('filter-class-curriculum', data, 'name');
+                    populateDropdown('filter-combined-curriculum', data, 'name');
+                    populateDropdown('filter-curriculum', data, 'name');
+                });
+
+            // Tải danh sách khóa học
+            fetch('/api/courses/')
+                .then(response => response.json())
+                .then(data => {
+                    allCourses = data;
+                    populateDropdown('filter-class-course', data, 'name');
+                });
+        }
+
+        // Thiết lập event listeners
+        function setupEventListeners() {
+            // Xử lý tab navigation
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabPanels = document.querySelectorAll('.tab-panel');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetTab = this.id.replace('tab-', '') + '-tab';
+                    
+                    // Ẩn tất cả tab panels
+                    tabPanels.forEach(panel => {
+                        panel.classList.add('hidden');
+                        panel.classList.remove('active');
+                    });
+                    
+                    // Hiển thị tab panel được chọn
+                    document.getElementById(targetTab).classList.remove('hidden');
+                    document.getElementById(targetTab).classList.add('active');
+                    
+                    // Cập nhật trạng thái tab buttons
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-blue-500', 'text-blue-600');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    this.classList.add('border-blue-500', 'text-blue-600');
+                    this.classList.remove('border-transparent', 'text-gray-500');
+                    
+                    // Load dữ liệu cho tab được chọn
+                    loadTabData(targetTab);
+                });
+            });
+
+            // Xử lý modal lớp học
+            document.getElementById('btn-them-lop-hoc').addEventListener('click', openThemLopHocModal);
+            document.getElementById('btn-dong-lop-hoc').addEventListener('click', closeThemLopHocModal);
+            document.getElementById('btn-huy-lop-hoc').addEventListener('click', closeThemLopHocModal);
+            document.getElementById('btn-luu-lop-hoc').addEventListener('click', createLopHoc);
+
+            // Xử lý checkbox lớp ghép
+            document.getElementById('is_combined').addEventListener('change', function() {
+                const combinedFields = document.getElementById('combined-class-fields');
+                if (this.checked) {
+                    combinedFields.classList.remove('hidden');
+                } else {
+                    combinedFields.classList.add('hidden');
+                }
+            });
+
+            // Xử lý bộ lọc
+            document.getElementById('btn-filter-classes').addEventListener('click', loadClassesData);
+            document.getElementById('btn-filter-combined').addEventListener('click', loadCombinedClassesData);
+
+            // Xử lý bộ lọc phân công giảng dạy
+            document.getElementById('filter-instructor').addEventListener('change', loadTeachingAssignmentsData);
+            document.getElementById('filter-curriculum').addEventListener('change', loadTeachingAssignmentsData);
+            document.getElementById('filter-class-type-assignment').addEventListener('change', loadTeachingAssignmentsData);
+            document.getElementById('filter-academic-year').addEventListener('input', loadTeachingAssignmentsData);
+        }
+
+        // Load dữ liệu cho tab
+        function loadTabData(tabId) {
+            switch(tabId) {
+                case 'classes-tab':
+                    loadClassesData();
+                    break;
+                case 'combined-classes-tab':
+                    loadCombinedClassesData();
+                    break;
+                case 'teaching-assignments-tab':
+                    loadTeachingAssignmentsData();
+                    break;
+                case 'statistics-tab':
+                    loadStatisticsData();
+                    break;
+            }
+        }
+
+        // Các hàm xử lý dữ liệu (giữ nguyên từ code trước)
+        function populateDropdown(elementId, data, displayField) {
+            const dropdown = document.getElementById(elementId);
+            if (!dropdown) return;
+            
+            // Giữ option đầu tiên nếu có
+            const firstOption = dropdown.options[0];
+            dropdown.innerHTML = '';
+            if (firstOption) {
+                dropdown.appendChild(firstOption);
+            }
+            
+            data.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item[displayField];
+                if (item.academic_year) {
+                    option.textContent += ` (${item.academic_year})`;
+                }
+                dropdown.appendChild(option);
+            });
+        }
+
+        function loadClassesData() {
+            const curriculumId = document.getElementById('filter-class-curriculum').value;
+            const courseId = document.getElementById('filter-class-course').value;
+            const isCombined = document.getElementById('filter-class-type').value;
+            
+            let url = '/api/classes/?';
+            const params = [];
+            
+            if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
+            if (courseId) params.push(`course_id=${courseId}`);
+            if (isCombined) params.push(`is_combined=${isCombined}`);
+            
+            url += params.join('&');
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('classes-table-body');
+                    tbody.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                    Không có dữ liệu lớp học
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    data.forEach(classItem => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${classItem.code}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${classItem.name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getCurriculumName(classItem.curriculum_id)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getCourseName(classItem.course_id)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${classItem.is_combined ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
+                                    ${classItem.is_combined ? 'Lớp ghép' : 'Lớp thường'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${classItem.start_date || 'Chưa có'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="editClass(${classItem.id})">Sửa</button>
+                                <button class="text-red-600 hover:text-red-900" onclick="deleteClass(${classItem.id})">Xóa</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error loading classes:', error));
+        }
+
+        function loadCombinedClassesData() {
+            const curriculumId = document.getElementById('filter-combined-curriculum').value;
+            
+            let url = '/api/combined-classes/';
+            if (curriculumId) {
+                url += `?curriculum_id=${curriculumId}`;
+            }
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('combined-classes-table-body');
+                    tbody.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                                    Không có dữ liệu lớp học ghép
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    data.forEach(combinedClass => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${combinedClass.code}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${combinedClass.name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getCurriculumName(combinedClass.curriculum_id)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${combinedClass.classes_count} lớp</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                ${combinedClass.class_codes ? combinedClass.class_codes.join(', ') : 'Không có'}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="editCombinedClass(${combinedClass.id})">Sửa</button>
+                                <button class="text-red-600 hover:text-red-900" onclick="deleteCombinedClass(${combinedClass.id})">Xóa</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error loading combined classes:', error));
+        }
+
+        function loadTeachingAssignmentsData() {
+            const instructorFilter = document.getElementById('filter-instructor').value;
+            const curriculumFilter = document.getElementById('filter-curriculum').value;
+            const classTypeFilter = document.getElementById('filter-class-type-assignment').value;
+            const academicYearFilter = document.getElementById('filter-academic-year').value;
+            
+            let url = '/api/teaching-assignments/?';
+            const params = [];
+            
+            if (instructorFilter) params.push(`instructor_id=${instructorFilter}`);
+            if (curriculumFilter) params.push(`curriculum_id=${curriculumFilter}`);
+            if (classTypeFilter) params.push(`class_type=${classTypeFilter}`);
+            if (academicYearFilter) params.push(`academic_year=${academicYearFilter}`);
+            
+            url += params.join('&');
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('teaching-assignments-table-body');
+                    tbody.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="9" class="px-6 py-4 text-center text-gray-500">
+                                    Không có dữ liệu phân công giảng dạy
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    data.forEach(assignment => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">${assignment.instructor_name}</div>
+                                <div class="text-sm text-gray-500">${assignment.instructor_code}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">${assignment.subject_code}</div>
+                                <div class="text-sm text-gray-500">${assignment.subject_name}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">${assignment.class_code}</div>
+                                <div class="text-sm text-gray-500">${assignment.class_type === 'combined' ? '(Ghép)' : '(Thường)'}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.academic_year}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.semester}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${assignment.is_main_instructor ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
+                                    ${assignment.is_main_instructor ? 'Chính' : 'Phụ'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.student_count}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.teaching_hours}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="editTeachingAssignment(${assignment.id})">Sửa</button>
+                                <button class="text-red-600 hover:text-red-900" onclick="deleteTeachingAssignment(${assignment.id})">Xóa</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error loading teaching assignments:', error));
+        }
+
+        function loadStatisticsData() {
+            fetch('/api/teaching-statistics/')
+                .then(response => response.json())
+                .then(data => {
+                    // Hiển thị thống kê theo giảng viên
+                    const instructorStats = document.getElementById('instructor-stats');
+                    instructorStats.innerHTML = '';
+                    
+                    if (data.instructor_statistics.length === 0) {
+                        instructorStats.innerHTML = '<p class="text-gray-500">Không có dữ liệu</p>';
+                    } else {
+                        data.instructor_statistics.forEach(stat => {
+                            const statItem = document.createElement('div');
+                            statItem.className = 'bg-white p-3 rounded border mb-2';
+                            statItem.innerHTML = `
+                                <div class="font-medium text-gray-900">${stat.instructor__full_name}</div>
+                                <div class="text-sm text-gray-600 mt-1">
+                                    <div>Phân công: ${stat.total_assignments}</div>
+                                    <div>Số giờ: ${stat.total_hours || 0}</div>
+                                    <div>Số lớp: ${stat.class_count || 0}</div>
+                                    <div>Số môn: ${stat.subject_count}</div>
+                                </div>
+                            `;
+                            instructorStats.appendChild(statItem);
+                        });
+                    }
+                    
+                    // Hiển thị thống kê theo chương trình
+                    const curriculumStats = document.getElementById('curriculum-stats');
+                    curriculumStats.innerHTML = '';
+                    
+                    if (data.curriculum_statistics.length === 0) {
+                        curriculumStats.innerHTML = '<p class="text-gray-500">Không có dữ liệu</p>';
+                    } else {
+                        data.curriculum_statistics.forEach(stat => {
+                            const statItem = document.createElement('div');
+                            statItem.className = 'bg-white p-3 rounded border mb-2';
+                            statItem.innerHTML = `
+                                <div class="font-medium text-gray-900">${stat.curriculum_subject__curriculum__name}</div>
+                                <div class="text-sm text-gray-600 mt-1">
+                                    <div>Phân công: ${stat.total_assignments}</div>
+                                    <div>Giảng viên: ${stat.total_instructors}</div>
+                                    <div>Môn học: ${stat.total_subjects}</div>
+                                </div>
+                            `;
+                            curriculumStats.appendChild(statItem);
+                        });
+                    }
+                    
+                    // Hiển thị thống kê theo đơn vị
+                    const departmentStats = document.getElementById('department-stats');
+                    departmentStats.innerHTML = '';
+                    
+                    if (data.department_statistics.length === 0) {
+                        departmentStats.innerHTML = '<p class="text-gray-500">Không có dữ liệu</p>';
+                    } else {
+                        data.department_statistics.forEach(stat => {
+                            const statItem = document.createElement('div');
+                            statItem.className = 'bg-white p-3 rounded border mb-2';
+                            statItem.innerHTML = `
+                                <div class="font-medium text-gray-900">${stat.instructor__department__name}</div>
+                                <div class="text-sm text-gray-600 mt-1">
+                                    <div>Phân công: ${stat.total_assignments}</div>
+                                    <div>Giảng viên: ${stat.total_instructors}</div>
+                                    <div>Số giờ: ${stat.total_hours || 0}</div>
+                                </div>
+                            `;
+                            departmentStats.appendChild(statItem);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error loading statistics:', error));
+        }
+
+        // Hàm hỗ trợ
+        function getCurriculumName(curriculumId) {
+            const curriculum = allCurricula.find(c => c.id == curriculumId);
+            return curriculum ? curriculum.name : 'N/A';
+        }
+        
+        function getCourseName(courseId) {
+            const course = allCourses.find(c => c.id == courseId);
+            return course ? course.name : 'N/A';
+        }
+
+        // Modal functions
+        function openThemLopHocModal() {
+            document.getElementById('modal-them-lop-hoc').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeThemLopHocModal() {
+            document.getElementById('modal-them-lop-hoc').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+            document.getElementById('form-them-lop-hoc').reset();
+        }
+
+        function createLopHoc() {
+            const form = document.getElementById('form-them-lop-hoc');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            
+            // Validate
+            if (!data.code || !data.name || !data.curriculum_id || !data.course_id) {
+                alert('Vui lòng điền đầy đủ các trường bắt buộc');
+                return;
+            }
+            
+            // Gửi request tạo lớp học
+            fetch('/api/classes/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Đã tạo lớp học thành công');
+                    closeThemLopHocModal();
+                    loadClassesData();
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi tạo lớp học');
+            });
+        }
+
+        // Hàm lấy CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Placeholder functions cho các chức năng chưa triển khai
+        function editClass(id) {
+            alert('Chức năng sửa lớp học đang được phát triển. ID: ' + id);
+        }
+
+        function deleteClass(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
+                alert('Chức năng xóa lớp học đang được phát triển. ID: ' + id);
+            }
+        }
+
+        function editCombinedClass(id) {
+            alert('Chức năng sửa lớp ghép đang được phát triển. ID: ' + id);
+        }
+
+        function deleteCombinedClass(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa lớp ghép này?')) {
+                alert('Chức năng xóa lớp ghép đang được phát triển. ID: ' + id);
+            }
+        }
+
+        function editTeachingAssignment(id) {
+            alert('Chức năng sửa phân công đang được phát triển. ID: ' + id);
+        }
+
+        function deleteTeachingAssignment(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa phân công giảng dạy này?')) {
+                alert('Chức năng xóa phân công đang được phát triển. ID: ' + id);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -331,7 +331,6 @@ class CurriculumSubject(models.Model):
 def update_curriculum_credits(sender, instance, **kwargs):
     """Cập nhật tổng số tín chỉ của chương trình khi môn học thay đổi"""
     curriculum = instance.curriculum
-    # curriculum.update_totals()
 
 class SemesterAllocation(models.Model):
     curriculum_subject = models.ForeignKey(
@@ -399,41 +398,6 @@ class Instructor(models.Model):
         return f"{self.code} - {self.full_name}"
 
 
-class TeachingAssignment(models.Model):
-    curriculum_subject = models.ForeignKey(
-        CurriculumSubject, 
-        on_delete=models.CASCADE, 
-        related_name='teaching_assignments',
-        verbose_name="Môn học trong chương trình",
-        db_column="subject_id"
-    )
-    instructor = models.ForeignKey(
-        Instructor, 
-        on_delete=models.CASCADE,
-        related_name='teaching_assignments',
-        verbose_name="Giảng viên",
-        db_column="instructor_id"
-    )
-    academic_year = models.CharField(max_length=20, verbose_name="Năm học")
-    semester = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(12)],
-        verbose_name="Học kỳ"
-    )
-    is_main_instructor = models.BooleanField(default=True, verbose_name="Là giảng viên chính")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'teaching_assignments'
-        verbose_name = 'Phân công giảng dạy'
-        verbose_name_plural = 'Phân công giảng dạy'
-        unique_together = ['curriculum_subject', 'instructor', 'academic_year', 'semester']
-        ordering = ['-academic_year', 'semester']
-
-    def __str__(self):
-        role = "Chính" if self.is_main_instructor else "Phụ"
-        return f"{self.instructor.full_name} - {self.curriculum_subject.subject.code} ({self.academic_year}-HK{self.semester}) - {role}"
-
-
 class Course(models.Model):
     STATUS_CHOICES = [
         ('planned', 'Đã lập kế hoạch'),
@@ -477,6 +441,159 @@ class Course(models.Model):
     def academic_year(self):
         return f"{self.start_year}-{self.end_year}"
 
+class Class(models.Model):
+    """Lớp học - mỗi lớp học có thể học nhiều môn học"""
+    code = models.CharField(max_length=50, unique=True, verbose_name="Mã lớp")
+    name = models.CharField(max_length=255, verbose_name="Tên lớp")
+    curriculum = models.ForeignKey(
+        Curriculum,
+        on_delete=models.CASCADE,
+        related_name='classes',
+        verbose_name="Chương trình đào tạo"
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name='classes',
+        verbose_name="Khóa học"
+    )
+    start_date = models.DateField(blank=True, null=True, verbose_name="Ngày bắt đầu")
+    end_date = models.DateField(blank=True, null=True, verbose_name="Ngày kết thúc")
+    is_combined = models.BooleanField(default=False, verbose_name="Là lớp ghép")
+    combined_class_code = models.CharField(max_length=50, blank=True, null=True, verbose_name="Mã lớp ghép (nếu có)")
+    description = models.TextField(blank=True, null=True, verbose_name="Mô tả")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'classes'
+        verbose_name = 'Lớp học'
+        verbose_name_plural = 'Các lớp học'
+        ordering = ['code']
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+class CombinedClass(models.Model):
+    """Lớp học ghép - quản lý các lớp học được ghép với nhau"""
+    code = models.CharField(max_length=50, unique=True, verbose_name="Mã lớp ghép")
+    name = models.CharField(max_length=255, verbose_name="Tên lớp ghép")
+    classes = models.ManyToManyField(
+        Class,
+        related_name='combined_classes',
+        verbose_name="Các lớp được ghép"
+    )
+    curriculum = models.ForeignKey(
+        Curriculum,
+        on_delete=models.CASCADE,
+        related_name='combined_classes',
+        verbose_name="Chương trình đào tạo"
+    )
+    description = models.TextField(blank=True, null=True, verbose_name="Mô tả")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'combined_classes'
+        verbose_name = 'Lớp học ghép'
+        verbose_name_plural = 'Các lớp học ghép'
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+# Cập nhật model TeachingAssignment để thêm trường lớp học
+class TeachingAssignment(models.Model):
+    curriculum_subject = models.ForeignKey(
+        CurriculumSubject, 
+        on_delete=models.CASCADE, 
+        related_name='teaching_assignments',
+        verbose_name="Môn học trong chương trình"
+    )
+    instructor = models.ForeignKey(
+        Instructor, 
+        on_delete=models.CASCADE,
+        related_name='teaching_assignments',
+        verbose_name="Giảng viên"
+    )
+    # Thêm trường class (lớp học thường)
+    class_obj = models.ForeignKey(
+        Class,
+        on_delete=models.CASCADE,
+        related_name='teaching_assignments',
+        verbose_name="Lớp học",
+        null=True,
+        blank=True
+    )
+    # Thêm trường combined_class (lớp học ghép)
+    combined_class = models.ForeignKey(
+        CombinedClass,
+        on_delete=models.CASCADE,
+        related_name='teaching_assignments',
+        verbose_name="Lớp học ghép",
+        null=True,
+        blank=True
+    )
+    academic_year = models.CharField(max_length=20, verbose_name="Năm học")
+    semester = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+        verbose_name="Học kỳ"
+    )
+    is_main_instructor = models.BooleanField(default=True, verbose_name="Là giảng viên chính")
+    
+    # Thêm các trường thống kê
+    student_count = models.IntegerField(default=0, verbose_name="Số lượng sinh viên")
+    teaching_hours = models.IntegerField(default=0, verbose_name="Số giờ giảng dạy")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'teaching_assignments'
+        verbose_name = 'Phân công giảng dạy'
+        verbose_name_plural = 'Phân công giảng dạy'
+        unique_together = [
+            ['curriculum_subject', 'instructor', 'academic_year', 'semester', 'class_obj'],
+            ['curriculum_subject', 'instructor', 'academic_year', 'semester', 'combined_class']
+        ]
+        ordering = ['-academic_year', 'semester']
+
+    def __str__(self):
+        role = "Chính" if self.is_main_instructor else "Phụ"
+        class_name = self.class_obj.code if self.class_obj else self.combined_class.code if self.combined_class else "Không xác định"
+        return f"{self.instructor.full_name} - {self.curriculum_subject.subject.code} - {class_name} ({self.academic_year}-HK{self.semester}) - {role}"
+
+    def save(self, *args, **kwargs):
+        # Đảm bảo chỉ có một trong hai trường class_obj hoặc combined_class được set
+        if self.class_obj and self.combined_class:
+            raise ValidationError("Chỉ có thể chọn lớp học thường HOẶC lớp học ghép")
+        super().save(*args, **kwargs)
+
+    @property
+    def class_type(self):
+        """Xác định loại lớp học"""
+        if self.class_obj:
+            return "regular"
+        elif self.combined_class:
+            return "combined"
+        return "unknown"
+
+    @property
+    def class_name(self):
+        """Trả về tên lớp học"""
+        if self.class_obj:
+            return self.class_obj.name
+        elif self.combined_class:
+            return self.combined_class.name
+        return "Không xác định"
+
+    @property
+    def class_code(self):
+        """Trả về mã lớp học"""
+        if self.class_obj:
+            return self.class_obj.code
+        elif self.combined_class:
+            return self.combined_class.code
+        return "Không xác định"
 
 class ImportHistory(models.Model):
     STATUS_CHOICES = [

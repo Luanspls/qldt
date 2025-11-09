@@ -26,4 +26,14 @@ urlpatterns = [
     path('api/subject-types/', views.api_subject_types, name='api_subject_types'),
     path('api/majors/', views.api_majors, name='api_majors'),
     path('api/curriculum/create/', views.create_curriculum, name='create_curriculum'),
+    
+    # URL mới cho quản lý lớp học và phân công giảng dạy
+    path('api/classes/', views.api_classes, name='api_classes'),
+    path('api/combined-classes/', views.api_combined_classes, name='api_combined_classes'),
+    path('api/teaching-assignments/', views.api_teaching_assignments, name='api_teaching_assignments'),
+    path('api/teaching-statistics/', views.api_teaching_statistics, name='api_teaching_statistics'),
+    path('api/teaching-assignments/create/', views.api_create_teaching_assignment, name='api_create_teaching_assignment'),
+    path('teaching-management/', views.TeachingManagementView.as_view(), name='teaching_management'),
+    path('api/instructors/', views.api_instructors, name='api_instructors'),
+    path('api/classes/create/', views.api_create_class, name='api_create_class'),
 ]
