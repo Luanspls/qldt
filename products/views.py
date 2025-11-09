@@ -380,7 +380,7 @@ class ImportExcelView(View):
                     'Tin học',
                     'Tiếng Anh',
                     'GD kỹ năng mềm',
-                    'Tin học văn phòng'
+                    'Tài chính doanh nghiệp'
                 ],
                 'Số tín chỉ': [4, 2, 2, 3, 3, 5, 3, 2],
                 'Tổng số giờ': [75, 30, 60, 75, 75, 120, 75, 30],
@@ -394,14 +394,14 @@ class ImportExcelView(View):
                 'HK5': ['', '', '', '', '', '', '', ''],
                 'HK6': ['', '', '', '', '', '', '', ''],
                 'Đơn vị': [
-                    'Khoa các BMC',
-                    'Khoa các BMC', 
-                    'Khoa các BMC',
-                    'Khoa các BMC',
-                    'Tổ Tin học',
+                    'Khoa Khoa học cơ bản',
+                    'Khoa Khoa học cơ bản', 
+                    'Khoa Khoa học cơ bản',
+                    'Khoa Khoa học cơ bản',
+                    'Khoa Điện - Công nghệ Thông tin',
                     'Khoa Ngoại ngữ',
-                    'Khoa các BMC',
-                    'Khoa KT-KT'
+                    'Khoa Khoa học cơ bản',
+                    'Khoa Kinh tế - Nông, Lâm nghiệp'
                 ],
                 'Loại môn': [
                     'Bắt buộc', 'Bắt buộc', 'Bắt buộc', 
@@ -411,7 +411,7 @@ class ImportExcelView(View):
                 'Tổ bộ môn': [
                     'BM Lý luận chính trị', 'BM Lý luận chính trị', 'BM GD Thể chất & GD Quốc phòng và An ninh',
                     'BM GD Thể chất & GD Quốc phòng và An ninh', 'BM Công nghệ thông tin', 'BM Tiếng Anh', 
-                    'BM Tâm lý học và Giáo dục học', 'BM Công nghệ thông tin'
+                    'BM Tâm lý học và Giáo dục học', 'BM Kinh tế'
                 ],
                 'Điều kiện tiên quyết': ['', '', '', '', '', '', '', ''],
                 'Chuẩn đầu ra': ['', '', '', '', '', '', '', ''],
@@ -420,10 +420,32 @@ class ImportExcelView(View):
             
             df = pd.DataFrame(sample_data)
             
+            # Lấy dữ liệu từ database cho sheet hướng dẫn
+            departments = Department.objects.all().values('name')
+            subject_types = SubjectType.objects.all().values('name')
+            
+            # Tạo DataFrame cho các giá trị có sẵn
+            df_departments = pd.DataFrame(list(departments))
+            df_subject_types = pd.DataFrame(list(subject_types))
+            
             # Tạo file trong memory
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                # Sheet chính với dữ liệu mẫu
                 df.to_excel(writer, index=False, sheet_name='Chương trình đào tạo')
+                
+                # Sheet hướng dẫn với các giá trị có sẵn
+                df_departments.to_excel(writer, index=False, sheet_name='Hướng dẫn', startrow=1)
+                df_subject_types.to_excel(writer, index=False, sheet_name='Hướng dẫn', startrow=len(df_departments) + 4)
+                
+                # Lấy worksheet để thêm tiêu đề
+                worksheet = writer.sheets['Hướng dẫn']
+                worksheet.cell(1, 1, "DANH SÁCH ĐƠN VỊ CÓ SẴN")
+                worksheet.cell(len(df_departments) + 4, 1, "DANH SÁCH LOẠI MÔN CÓ SẴN")
+                
+                # Thêm ghi chú
+                worksheet.cell(len(df_departments) + len(df_subject_types) + 7, 1, 
+                              "LƯU Ý: Khi nhập dữ liệu, vui lòng sử dụng các giá trị từ danh sách trên để đảm bảo tính nhất quán.")
             
             output.seek(0)
             
@@ -445,6 +467,7 @@ class ImportExcelView(View):
             if request.FILES.get('excel_file'):
                 excel_file = request.FILES['excel_file']
                 curriculum_id = request.POST.get('curriculum_id')
+                sheet_name = request.POST.get('sheet_name', '')  # Lấy tên sheet từ request
                 
                 if not curriculum_id:
                     return JsonResponse({'status': 'error', 'message': 'Vui lòng chọn chương trình đào tạo'})
@@ -458,21 +481,30 @@ class ImportExcelView(View):
                     return JsonResponse({'status': 'error', 'message': 'File không được vượt quá 10MB'})
                 
                 try:
-                    # Đọc file Excel
-                    df = pd.read_excel(excel_file)
-                    print(f"File imported successfully, shape: {df.shape}")
+                    # Đọc file Excel để lấy danh sách sheet
+                    excel_file.seek(0)  # Reset file pointer
+                    xls = pd.ExcelFile(excel_file)
+                    sheet_names = xls.sheet_names
+                    
+                    # Nếu không có sheet_name được chọn, sử dụng sheet đầu tiên
+                    if not sheet_name and sheet_names:
+                        sheet_name = sheet_names[0]
+                        
+                    # Đọc file Excel cụ thể
+                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
                     
                 except Exception as e:
                     return JsonResponse({'status': 'error', 'message': f'Không thể đọc file Excel: {str(e)}'})
                 
                 # Xử lý dữ liệu và lưu vào database - TRUYỀN excel_file VÀO
-                result = self.process_excel_data(df, curriculum_id, request.user, excel_file)
+                result = self.process_excel_data(df, curriculum_id, request.user, excel_file, sheet_name)
                 
                 if result['status'] == 'success':
                     return JsonResponse({
                         'status': 'success', 
                         'message': f'Import file Excel thành công: {result["created_count"]} môn học được tạo, {result["updated_count"]} môn học được cập nhật',
-                        'data': result['processed_data']
+                        'data': result['processed_data'],
+                        'sheet_used': sheet_name
                     })
                 else:
                     return JsonResponse({'status': 'error', 'message': result['message']})
@@ -481,10 +513,9 @@ class ImportExcelView(View):
                 return JsonResponse({'status': 'error', 'message': 'Không tìm thấy file'})
                 
         except Exception as e:
-            print(f"Error in import: {str(e)}")
             return JsonResponse({'status': 'error', 'message': f'Lỗi khi xử lý file: {str(e)}'})
     
-    def process_excel_data(self, df, curriculum_id, user, excel_file):  # THÊM excel_file VÀO THAM SỐ
+    def process_excel_data(self, df, curriculum_id, user, excel_file, sheet_name):  # THÊM excel_file, sheet_name VÀO THAM SỐ
         """Xử lý dữ liệu từ Excel và lưu vào database"""
         try:
             curriculum = Curriculum.objects.get(id=curriculum_id)
@@ -543,30 +574,39 @@ class ImportExcelView(View):
                     except (ValueError, TypeError):
                         kiem_tra_thi = 0
                     
-                    # Lấy hoặc tạo department
+                    # Lấy hoặc tạo department - sử dụng giá trị chính xác từ database
                     department_name = str(row.get('Đơn vị', '')).strip()
                     department = None
                     if department_name and department_name not in ['', 'nan']:
-                        department, _ = Department.objects.get_or_create(
-                            name=department_name,
-                            defaults={
-                                'code': department_name[:10].upper().replace(' ', ''),
-                                'name': department_name
-                            }
-                        )
+                        try:
+                            # Tìm department theo tên chính xác
+                            department = Department.objects.get(name=department_name)
+                        except Department.DoesNotExist:
+                            department, _ = Department.objects.get_or_create(
+                                name=department_name,
+                                defaults={
+                                    'code': department_name[:10].upper().replace(' ', ''),
+                                    'name': department_name
+                                }
+                            )
+                            errors.append(f"Dòng {index + 2}: Đã tạo mới đơn vị '{department_name}'")
                     
-                    # Lấy hoặc tạo subject_type
+                    # Lấy hoặc tạo subject_type - sử dụng giá trị chính xác từ database
                     subject_type_name = str(row.get('Loại môn', 'Bắt buộc')).strip()
                     if not subject_type_name or subject_type_name == 'nan':
                         subject_type_name = 'Bắt buộc'
                     
-                    subject_type, _ = SubjectType.objects.get_or_create(
-                        name=subject_type_name,
-                        defaults={
-                            'code': subject_type_name[:10].upper().replace(' ', ''),
-                            'name': subject_type_name
-                        }
-                    )
+                    try:
+                        subject_type = SubjectType.objects.get(name=subject_type_name)
+                    except SubjectType.DoesNotExist:
+                        subject_type, _ = SubjectType.objects.get_or_create(
+                            name=subject_type_name,
+                            defaults={
+                                'code': subject_type_name[:10].upper().replace(' ', ''),
+                                'name': subject_type_name
+                            }
+                        )
+                        errors.append(f"Dòng {index + 2}: Đã tạo mới loại môn '{subject_type_name}'")
                     
                     # Lấy hoặc tạo subject_group nếu có
                     subject_group = None
@@ -636,12 +676,6 @@ class ImportExcelView(View):
                                         semester=hk,
                                         defaults={'credits': credit_value}
                                     )
-                                    
-                                    # Subject.objects.update_or_create(
-                                    #     curriculum=curriculum,
-                                    #     code=ma_mon_hoc,
-                                    #     semester=hk,
-                                    # )
                                 except (ValueError, TypeError) as e:
                                     errors.append(f"Dòng {index + 2} - HK{hk}: Giá trị tín chỉ không hợp lệ: {credits_value}")
                     
@@ -664,7 +698,8 @@ class ImportExcelView(View):
                 imported_by=user,
                 record_count=len(processed_data),
                 status='success' if not errors else 'partial',
-                errors=errors if errors else None
+                errors=errors if errors else None,
+                additional_info=f"Sheet được sử dụng: {sheet_name}"
             )
                         
             return {
@@ -680,7 +715,17 @@ class ImportExcelView(View):
         except Exception as e:
             print(f"Error in process_excel_data: {str(e)}")
             return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}
-            
+    
+    def get_sheet_names(self, excel_file):
+        """Lấy danh sách các sheet trong file Excel"""
+        try:
+            excel_file.seek(0)  # Reset file pointer
+            xls = pd.ExcelFile(excel_file)
+            return xls.sheet_names
+        except Exception as e:
+            print(f"Error getting sheet names: {str(e)}")
+            return []
+    
 class ThongKeView(View):
     def get(self, request):
         """API trả về thống kê"""
@@ -722,6 +767,36 @@ class ThongKeView(View):
             })
 
 # API endpoints cho các dropdown
+@csrf_exempt
+def api_get_sheet_names(request):
+    """API lấy danh sách sheet từ file Excel"""
+    if request.method == 'POST' and request.FILES.get('excel_file'):
+        try:
+            excel_file = request.FILES['excel_file']
+            
+            # Kiểm tra định dạng file
+            if not excel_file.name.endswith(('.xlsx', '.xls')):
+                return JsonResponse({'status': 'error', 'message': 'File phải có định dạng Excel'})
+            
+            # Lấy danh sách sheet
+            sheet_names = []
+            try:
+                excel_file.seek(0)  # Reset file pointer
+                xls = pd.ExcelFile(excel_file)
+                sheet_names = xls.sheet_names
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': f'Không thể đọc file Excel: {str(e)}'})
+            
+            return JsonResponse({
+                'status': 'success',
+                'sheet_names': sheet_names
+            })
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Lỗi khi xử lý file: {str(e)}'})
+    
+    return JsonResponse({'status': 'error', 'message': 'Không tìm thấy file'})
+
 @csrf_exempt
 def api_departments(request):
     """API lấy danh sách khoa"""
@@ -1145,60 +1220,6 @@ def api_teaching_statistics(request):
         'department_statistics': list(department_stats)
     })
 
-# @csrf_exempt
-# def api_create_teaching_assignment(request):
-#     """API tạo phân công giảng dạy mới"""
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-            
-#             # Kiểm tra các trường bắt buộc
-#             required_fields = ['curriculum_subject_id', 'instructor_id', 'academic_year', 'semester']
-#             for field in required_fields:
-#                 if not data.get(field):
-#                     return JsonResponse({
-#                         'status': 'error', 
-#                         'message': f'Thiếu trường bắt buộc: {field}'
-#                     })
-            
-#             # Kiểm tra xem có class_obj hay combined_class
-#             if not data.get('class_obj_id') and not data.get('combined_class_id'):
-#                 return JsonResponse({
-#                     'status': 'error', 
-#                     'message': 'Phải chọn lớp học thường hoặc lớp học ghép'
-#                 })
-            
-#             # Tạo phân công giảng dạy
-#             teaching_assignment = TeachingAssignment.objects.create(
-#                 curriculum_subject_id=data['curriculum_subject_id'],
-#                 instructor_id=data['instructor_id'],
-#                 class_obj_id=data.get('class_obj_id'),
-#                 combined_class_id=data.get('combined_class_id'),
-#                 academic_year=data['academic_year'],
-#                 semester=data['semester'],
-#                 is_main_instructor=data.get('is_main_instructor', True),
-#                 student_count=data.get('student_count', 0),
-#                 teaching_hours=data.get('teaching_hours', 0)
-#             )
-            
-#             return JsonResponse({
-#                 'status': 'success',
-#                 'message': 'Đã tạo phân công giảng dạy thành công',
-#                 'id': teaching_assignment.id
-#             })
-            
-#         except Exception as e:
-#             print(f"Error creating teaching assignment: {str(e)}")
-#             return JsonResponse({
-#                 'status': 'error', 
-#                 'message': f'Lỗi khi tạo phân công giảng dạy: {str(e)}'
-#             })
-    
-#     return JsonResponse({
-#         'status': 'error', 
-#         'message': 'Method not allowed'
-#     })
-
 @csrf_exempt
 def api_create_teaching_assignment(request):
     """API tạo phân công giảng dạy mới"""
@@ -1429,47 +1450,312 @@ import io
 from django.core.files.base import ContentFile
 
 class ImportTeachingDataView(View):
-    def get(self, request, object_type):
-        """Tải file Excel mẫu cho từng loại đối tượng"""
-        try:
-            if object_type == 'class':
-                sample_data = self.get_class_template()
-                filename = "mau_import_lop_hoc.xlsx"
-            elif object_type == 'combined-class':
-                sample_data = self.get_combined_class_template()
-                filename = "mau_import_lop_hoc_ghep.xlsx"
-            elif object_type == 'teaching-assignment':
-                sample_data = self.get_teaching_assignment_template()
-                filename = "mau_import_phan_cong_giang_day.xlsx"
-            else:
-                return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
+    class ImportTeachingDataView(View):
+        def get(self, request, object_type):
+            """Tải file Excel mẫu cho từng loại đối tượng với sheet hướng dẫn"""
+            try:
+                # Tạo workbook
+                output = io.BytesIO()
+                
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    # Tạo sheet dữ liệu mẫu
+                    if object_type == 'class':
+                        sample_data = self.get_class_template()
+                        filename = "mau_import_lop_hoc.xlsx"
+                        df = pd.DataFrame(sample_data)
+                        df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
+                        
+                        # Tạo sheet hướng dẫn cho lớp học
+                        self.create_class_guide_sheet(writer)
+                        
+                    elif object_type == 'combined-class':
+                        sample_data = self.get_combined_class_template()
+                        filename = "mau_import_lop_hoc_ghep.xlsx"
+                        df = pd.DataFrame(sample_data)
+                        df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
+                        
+                        # Tạo sheet hướng dẫn cho lớp học ghép
+                        self.create_combined_class_guide_sheet(writer)
+                        
+                    elif object_type == 'teaching-assignment':
+                        sample_data = self.get_teaching_assignment_template()
+                        filename = "mau_import_phan_cong_giang_day.xlsx"
+                        df = pd.DataFrame(sample_data)
+                        df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
+                        
+                        # Tạo sheet hướng dẫn cho phân công giảng dạy
+                        self.create_teaching_assignment_guide_sheet(writer)
+                        
+                    else:
+                        return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
+                
+                output.seek(0)
+                
+                # Trả về file để download
+                response = HttpResponse(
+                    output.getvalue(),
+                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+                response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                response['Content-Length'] = len(output.getvalue())
+                
+                return response
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': f"Lỗi tạo file mẫu: {str(e)}"})
+    
+    def create_class_guide_sheet(self, writer):
+        """Tạo sheet hướng dẫn cho import lớp học"""
+        guide_data = {}
+        
+        # Lấy danh sách chương trình
+        curricula = Curriculum.objects.all().values('code', 'name', 'academic_year')
+        guide_data['Chương trình đào tạo'] = {
+            'Mã chương trình': [c['code'] for c in curricula],
+            'Tên chương trình': [c['name'] for c in curricula],
+            'Năm học': [c['academic_year'] for c in curricula]
+        }
+        
+        # Lấy danh sách khóa học
+        courses = Course.objects.all().values('code', 'name', 'curriculum__code')
+        guide_data['Khóa học'] = {
+            'Mã khóa học': [c['code'] for c in courses],
+            'Tên khóa học': [c['name'] for c in courses],
+            'Mã chương trình': [c['curriculum__code'] for c in courses]
+        }
+        
+        # Lấy danh sách lớp học hiện có
+        classes = Class.objects.all().values('code', 'name', 'curriculum__code', 'course__code')
+        guide_data['Lớp học hiện có'] = {
+            'Mã lớp': [c['code'] for c in classes],
+            'Tên lớp': [c['name'] for c in classes],
+            'Mã chương trình': [c['curriculum__code'] for c in classes],
+            'Mã khóa học': [c['course__code'] for c in classes]
+        }
+        
+        # Tạo sheet hướng dẫn
+        workbook = writer.book
+        worksheet = workbook.create_sheet("Hướng dẫn nhập liệu")
+        
+        row = 1
+        for section, data in guide_data.items():
+            # Tiêu đề section
+            worksheet.cell(row=row, column=1, value=section.upper())
+            worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
+            row += 1
             
-            df = pd.DataFrame(sample_data)
+            # Tiêu đề cột
+            col = 1
+            for col_name in data.keys():
+                worksheet.cell(row=row, column=col, value=col_name)
+                col += 1
+            row += 1
             
-            # Tạo file trong memory
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                df.to_excel(writer, index=False, sheet_name='Data')
+            # Dữ liệu
+            max_rows = max(len(values) for values in data.values())
+            for i in range(max_rows):
+                col = 1
+                for col_name, values in data.items():
+                    if i < len(values):
+                        worksheet.cell(row=row, column=col, value=values[i])
+                    col += 1
+                row += 1
             
-            output.seek(0)
+            row += 2  # Thêm khoảng cách giữa các section
+        
+        # Thêm ghi chú
+        worksheet.cell(row=row, column=1, value="LƯU Ý QUAN TRỌNG:")
+        worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
+        row += 1
+        
+        notes = [
+            "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
+            "2. Các cột có dấu * là bắt buộc",
+            "3. Sử dụng các giá trị từ sheet này để đảm bảo tính nhất quán",
+            "4. Mã lớp không được trùng với các lớp đã có trong hệ thống",
+            "5. Ngày tháng nhập theo định dạng YYYY-MM-DD (ví dụ: 2023-09-01)"
+        ]
+        
+        for note in notes:
+            worksheet.cell(row=row, column=1, value=note)
+            row += 1
+    
+    def create_combined_class_guide_sheet(self, writer):
+        """Tạo sheet hướng dẫn cho import lớp học ghép"""
+        guide_data = {}
+        
+        # Lấy danh sách chương trình
+        curricula = Curriculum.objects.all().values('code', 'name', 'academic_year')
+        guide_data['Chương trình đào tạo'] = {
+            'Mã chương trình': [c['code'] for c in curricula],
+            'Tên chương trình': [c['name'] for c in curricula],
+            'Năm học': [c['academic_year'] for c in curricula]
+        }
+        
+        # Lấy danh sách lớp học có thể ghép
+        classes = Class.objects.filter(is_combined=False).values('code', 'name', 'curriculum__code')
+        guide_data['Lớp học có thể ghép'] = {
+            'Mã lớp': [c['code'] for c in classes],
+            'Tên lớp': [c['name'] for c in classes],
+            'Mã chương trình': [c['curriculum__code'] for c in classes]
+        }
+        
+        # Lấy danh sách lớp học ghép hiện có
+        combined_classes = CombinedClass.objects.all().values('code', 'name', 'curriculum__code')
+        guide_data['Lớp học ghép hiện có'] = {
+            'Mã lớp ghép': [c['code'] for c in combined_classes],
+            'Tên lớp ghép': [c['name'] for c in combined_classes],
+            'Mã chương trình': [c['curriculum__code'] for c in combined_classes]
+        }
+        
+        # Tạo sheet hướng dẫn
+        workbook = writer.book
+        worksheet = workbook.create_sheet("Hướng dẫn nhập liệu")
+        
+        row = 1
+        for section, data in guide_data.items():
+            # Tiêu đề section
+            worksheet.cell(row=row, column=1, value=section.upper())
+            worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
+            row += 1
             
-            # Trả về file để download
-            response = HttpResponse(
-                output.getvalue(),
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            response['Content-Length'] = len(output.getvalue())
+            # Tiêu đề cột
+            col = 1
+            for col_name in data.keys():
+                worksheet.cell(row=row, column=col, value=col_name)
+                col += 1
+            row += 1
             
-            return response
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': f"Lỗi tạo file mẫu: {str(e)}"})
+            # Dữ liệu
+            max_rows = max(len(values) for values in data.values())
+            for i in range(max_rows):
+                col = 1
+                for col_name, values in data.items():
+                    if i < len(values):
+                        worksheet.cell(row=row, column=col, value=values[i])
+                    col += 1
+                row += 1
+            
+            row += 2  # Thêm khoảng cách giữa các section
+        
+        # Thêm ghi chú
+        worksheet.cell(row=row, column=1, value="LƯU Ý QUAN TRỌNG:")
+        worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
+        row += 1
+        
+        notes = [
+            "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
+            "2. Các cột có dấu * là bắt buộc",
+            "3. Sử dụng các giá trị từ sheet này để đảm bảo tính nhất quán",
+            "4. Mã lớp ghép không được trùng với các lớp ghép đã có",
+            "5. Các mã lớp thành phần phân cách bằng dấu phẩy (ví dụ: DHTI001,DHTI002)",
+            "6. Các lớp thành phần phải thuộc cùng chương trình đào tạo"
+        ]
+        
+        for note in notes:
+            worksheet.cell(row=row, column=1, value=note)
+            row += 1
+    
+    def create_teaching_assignment_guide_sheet(self, writer):
+        """Tạo sheet hướng dẫn cho import phân công giảng dạy"""
+        guide_data = {}
+        
+        # Lấy danh sách giảng viên
+        instructors = Instructor.objects.all().values('code', 'full_name', 'department__name')
+        guide_data['Giảng viên'] = {
+            'Mã giảng viên': [i['code'] for i in instructors],
+            'Họ tên': [i['full_name'] for i in instructors],
+            'Khoa': [i['department__name'] for i in instructors]
+        }
+        
+        # Lấy danh sách môn học
+        curriculum_subjects = CurriculumSubject.objects.select_related('subject', 'curriculum').all()
+        guide_data['Môn học'] = {
+            'Mã môn học': [cs.subject.code for cs in curriculum_subjects],
+            'Tên môn học': [cs.subject.name for cs in curriculum_subjects],
+            'Mã chương trình': [cs.curriculum.code for cs in curriculum_subjects]
+        }
+        
+        # Lấy danh sách lớp học thường
+        classes = Class.objects.all().values('code', 'name', 'curriculum__code')
+        guide_data['Lớp học thường'] = {
+            'Mã lớp': [c['code'] for c in classes],
+            'Tên lớp': [c['name'] for c in classes],
+            'Mã chương trình': [c['curriculum__code'] for c in classes]
+        }
+        
+        # Lấy danh sách lớp học ghép
+        combined_classes = CombinedClass.objects.all().values('code', 'name', 'curriculum__code')
+        guide_data['Lớp học ghép'] = {
+            'Mã lớp ghép': [c['code'] for c in combined_classes],
+            'Tên lớp ghép': [c['name'] for c in combined_classes],
+            'Mã chương trình': [c['curriculum__code'] for c in combined_classes]
+        }
+        
+        # Danh sách loại lớp
+        guide_data['Loại lớp'] = {
+            'Giá trị hợp lệ': ['Thường', 'Ghép']
+        }
+        
+        # Danh sách học kỳ
+        guide_data['Học kỳ'] = {
+            'Giá trị hợp lệ': [str(i) for i in range(1, 13)]
+        }
+        
+        # Tạo sheet hướng dẫn
+        workbook = writer.book
+        worksheet = workbook.create_sheet("Hướng dẫn nhập liệu")
+        
+        row = 1
+        for section, data in guide_data.items():
+            # Tiêu đề section
+            worksheet.cell(row=row, column=1, value=section.upper())
+            worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
+            row += 1
+            
+            # Tiêu đề cột
+            col = 1
+            for col_name in data.keys():
+                worksheet.cell(row=row, column=col, value=col_name)
+                col += 1
+            row += 1
+            
+            # Dữ liệu
+            max_rows = max(len(values) for values in data.values())
+            for i in range(max_rows):
+                col = 1
+                for col_name, values in data.items():
+                    if i < len(values):
+                        worksheet.cell(row=row, column=col, value=values[i])
+                    col += 1
+                row += 1
+            
+            row += 2  # Thêm khoảng cách giữa các section
+        
+        # Thêm ghi chú
+        worksheet.cell(row=row, column=1, value="LƯU Ý QUAN TRỌNG:")
+        worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
+        row += 1
+        
+        notes = [
+            "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
+            "2. Các cột có dấu * là bắt buộc",
+            "3. Sử dụng các giá trị từ sheet này để đảm bảo tính nhất quán",
+            "4. Loại lớp phải là 'Thường' hoặc 'Ghép'",
+            "5. Học kỳ phải là số từ 1 đến 12",
+            "6. Năm học theo định dạng YYYY-YYYY (ví dụ: 2023-2024)",
+            "7. Là giảng viên chính: 'Có' hoặc 'Không'"
+        ]
+        
+        for note in notes:
+            worksheet.cell(row=row, column=1, value=note)
+            row += 1
     
     def post(self, request, object_type):
-        """Xử lý import file Excel"""
+        """Xử lý import file Excel với chức năng chọn sheet"""
         try:
             if request.FILES.get('excel_file'):
                 excel_file = request.FILES['excel_file']
+                selected_sheet = request.POST.get('selected_sheet', '')
                 
                 # Kiểm tra định dạng file
                 if not excel_file.name.endswith(('.xlsx', '.xls')):
@@ -1480,20 +1766,29 @@ class ImportTeachingDataView(View):
                     return JsonResponse({'status': 'error', 'message': 'File không được vượt quá 10MB'})
                 
                 try:
-                    # Đọc file Excel
-                    df = pd.read_excel(excel_file)
-                    print(f"File imported successfully, shape: {df.shape}")
+                    # Đọc file Excel để lấy danh sách sheet
+                    excel_file.seek(0)
+                    xls = pd.ExcelFile(excel_file)
+                    sheet_names = xls.sheet_names
+                    
+                    # Nếu không có sheet được chọn, sử dụng sheet đầu tiên
+                    if not selected_sheet and sheet_names:
+                        selected_sheet = sheet_names[0]
+                    
+                    # Đọc sheet được chọn
+                    df = pd.read_excel(excel_file, sheet_name=selected_sheet)
+                    print(f"File imported successfully, sheet: {selected_sheet}, shape: {df.shape}")
                     
                 except Exception as e:
                     return JsonResponse({'status': 'error', 'message': f'Không thể đọc file Excel: {str(e)}'})
                 
                 # Xử lý dữ liệu theo loại đối tượng
                 if object_type == 'class':
-                    result = self.process_class_import(df, request.user, excel_file)
+                    result = self.process_class_import(df, request.user, excel_file, selected_sheet)
                 elif object_type == 'combined-class':
-                    result = self.process_combined_class_import(df, request.user, excel_file)
+                    result = self.process_combined_class_import(df, request.user, excel_file, selected_sheet)
                 elif object_type == 'teaching-assignment':
-                    result = self.process_teaching_assignment_import(df, request.user, excel_file)
+                    result = self.process_teaching_assignment_import(df, request.user, excel_file, selected_sheet)
                 else:
                     return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
                 
@@ -1502,7 +1797,8 @@ class ImportTeachingDataView(View):
                         'status': 'success', 
                         'message': result['message'],
                         'data': result.get('processed_data', []),
-                        'errors': result.get('errors', [])
+                        'errors': result.get('errors', []),
+                        'sheet_used': selected_sheet
                     })
                 else:
                     return JsonResponse({'status': 'error', 'message': result['message']})
@@ -1513,6 +1809,16 @@ class ImportTeachingDataView(View):
         except Exception as e:
             print(f"Error in import: {str(e)}")
             return JsonResponse({'status': 'error', 'message': f'Lỗi khi xử lý file: {str(e)}'})
+    
+    def get_sheet_names(self, excel_file):
+        """Lấy danh sách các sheet trong file Excel"""
+        try:
+            excel_file.seek(0)
+            xls = pd.ExcelFile(excel_file)
+            return xls.sheet_names
+        except Exception as e:
+            print(f"Error getting sheet names: {str(e)}")
+            return []
     
     def get_class_template(self):
         """Tạo template cho import lớp học"""
@@ -1552,7 +1858,7 @@ class ImportTeachingDataView(View):
             'Số giờ giảng dạy': [45, 60, 30]
         }
     
-    def process_class_import(self, df, user, excel_file):
+    def process_class_import(self, df, user, excel_file, sheet_name):
         """Xử lý import lớp học"""
         try:
             created_count = 0
@@ -1665,7 +1971,8 @@ class ImportTeachingDataView(View):
                 imported_by=user,
                 record_count=len(processed_data),
                 status='success' if not errors else 'partial',
-                errors=errors if errors else None
+                errors=errors if errors else None,
+                additional_info=f"Sheet được sử dụng: {sheet_name}"
             )
             
             return {
@@ -1681,7 +1988,7 @@ class ImportTeachingDataView(View):
             print(f"Error in process_class_import: {str(e)}")
             return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}
     
-    def process_combined_class_import(self, df, user, excel_file):
+    def process_combined_class_import(self, df, user, excel_file, sheet_name):
         """Xử lý import lớp học ghép"""
         try:
             created_count = 0
@@ -1774,7 +2081,8 @@ class ImportTeachingDataView(View):
                 imported_by=user,
                 record_count=len(processed_data),
                 status='success' if not errors else 'partial',
-                errors=errors if errors else None
+                errors=errors if errors else None,
+                additional_info=f"Sheet được sử dụng: {sheet_name}"
             )
             
             return {
@@ -1790,7 +2098,7 @@ class ImportTeachingDataView(View):
             print(f"Error in process_combined_class_import: {str(e)}")
             return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}
     
-    def process_teaching_assignment_import(self, df, user, excel_file):
+    def process_teaching_assignment_import(self, df, user, excel_file, sheet_name):
         """Xử lý import phân công giảng dạy"""
         try:
             created_count = 0
@@ -1945,7 +2253,8 @@ class ImportTeachingDataView(View):
                 imported_by=user,
                 record_count=len(processed_data),
                 status='success' if not errors else 'partial',
-                errors=errors if errors else None
+                errors=errors if errors else None,
+                additional_info=f"Sheet được sử dụng: {sheet_name}"
             )
             
             return {

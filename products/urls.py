@@ -39,4 +39,5 @@ urlpatterns = [
     path('api/teaching-statistics/', views.api_teaching_statistics, name='api_teaching_statistics'),
     path('api/instructors/', views.api_instructors, name='api_instructors'),
     path('api/curriculum-subjects/', views.api_curriculum_subjects, name='api_curriculum_subjects'),
+    path('api/get-sheet-names/', views.api_get_sheet_names, name='api_get_sheet_names'),
 ]

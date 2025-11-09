@@ -235,6 +235,17 @@
                             required>
                         <p class="text-xs text-gray-500 mt-1">Chỉ chấp nhận file .xlsx hoặc .xls, tối đa 10MB</p>
                     </div>
+
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Chọn sheet</label>
+                        <select id="sheet-select" name="sheet_name" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Tự động chọn sheet đầu tiên --</option>
+                            <!-- Các option sẽ được thêm bằng JavaScript -->
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Chọn sheet chứa dữ liệu môn học. Nếu không chọn, sheet đầu tiên sẽ được sử dụng.</p>
+                    </div>
+                    
                     <div class="text-sm text-gray-600">
                         <p>
                             <a href="#" id="btn-download-template" class="text-blue-600 hover:text-blue-800 inline-flex items-center">
@@ -908,6 +919,7 @@
             const formData = new FormData(form);
             const curriculumId = document.getElementById('import-curriculum').value;
             const fileInput = document.getElementById('excel-file');
+            const sheetSelect = document.getElementById('sheet-select');
             
             if (!curriculumId) {
                 alert('Vui lòng chọn chương trình đào tạo');
@@ -917,6 +929,12 @@
             if (!fileInput.files.length) {
                 alert('Vui lòng chọn file Excel');
                 return;
+            }
+
+            // Thêm thông tin sheet vào formData
+            const selectedSheet = sheetSelect.value;
+            if (selectedSheet) {
+                formData.append('sheet_name', selectedSheet);
             }
             
             // Hiển thị loading
@@ -940,7 +958,11 @@
             })
             .then(data => {
                 if (data.status === 'success') {
-                    alert('✅ ' + data.message);
+                    let successMessage = '✅ ' + data.message;
+                    if (data.sheet_used) {
+                        successMessage += ` (Sheet: ${data.sheet_used})`;
+                    }
+                    alert(successMessage);
                     closeImportModal();
                     
                     // Hiển thị chi tiết lỗi nếu có
@@ -982,6 +1004,33 @@
                 .catch(error => {
                     console.error('Error loading curricula:', error);
                 });
+        }
+
+        // Hàm lấy danh sách sheet từ file Excel
+        function getSheetNamesFromFile(file) {
+            return new Promise((resolve, reject) => {
+                const formData = new FormData();
+                formData.append('excel_file', file);
+                
+                fetch('/api/get-sheet-names/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        resolve(data.sheet_names);
+                    } else {
+                        reject(new Error(data.message));
+                    }
+                })
+                .catch(error => {
+                    reject(error);
+                });
+            });
         }
         
         // Mở modal thêm chương trình
@@ -1469,6 +1518,43 @@
             document.getElementById('btn-import').addEventListener('click', function() {
                 console.log('Button Import clicked');
                 openImportModal();
+            });
+
+            // Cập nhật dropdown sheet khi chọn file
+            document.getElementById('excel-file').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const sheetSelect = document.getElementById('sheet-select');
+                
+                if (file) {
+                    // Hiển thị loading
+                    const originalHTML = sheetSelect.innerHTML;
+                    sheetSelect.innerHTML = '<option value="">Đang tải danh sách sheet...</option>';
+                    
+                    getSheetNamesFromFile(file)
+                        .then(sheetNames => {
+                            sheetSelect.innerHTML = '<option value="">-- Tự động chọn sheet đầu tiên --</option>';
+                            
+                            sheetNames.forEach(sheetName => {
+                                const option = document.createElement('option');
+                                option.value = sheetName;
+                                option.textContent = sheetName;
+                                sheetSelect.appendChild(option);
+                            });
+                            
+                            // Tự động chọn sheet đầu tiên nếu chỉ có một sheet
+                            if (sheetNames.length === 1) {
+                                sheetSelect.value = sheetNames[0];
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading sheet names:', error);
+                            sheetSelect.innerHTML = originalHTML;
+                            alert('Không thể đọc danh sách sheet từ file. Vui lòng kiểm tra định dạng file.');
+                        });
+                } else {
+                    // Reset dropdown nếu không có file
+                    sheetSelect.innerHTML = '<option value="">-- Tự động chọn sheet đầu tiên --</option>';
+                }
             });
             
             // Đóng modal import bằng nút hủy

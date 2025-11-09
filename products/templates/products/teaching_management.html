@@ -555,6 +555,16 @@
                     <p class="text-xs text-gray-500 mt-1">Chỉ chấp nhận file .xlsx hoặc .xls, tối đa 10MB</p>
                 </div>
                 
+                <!-- Dropdown chọn sheet -->
+                <div id="sheet-selection" class="hidden">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Chọn sheet</label>
+                    <select id="selected-sheet" name="selected_sheet" 
+                        class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Chọn sheet --</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Chọn sheet chứa dữ liệu cần import</p>
+                </div>
+                
                 <div class="text-sm text-gray-600">
                     <p>
                         <a href="#" id="btn-download-template" class="text-blue-600 hover:text-blue-800 inline-flex items-center">
@@ -783,6 +793,48 @@
             document.getElementById('modal-import-errors').addEventListener('click', function(e) {
                 if (e.target === this) {
                     closeImportErrorsModal();
+                }
+            });
+
+            document.getElementById('excel-file').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Gửi file đến server để lấy danh sách sheet
+                    const formData = new FormData();
+                    formData.append('excel_file', file);
+                    
+                    fetch('/api/get-sheet-names/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const sheetSelection = document.getElementById('sheet-selection');
+                        const sheetSelect = document.getElementById('selected-sheet');
+                        
+                        if (data.status === 'success' && data.sheet_names.length > 0) {
+                            // Hiển thị dropdown chọn sheet
+                            sheetSelection.classList.remove('hidden');
+                            
+                            // Điền danh sách sheet vào dropdown
+                            sheetSelect.innerHTML = '<option value="">-- Chọn sheet --</option>';
+                            data.sheet_names.forEach(sheetName => {
+                                const option = document.createElement('option');
+                                option.value = sheetName;
+                                option.textContent = sheetName;
+                                sheetSelect.appendChild(option);
+                            });
+                        } else {
+                            sheetSelection.classList.add('hidden');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error getting sheet names:', error);
+                        document.getElementById('sheet-selection').classList.add('hidden');
+                    });
                 }
             });
         }
@@ -1519,10 +1571,16 @@
             const form = document.getElementById('form-import');
             const formData = new FormData(form);
             const fileInput = document.getElementById('excel-file');
+            const selectedSheet = document.getElementById('selected-sheet').value;
             
             if (!fileInput.files.length) {
                 alert('Vui lòng chọn file Excel');
                 return;
+            }
+            
+            // Thêm sheet được chọn vào formData
+            if (selectedSheet) {
+                formData.append('selected_sheet', selectedSheet);
             }
             
             // Hiển thị loading
