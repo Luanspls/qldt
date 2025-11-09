@@ -645,6 +645,7 @@ class ImportHistory(models.Model):
         verbose_name="Trạng thái"
     )
     errors = models.JSONField(blank=True, null=True, verbose_name="Lỗi")
+    additional_info = models.TextField(blank=True, null=True, verbose_name="Thông tin bổ sung")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

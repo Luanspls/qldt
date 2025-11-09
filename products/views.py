@@ -1965,15 +1965,26 @@ class ImportTeachingDataView(View):
                     errors.append(f"Dòng {index + 2}: {str(e)}")
             
             # Lưu lịch sử import
-            ImportHistory.objects.create(
-                file_name=excel_file.name,
-                file_size=excel_file.size,
-                imported_by=user,
-                record_count=len(processed_data),
-                status='success' if not errors else 'partial',
-                errors=errors if errors else None,
-                additional_info=f"Sheet được sử dụng: {sheet_name}"
-            )
+            import_history_data = {
+                'curriculum': curriculum,
+                'file_name': excel_file.name,
+                'file_size': excel_file.size,
+                'imported_by': user,
+                'record_count': len(processed_data),
+                'status': 'success' if not errors else 'partial',
+                'errors': errors if errors else None,
+            }
+            
+            # Chỉ thêm additional_info nếu không gây lỗi
+            try:
+                # Kiểm tra xem model có trường này không
+                test_instance = ImportHistory()
+                if hasattr(test_instance, 'additional_info'):
+                    import_history_data['additional_info'] = f"Sheet được sử dụng: {sheet_name}"
+            except:
+                pass  # Bỏ qua nếu có lỗi
+            
+            ImportHistory.objects.create(**import_history_data)
             
             return {
                 'status': 'success',
