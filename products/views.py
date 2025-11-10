@@ -691,16 +691,37 @@ class ImportExcelView(View):
                     errors.append(error_msg)
             
             # Lưu lịch sử import - SỬ DỤNG excel_file ĐÃ ĐƯỢC TRUYỀN VÀO
-            ImportHistory.objects.create(
-                curriculum=curriculum,
-                file_name=excel_file.name,  # BÂY GIỜ excel_file ĐÃ ĐƯỢC XÁC ĐỊNH
-                file_size=excel_file.size,   # BÂY GIỜ excel_file ĐÃ ĐƯỢC XÁC ĐỊNH
-                imported_by=user,
-                record_count=len(processed_data),
-                status='success' if not errors else 'partial',
-                errors=errors if errors else None,
-                additional_info=f"Sheet được sử dụng: {sheet_name}"
-            )
+            # ImportHistory.objects.create(
+            #     curriculum=curriculum,
+            #     file_name=excel_file.name,  # BÂY GIỜ excel_file ĐÃ ĐƯỢC XÁC ĐỊNH
+            #     file_size=excel_file.size,   # BÂY GIỜ excel_file ĐÃ ĐƯỢC XÁC ĐỊNH
+            #     imported_by=user,
+            #     record_count=len(processed_data),
+            #     status='success' if not errors else 'partial',
+            #     errors=errors if errors else None,
+            #     additional_info=f"Sheet được sử dụng: {sheet_name}"
+            # )
+            
+            import_history_data = {
+                'curriculum': curriculum,
+                'file_name': excel_file.name,
+                'file_size': excel_file.size,
+                'imported_by': user,
+                'record_count': len(processed_data),
+                'status': 'success' if not errors else 'partial',
+                'errors': errors if errors else None,
+            }
+            
+            # Chỉ thêm additional_info nếu không gây lỗi
+            try:
+                # Kiểm tra xem model có trường này không
+                test_instance = ImportHistory()
+                if hasattr(test_instance, 'additional_info'):
+                    import_history_data['additional_info'] = f"Sheet được sử dụng: {sheet_name}"
+            except:
+                pass  # Bỏ qua nếu có lỗi
+            
+            ImportHistory.objects.create(**import_history_data)
                         
             return {
                 'status': 'success',
@@ -970,33 +991,41 @@ def api_create_subject(request):
             )
             
             # Tạo CurriculumSubject
-            curriculum_subject = CurriculumSubject.objects.create(
+            curriculum_subject, cs_created = CurriculumSubject.objects.get_or_create(
                 curriculum=curriculum,
                 subject=subject,
-                credits=float(data['credits']),
-                total_hours=int(data.get('total_hours', 0) or 0),
-                theory_hours=int(data.get('theory_hours', 0) or 0),
-                practice_hours=int(data.get('practice_hours', 0) or 0),
-                exam_hours=int(data.get('exam_hours', 0) or 0),
-                semester=int(data.get('semester', 0) or None),
-                order_number=int(data.get('order_number', 0) or 0)
+                defaults={
+                    'credits': float(data['credits']),
+                    'total_hours': int(data.get('total_hours', 0) or 0),
+                    'theory_hours': int(data.get('theory_hours', 0) or 0),
+                    'practice_hours': int(data.get('practice_hours', 0) or 0),
+                    'exam_hours': int(data.get('exam_hours', 0) or 0),
+                    'semester': int(data.get('semester', 0) or None),
+                    'order_number': int(data.get('order_number', 0) or 0)
+                }
             )
             
             # Tạo phân bố học kỳ
             semester_allocations = data.get('semester_allocations', {})
             for semester_str, credits_value in semester_allocations.items():
-                semester = int(semester_str.replace('hk', ''))
-                if credits_value and float(credits_value) > 0:
-                    SemesterAllocation.objects.create(
-                        curriculum_subject=curriculum_subject,
-                        semester=semester,
-                        credits=float(credits_value)
-                    )
+                if semester_str.startswith('hk'):
+                    semester = int(semester_str.replace('hk', ''))
+                    if credits_value and float(credits_value) > 0:
+                        SemesterAllocation.objects.update_or_create(
+                            curriculum_subject=curriculum_subject,
+                            semester=semester,
+                            defaults={'credits': float(credits_value)}
+                        )
+            
+            # Nếu là môn học mới được tạo, thêm vào curriculum
+            if subject_created:
+                subject.curricula.add(curriculum)
             
             return JsonResponse({
                 'status': 'success',
                 'message': 'Đã tạo môn học thành công',
-                'id': curriculum_subject.id
+                'id': curriculum_subject.id,
+                'subject_id': subject.id
             })
             
         except Exception as e:
@@ -1965,26 +1994,15 @@ class ImportTeachingDataView(View):
                     errors.append(f"Dòng {index + 2}: {str(e)}")
             
             # Lưu lịch sử import
-            import_history_data = {
-                'curriculum': curriculum,
-                'file_name': excel_file.name,
-                'file_size': excel_file.size,
-                'imported_by': user,
-                'record_count': len(processed_data),
-                'status': 'success' if not errors else 'partial',
-                'errors': errors if errors else None,
-            }
-            
-            # Chỉ thêm additional_info nếu không gây lỗi
-            try:
-                # Kiểm tra xem model có trường này không
-                test_instance = ImportHistory()
-                if hasattr(test_instance, 'additional_info'):
-                    import_history_data['additional_info'] = f"Sheet được sử dụng: {sheet_name}"
-            except:
-                pass  # Bỏ qua nếu có lỗi
-            
-            ImportHistory.objects.create(**import_history_data)
+            ImportHistory.objects.create(
+                file_name=excel_file.name,
+                file_size=excel_file.size,
+                imported_by=user,
+                record_count=len(processed_data),
+                status='success' if not errors else 'partial',
+                errors=errors if errors else None,
+                additional_info=f"Sheet được sử dụng: {sheet_name}"
+            )
             
             return {
                 'status': 'success',
