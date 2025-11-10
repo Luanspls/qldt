@@ -199,7 +199,7 @@ class Subject(models.Model):
         verbose_name="Loại môn học",
         db_column="subject_type_id"
     )
-    code = models.CharField(max_length=20, unique=True, verbose_name="Mã môn học")
+    code = models.CharField(max_length=20, unique=False, verbose_name="Mã môn học")
     name = models.CharField(max_length=255, verbose_name="Tên môn học")
     
     credits = models.DecimalField(
@@ -364,7 +364,7 @@ class SemesterAllocation(models.Model):
 
 
 class Instructor(models.Model):
-    code = models.CharField(max_length=20, unique=True, verbose_name="Mã giảng viên")
+    code = models.CharField(max_length=20, unique=False, verbose_name="Mã giảng viên")
     full_name = models.CharField(max_length=255, verbose_name="Họ và tên")
     email = models.EmailField(blank=True, null=True, verbose_name="Email")
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Số điện thoại")
@@ -443,7 +443,7 @@ class Course(models.Model):
 
 class Class(models.Model):
     """Lớp học - mỗi lớp học có thể học nhiều môn học"""
-    code = models.CharField(max_length=50, unique=True, verbose_name="Mã lớp")
+    code = models.CharField(max_length=50, unique=False, verbose_name="Mã lớp")
     name = models.CharField(max_length=255, verbose_name="Tên lớp")
     curriculum = models.ForeignKey(
         Curriculum,
@@ -494,7 +494,7 @@ class Class(models.Model):
 
 class CombinedClass(models.Model):
     """Lớp học ghép - quản lý các lớp học được ghép với nhau"""
-    code = models.CharField(max_length=50, unique=True, verbose_name="Mã lớp ghép")
+    code = models.CharField(max_length=50, unique=False, verbose_name="Mã lớp ghép")
     name = models.CharField(max_length=255, verbose_name="Tên lớp ghép")
     classes = models.ManyToManyField(
         Class,
