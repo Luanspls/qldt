@@ -971,55 +971,68 @@ def api_create_subject(request):
                 except SubjectGroup.DoesNotExist:
                     pass
             
-            # Tạo hoặc lấy Subject
-            subject, subject_created = Subject.objects.get_or_create(
-                code=data['code'],
-                defaults={
-                    'name': data['name'],
-                    'credits': float(data['credits']),
-                    'total_hours': int(data.get('total_hours', 0) or 0),
-                    'theory_hours': int(data.get('theory_hours', 0) or 0),
-                    'practice_hours': int(data.get('practice_hours', 0) or 0),
-                    'exam_hours': int(data.get('exam_hours', 0) or 0),
-                    'department': department,
-                    'subject_group': subject_group,
-                    'subject_type': subject_type,
-                    'prerequisites': data.get('prerequisites', ''),
-                    'learning_outcomes': data.get('learning_outcomes', ''),
-                    'description': data.get('description', ''),
-                }
-            )
+            # Tạo Subject trước (KHÔNG liên kết với curriculum ở đây)
+            try:
+                subject = Subject.objects.create(
+                    code=data['code'],
+                    name=data['name'],
+                    credits=float(data['credits']),
+                    total_hours=int(data.get('total_hours', 0) or 0),
+                    theory_hours=int(data.get('theory_hours', 0) or 0),
+                    practice_hours=int(data.get('practice_hours', 0) or 0),
+                    exam_hours=int(data.get('exam_hours', 0) or 0),
+                    department=department,
+                    subject_group=subject_group,
+                    subject_type=subject_type,
+                    prerequisites=data.get('prerequisites', ''),
+                    learning_outcomes=data.get('learning_outcomes', ''),
+                    description=data.get('description', ''),
+                )
+                print(f"Subject created: {subject.id}")  # Debug log
+            except Exception as e:
+                print(f"Error creating subject: {str(e)}")  # Debug log
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': f'Lỗi khi tạo môn học: {str(e)}'
+                })
             
-            # Tạo CurriculumSubject
-            curriculum_subject, cs_created = CurriculumSubject.objects.get_or_create(
-                curriculum=curriculum,
-                subject=subject,
-                defaults={
-                    'credits': float(data['credits']),
-                    'total_hours': int(data.get('total_hours', 0) or 0),
-                    'theory_hours': int(data.get('theory_hours', 0) or 0),
-                    'practice_hours': int(data.get('practice_hours', 0) or 0),
-                    'exam_hours': int(data.get('exam_hours', 0) or 0),
-                    'semester': int(data.get('semester', 0) or None),
-                    'order_number': int(data.get('order_number', 0) or 0)
-                }
-            )
+            # Tạo CurriculumSubject để liên kết
+            try:
+                curriculum_subject = CurriculumSubject.objects.create(
+                    curriculum=curriculum,
+                    subject=subject,
+                    credits=float(data['credits']),
+                    total_hours=int(data.get('total_hours', 0) or 0),
+                    theory_hours=int(data.get('theory_hours', 0) or 0),
+                    practice_hours=int(data.get('practice_hours', 0) or 0),
+                    exam_hours=int(data.get('exam_hours', 0) or 0),
+                    semester=int(data.get('semester', 0)) if data.get('semester') else None,
+                    order_number=int(data.get('order_number', 0) or 0)
+                )
+                print(f"CurriculumSubject created: {curriculum_subject.id}")  # Debug log
+            except Exception as e:
+                # Nếu tạo CurriculumSubject thất bại, xóa Subject đã tạo
+                subject.delete()
+                print(f"Error creating curriculum_subject: {str(e)}")  # Debug log
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': f'Lỗi khi thêm môn học vào chương trình: {str(e)}'
+                })
             
             # Tạo phân bố học kỳ
             semester_allocations = data.get('semester_allocations', {})
             for semester_str, credits_value in semester_allocations.items():
                 if semester_str.startswith('hk'):
                     semester = int(semester_str.replace('hk', ''))
-                    if credits_value and float(credits_value) > 0:
-                        SemesterAllocation.objects.update_or_create(
-                            curriculum_subject=curriculum_subject,
-                            semester=semester,
-                            defaults={'credits': float(credits_value)}
-                        )
-            
-            # Nếu là môn học mới được tạo, thêm vào curriculum
-            if subject_created:
-                subject.curricula.add(curriculum)
+                    if credits_value and str(credits_value).strip() and float(credits_value) > 0:
+                        try:
+                            SemesterAllocation.objects.create(
+                                curriculum_subject=curriculum_subject,
+                                semester=semester,
+                                credits=float(credits_value)
+                            )
+                        except Exception as e:
+                            print(f"Error creating semester allocation: {str(e)}")  # Debug log
             
             return JsonResponse({
                 'status': 'success',

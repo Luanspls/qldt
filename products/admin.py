@@ -3,7 +3,7 @@ from django.contrib import admin
 from .models import (
     Department, SubjectGroup, Major, Curriculum, SubjectType, 
     Subject, SemesterAllocation, Instructor, TeachingAssignment, 
-    Course, ImportHistory, CurriculumSubject
+    Course, ImportHistory, CurriculumSubject, Class, CombinedClass
 )
 
 
@@ -94,11 +94,40 @@ class InstructorAdmin(admin.ModelAdmin):
     search_fields = ['code', 'full_name']
     list_filter = ['department', 'subject_group', 'is_active']
 
+@admin.register(Class)
+class ClassAdmin(admin.ModelAdmin):
+    list_display = ['code', 'name', 'curriculum', 'course', 'is_combined', 'start_date', 'end_date']
+    search_fields = ['code', 'name']
+    list_filter = ['curriculum', 'course', 'is_combined', 'start_date']
+    readonly_fields = ['created_at', 'updated_at']
+
+@admin.register(CombinedClass)
+class CombinedClassAdmin(admin.ModelAdmin):
+    list_display = ['code', 'name', 'curriculum', 'get_classes_count']
+    search_fields = ['code', 'name']
+    list_filter = ['curriculum']
+    filter_horizontal = ['classes']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def get_classes_count(self, obj):
+        return obj.classes.count()
+    get_classes_count.short_description = 'Số lớp được ghép'
+
 @admin.register(TeachingAssignment)
 class TeachingAssignmentAdmin(admin.ModelAdmin):
-    list_display = ['instructor', 'get_subject_code', 'get_subject_name', 'academic_year', 'semester', 'is_main_instructor']
-    list_filter = ['academic_year', 'semester', 'is_main_instructor']
-    search_fields = ['instructor__full_name', 'curriculum_subject__subject__code', 'curriculum_subject__subject__name']
+    list_display = [
+        'instructor', 'get_subject_code', 'get_subject_name', 
+        'get_class_info', 'academic_year', 'semester', 
+        'is_main_instructor', 'student_count'
+    ]
+    list_filter = ['academic_year', 'semester', 'is_main_instructor', 'class_obj', 'combined_class']
+    search_fields = [
+        'instructor__full_name', 
+        'curriculum_subject__subject__code', 
+        'curriculum_subject__subject__name',
+        'class_obj__code',
+        'combined_class__code'
+    ]
     
     def get_subject_code(self, obj):
         return obj.curriculum_subject.subject.code
@@ -107,6 +136,14 @@ class TeachingAssignmentAdmin(admin.ModelAdmin):
     def get_subject_name(self, obj):
         return obj.curriculum_subject.subject.name
     get_subject_name.short_description = 'Tên môn học'
+    
+    def get_class_info(self, obj):
+        if obj.class_obj:
+            return f"{obj.class_obj.code} (Thường)"
+        elif obj.combined_class:
+            return f"{obj.combined_class.code} (Ghép)"
+        return "Không xác định"
+    get_class_info.short_description = 'Lớp học'
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
