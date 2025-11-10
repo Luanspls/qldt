@@ -253,11 +253,11 @@ class Subject(models.Model):
         db_table = 'subjects'
         verbose_name = 'Môn học'
         verbose_name_plural = 'Các môn học'
-        # unique_together = []
+        unique_together = ['code', 'curricula']
         # constraints = [
         #     models.UniqueConstraint(fields=['code'], name='unique_subject_code')
         # ]
-        ordering = ['code']
+        ordering = ['curricula', 'code']
 
     def __str__(self):
         return f"{self.code} - {self.name}"
