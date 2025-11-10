@@ -574,6 +574,16 @@ class ImportExcelView(View):
                     except (ValueError, TypeError):
                         kiem_tra_thi = 0
                     
+                    # Xác định học kỳ mặc định từ phân bố học kỳ
+                    default_semester = None
+                    for hk in range(1, 7):
+                        column_name = f'HK{hk}'
+                        if column_name in df.columns:
+                            credits_value = row.get(column_name)
+                            if credits_value and str(credits_value).strip() and str(credits_value).strip() not in ['', 'nan', 'x', 'X']:
+                                default_semester = hk
+                                break
+                    
                     # Lấy hoặc tạo department - sử dụng giá trị chính xác từ database
                     department_name = str(row.get('Đơn vị', '')).strip()
                     department = None
@@ -640,7 +650,7 @@ class ImportExcelView(View):
                             'exam_hours': kiem_tra_thi,
                             'department': department,
                             'subject_type': subject_type,
-                            'subject_group': subject_group,
+                            'subject_group': subject_group
                         }
                     )
                     
@@ -654,7 +664,8 @@ class ImportExcelView(View):
                             'theory_hours': ly_thuyet,
                             'practice_hours': thuc_hanh,
                             'exam_hours': kiem_tra_thi,
-                            'order_number': order_number
+                            'order_number': order_number,
+                            'semester': default_semester
                         }
                     )
                     
@@ -684,6 +695,7 @@ class ImportExcelView(View):
                         'ten_mon_hoc': subject.name,
                         'so_tin_chi': float(curriculum_subject.credits),
                         'tong_so_gio': curriculum_subject.total_hours,
+                        'hoc_ky': curriculum_subject.semester
                     })
                     
                 except Exception as e:
