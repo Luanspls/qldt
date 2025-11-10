@@ -640,6 +640,7 @@ class ImportExcelView(View):
                     
                     # Tạo hoặc cập nhật subject
                     subject, created = Subject.objects.update_or_create(
+                        curricula = curriculum, 
                         code=ma_mon_hoc,
                         defaults={
                             'name': ten_mon_hoc,
