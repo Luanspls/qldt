@@ -329,7 +329,7 @@ class Subject(models.Model):
 #     curriculum = instance.curriculum
 
 class SemesterAllocation(models.Model):
-    curriculum_subject = models.ForeignKey(
+    base_subject = models.ForeignKey(
         Subject, 
         on_delete=models.CASCADE, 
         related_name='semester_allocations',
@@ -352,11 +352,11 @@ class SemesterAllocation(models.Model):
         db_table = 'semester_allocations'
         verbose_name = 'Phân bố học kỳ'
         verbose_name_plural = 'Phân bố học kỳ'
-        unique_together = ['curriculum_subject', 'semester']
+        unique_together = ['base_subject', 'semester']
         ordering = ['semester']
 
     def __str__(self):
-        return f"{self.curriculum_subject.code} - HK{self.semester} ({self.credits} tín chỉ)"
+        return f"{self.base_subject.code} - HK{self.semester} ({self.credits} tín chỉ)"
 
 
 class Instructor(models.Model):

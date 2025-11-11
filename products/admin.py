@@ -75,12 +75,12 @@ class SubjectAdmin(admin.ModelAdmin):
 
 @admin.register(SemesterAllocation)
 class SemesterAllocationAdmin(admin.ModelAdmin):
-    list_display = ['curriculum_subject', 'semester', 'credits', 'created_at']
+    list_display = ['base_subject', 'semester', 'credits', 'created_at']
     list_filter = ['semester', 'created_at']
     search_fields = [
-        'curriculum_subject__subject__code', 
-        'curriculum_subject__subject__name',
-        'curriculum_subject__curriculum__code'
+        'base_subject__code', 
+        'base_subject__name',
+        'base_subject__curriculum__code'
     ]
 
 @admin.register(Instructor)
