@@ -6,6 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import re
 
 class Department(models.Model):
     code = models.CharField(max_length=20, unique=True, verbose_name="Mã khoa")
@@ -137,37 +138,6 @@ class Curriculum(models.Model):
         if self.total_hours < (self.theory_hours + self.practice_hours):
             raise ValidationError("Tổng số giờ không được nhỏ hơn tổng giờ lý thuyết và thực hành")
     
-    # def get_subjects_by_type(self, subject_type_name=None):
-    #     """Lấy môn học theo loại"""
-    #     subjects = self.subjects.all()
-    #     if subject_type_name:
-    #         subjects = subjects.filter(subject_type__name=subject_type_name)
-    #     return subjects
-
-    # def get_total_credits(self):
-    #     """Tính tổng số tín chỉ"""
-    #     return self.curriculum_subjects.aggregate(total=models.Sum('credits'))['total'] or 0
-
-    # def get_total_hours(self):
-    #     """Tính tổng số giờ"""
-    #     return self.curriculum_subjects.aggregate(total=models.Sum('total_hours'))['total'] or 0
-
-    # def update_totals(self):
-    #     """Cập nhật tổng số tín chỉ và giờ từ các môn học"""
-    #     from django.db.models import Sum
-    #     aggregates = self.curriculum_subjects.aggregate(
-    #         total_credits=Sum('credits'),
-    #         total_hours=Sum('total_hours'),
-    #         total_theory=Sum('theory_hours'),
-    #         total_practice=Sum('practice_hours')
-    #     )
-        
-    #     self.total_credits = aggregates['total_credits'] or 0
-    #     self.total_hours = aggregates['total_hours'] or 0
-    #     self.theory_hours = aggregates['total_theory'] or 0
-    #     self.practice_hours = aggregates['total_practice'] or 0
-    #     self.save()
-
 class SubjectType(models.Model):
     code = models.CharField(max_length=20, unique=True, verbose_name="Mã loại môn học")
     name = models.CharField(max_length=100, verbose_name="Tên loại môn học")
@@ -184,10 +154,11 @@ class SubjectType(models.Model):
 
 
 class Subject(models.Model):
-    curricula = models.ManyToManyField(
+    code = models.CharField(max_length=50, unique=True, verbose_name="Mã môn học")
+    name = models.CharField(max_length=255, verbose_name="Tên môn học")
+    curriculum = models.ForeignKey(
         Curriculum,
-        through='CurriculumSubject',
-        related_name='subjects',
+        on_delete=models.CASCADE,
         verbose_name="Chương trình đào tạo",
         blank=True
     )
@@ -199,34 +170,27 @@ class Subject(models.Model):
         verbose_name="Loại môn học",
         db_column="subject_type_id"
     )
-    code = models.CharField(max_length=20, unique=False, verbose_name="Mã môn học")
-    name = models.CharField(max_length=255, verbose_name="Tên môn học")
     
+    # Thông tin chung
     credits = models.DecimalField(
         max_digits=4, 
         decimal_places=2,
         validators=[MinValueValidator(0)],
-        verbose_name="Số tín chỉ mặc định",
+        verbose_name="Số tín chỉ",
         default=0
     )
-    total_hours = models.IntegerField(default=0, verbose_name="Tổng số giờ mặc định")
-    theory_hours = models.IntegerField(default=0, verbose_name="Số giờ lý thuyết mặc định")
-    practice_hours = models.IntegerField(default=0, verbose_name="Số giờ thực hành mặc định")
-    exam_hours = models.IntegerField(default=0, verbose_name="Số giờ kiểm tra/thi mặc định")
+    total_hours = models.IntegerField(default=0, verbose_name="Tổng số giờ")
+    theory_hours = models.IntegerField(default=0, verbose_name="Số giờ lý thuyết")
+    practice_hours = models.IntegerField(default=0, verbose_name="Số giờ thực hành")
+    exam_hours = models.IntegerField(default=0, verbose_name="Số giờ kiểm tra/thi")
+    semester = models.IntegerField(
+        null=True, 
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+        verbose_name="Học kỳ mặc định"
+    )
     
-    is_elective = models.BooleanField(default=False, verbose_name="Là môn tự chọn")
-    elective_group = models.CharField(
-        max_length=50, 
-        blank=True, 
-        null=True,
-        verbose_name="Nhóm môn tự chọn"
-    )
-    min_elective_credits = models.DecimalField(
-        max_digits=4, 
-        decimal_places=2,
-        default=0,
-        verbose_name="Số tín chỉ tối thiểu phải chọn"
-    )
+    # Thông tin quản lý
     department = models.ForeignKey(
         Department, 
         on_delete=models.SET_NULL, 
@@ -243,98 +207,130 @@ class Subject(models.Model):
         verbose_name="Tổ bộ môn",
         db_column="subject_group_id"
     )
+    
+    # Thông tin bổ sung
+    is_elective = models.BooleanField(default=False, verbose_name="Là môn tự chọn")
+    elective_group = models.CharField(
+        max_length=50, 
+        blank=True, 
+        null=True,
+        verbose_name="Nhóm môn tự chọn"
+    )
     prerequisites = models.TextField(blank=True, null=True, verbose_name="Điều kiện tiên quyết")
     learning_outcomes = models.TextField(blank=True, null=True, verbose_name="Chuẩn đầu ra")
     description = models.TextField(blank=True, null=True, verbose_name="Mô tả")
+    
+     # Thông tin hệ thống
+    order_number = models.IntegerField(default=0, verbose_name="Thứ tự trong chương trình")
+    original_code = models.CharField(max_length=20, verbose_name="Mã gốc từ file import")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
         
     class Meta:
         db_table = 'subjects'
-        verbose_name = 'Môn học'
-        verbose_name_plural = 'Các môn học'
-        # unique_together = []
-        # constraints = [
-        #     models.UniqueConstraint(fields=['code'], name='unique_subject_code')
-        # ]
-        ordering = ['code']
-
-    def __str__(self):
-        return f"{self.code} - {self.name}"
-    
-    @property
-    def curriculum_count(self):
-        """Số chương trình chứa môn học này"""
-        return self.curricula.count()
-
-class CurriculumSubject(models.Model):
-    curriculum = models.ForeignKey(
-        Curriculum, 
-        on_delete=models.CASCADE,
-        verbose_name="Chương trình đào tạo"
-    )
-    subject = models.ForeignKey(
-        Subject,
-        on_delete=models.CASCADE,
-        verbose_name="Môn học"
-    )
-    # Các trường đặc thù cho môn học trong chương trình cụ thể
-    credits = models.DecimalField(
-        max_digits=4, 
-        decimal_places=2,
-        validators=[MinValueValidator(0)],
-        verbose_name="Số tín chỉ",
-        default=0
-    )
-    total_hours = models.IntegerField(default=0, verbose_name="Tổng số giờ")
-    theory_hours = models.IntegerField(default=0, verbose_name="Số giờ lý thuyết")
-    practice_hours = models.IntegerField(default=0, verbose_name="Số giờ thực hành")
-    exam_hours = models.IntegerField(default=0, verbose_name="Số giờ kiểm tra/thi")
-    order_number = models.IntegerField(default=0, verbose_name="Thứ tự")
-    
-    # Phân bố học kỳ có thể chuyển vào đây hoặc giữ trong SemesterAllocation
-    semester = models.IntegerField(
-        null=True, 
-        blank=True,
-        validators=[MinValueValidator(1), MaxValueValidator(12)],
-        verbose_name="Học kỳ mặc định"
-    )
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'curriculum_subjects'
         verbose_name = 'Môn học trong chương trình'
         verbose_name_plural = 'Các môn học trong chương trình'
-        unique_together = ['curriculum', 'subject']
-        ordering = ['order_number']
+        ordering = ['curriculum', 'order_number']
 
     def __str__(self):
-        return f"{self.curriculum.code} - {self.subject.code}"
-    
+        return f"{self.code} - {self.name} ({self.curriculum.code})"
+        
+    def clean(self):
+        """Tự động tạo mã duy nhất nếu chưa có"""
+        if not self.code:
+            self.code = self.generate_unique_code()
+        
+    def generate_unique_code(self):
+        """Tạo mã môn học duy nhất dựa trên mã chương trình và mã gốc"""
+        base_code = self.original_code or re.sub(r'[^A-Z0-9]', '', self.name.upper())[:10]
+        curriculum_prefix = self.curriculum.code.replace(' ', '_').upper()[:10]
+        
+        # Tạo mã cơ sở
+        proposed_code = f"{curriculum_prefix}_{base_code}"
+        
+        # Kiểm tra và tạo mã duy nhất
+        counter = 1
+        unique_code = proposed_code
+        while Subject.objects.filter(code=unique_code).exists():
+            unique_code = f"{proposed_code}_{counter}"
+            counter += 1
+            
+        return unique_code
+
     def save(self, *args, **kwargs):
-        # Nếu không có giá trị, sử dụng giá trị mặc định từ Subject
-        if self.credits == 0:
-            self.credits = self.subject.credits
-        if self.total_hours == 0:
-            self.total_hours = self.subject.total_hours
-        if self.theory_hours == 0:
-            self.theory_hours = self.subject.theory_hours
-        if self.practice_hours == 0:
-            self.practice_hours = self.subject.practice_hours
-        if self.exam_hours == 0:
-            self.exam_hours = self.subject.exam_hours
+        # Tự động tạo mã duy nhất nếu chưa có
+        if not self.code:
+            self.code = self.generate_unique_code()
         super().save(*args, **kwargs)
 
-@receiver(post_save, sender=CurriculumSubject)
-def update_curriculum_credits(sender, instance, **kwargs):
-    """Cập nhật tổng số tín chỉ của chương trình khi môn học thay đổi"""
-    curriculum = instance.curriculum
+# class CurriculumSubject(models.Model):
+#     curriculum = models.ForeignKey(
+#         Curriculum, 
+#         on_delete=models.CASCADE,
+#         verbose_name="Chương trình đào tạo"
+#     )
+#     subject = models.ForeignKey(
+#         Subject,
+#         on_delete=models.CASCADE,
+#         verbose_name="Môn học"
+#     )
+#     # Các trường đặc thù cho môn học trong chương trình cụ thể
+#     credits = models.DecimalField(
+#         max_digits=4, 
+#         decimal_places=2,
+#         validators=[MinValueValidator(0)],
+#         verbose_name="Số tín chỉ",
+#         default=0
+#     )
+#     total_hours = models.IntegerField(default=0, verbose_name="Tổng số giờ")
+#     theory_hours = models.IntegerField(default=0, verbose_name="Số giờ lý thuyết")
+#     practice_hours = models.IntegerField(default=0, verbose_name="Số giờ thực hành")
+#     exam_hours = models.IntegerField(default=0, verbose_name="Số giờ kiểm tra/thi")
+#     order_number = models.IntegerField(default=0, verbose_name="Thứ tự")
+    
+#     # Phân bố học kỳ có thể chuyển vào đây hoặc giữ trong SemesterAllocation
+#     semester = models.IntegerField(
+#         null=True, 
+#         blank=True,
+#         validators=[MinValueValidator(1), MaxValueValidator(12)],
+#         verbose_name="Học kỳ mặc định"
+#     )
+    
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+
+#     class Meta:
+#         db_table = 'curriculum_subjects'
+#         verbose_name = 'Môn học trong chương trình'
+#         verbose_name_plural = 'Các môn học trong chương trình'
+#         unique_together = ['curriculum', 'subject']
+#         ordering = ['order_number']
+
+#     def __str__(self):
+#         return f"{self.curriculum.code} - {self.subject.code}"
+    
+#     def save(self, *args, **kwargs):
+#         # Nếu không có giá trị, sử dụng giá trị mặc định từ Subject
+#         if self.credits == 0:
+#             self.credits = self.subject.credits
+#         if self.total_hours == 0:
+#             self.total_hours = self.subject.total_hours
+#         if self.theory_hours == 0:
+#             self.theory_hours = self.subject.theory_hours
+#         if self.practice_hours == 0:
+#             self.practice_hours = self.subject.practice_hours
+#         if self.exam_hours == 0:
+#             self.exam_hours = self.subject.exam_hours
+#         super().save(*args, **kwargs)
+
+# @receiver(post_save, sender=Subject)
+# def update_curriculum_credits(sender, instance, **kwargs):
+#     """Cập nhật tổng số tín chỉ của chương trình khi môn học thay đổi"""
+#     curriculum = instance.curriculum
 
 class SemesterAllocation(models.Model):
     curriculum_subject = models.ForeignKey(
-        CurriculumSubject, 
+        Subject, 
         on_delete=models.CASCADE, 
         related_name='semester_allocations',
         verbose_name="Môn học trong chương trình",
@@ -360,7 +356,7 @@ class SemesterAllocation(models.Model):
         ordering = ['semester']
 
     def __str__(self):
-        return f"{self.curriculum_subject.subject.code} - HK{self.semester} ({self.credits} tín chỉ)"
+        return f"{self.curriculum_subject.code} - HK{self.semester} ({self.credits} tín chỉ)"
 
 
 class Instructor(models.Model):
@@ -522,7 +518,7 @@ class CombinedClass(models.Model):
 # Cập nhật model TeachingAssignment để thêm trường lớp học
 class TeachingAssignment(models.Model):
     curriculum_subject = models.ForeignKey(
-        CurriculumSubject, 
+        Subject, 
         on_delete=models.CASCADE, 
         related_name='teaching_assignments',
         verbose_name="Môn học trong chương trình"
@@ -578,7 +574,7 @@ class TeachingAssignment(models.Model):
     def __str__(self):
         role = "Chính" if self.is_main_instructor else "Phụ"
         class_name = self.class_obj.code if self.class_obj else self.combined_class.code if self.combined_class else "Không xác định"
-        return f"{self.instructor.full_name} - {self.curriculum_subject.subject.code} - {class_name} ({self.academic_year}-HK{self.semester}) - {role}"
+        return f"{self.instructor.full_name} - {self.curriculum_subject.code} - {class_name} ({self.academic_year}-HK{self.semester}) - {role}"
 
     def save(self, *args, **kwargs):
         # Đảm bảo chỉ có một trong hai trường class_obj hoặc combined_class được set

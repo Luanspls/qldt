@@ -6,7 +6,7 @@ from django.shortcuts import render, get_object_or_404
 from django.core.serializers import serialize
 from django.views import View
 from .models import (
-    Department, SubjectGroup, Curriculum, Course, Subject, CurriculumSubject, SubjectType, 
+    Department, SubjectGroup, Curriculum, Course, Subject, SubjectType, 
     SemesterAllocation, Major, ImportHistory, Class, CombinedClass, TeachingAssignment, Instructor
 )
 import pandas as pd
@@ -504,7 +504,9 @@ class ImportExcelView(View):
                         'status': 'success', 
                         'message': f'Import file Excel thành công: {result["created_count"]} môn học được tạo, {result["updated_count"]} môn học được cập nhật',
                         'data': result['processed_data'],
-                        'sheet_used': sheet_name
+                        'sheet_used': sheet_name,
+                        'code_mapping': [{'original': item['ma_mon_hoc_goc'], 'new': item['ma_mon_hoc_moi']} 
+                                    for item in result['processed_data']]
                     })
                 else:
                     return JsonResponse({'status': 'error', 'message': result['message']})
@@ -540,10 +542,10 @@ class ImportExcelView(View):
                         continue
                     
                     # Chuẩn hóa dữ liệu
-                    ma_mon_hoc = str(row.get('Mã môn học')).strip()
+                    original_code = str(row.get('Mã môn học')).strip()
                     ten_mon_hoc = str(row.get('Tên học phần')).strip()
                     
-                    if not ma_mon_hoc or not ten_mon_hoc:
+                    if not original_code or not ten_mon_hoc:
                         errors.append(f"Dòng {index + 2}: Mã môn học và Tên học phần không được để trống")
                         continue
                     
@@ -638,11 +640,35 @@ class ImportExcelView(View):
                     except (ValueError, TypeError):
                         order_number = index + 1
                     
+                    # Tạo mã duy nhất cho môn học
+                    curriculum_prefix = curriculum.code.replace(' ', '_').upper()[:10]
+                    base_code = original_code
+                    
+                    # Kiểm tra xem mã đã tồn tại chưa
+                    proposed_code = f"{curriculum_prefix}_{base_code}"
+                    counter = 1
+                    unique_code = proposed_code
+                    
+                    while Subject.objects.filter(code=unique_code).exists():
+                        # Kiểm tra xem có phải là cùng một môn học không (dựa trên tên và các thuộc tính)
+                        existing_subject = Subject.objects.get(code=unique_code)
+                        if (existing_subject.name == ten_mon_hoc and
+                            existing_subject.curriculum == curriculum_id and
+                            float(existing_subject.credits) == so_tin_chi and
+                            int(existing_subject.semester) == default_semester):
+                            # Nếu giống hệt, sử dụng môn học hiện có
+                            break
+                        else:
+                            # Nếu khác, tạo mã mới
+                            unique_code = f"{proposed_code}_{counter}"
+                            counter += 1
+                    
                     # Tạo hoặc cập nhật subject
-                    subject, created = Subject.objects.update_or_create(
-                        code=ma_mon_hoc,
+                    base_subject, created = Subject.objects.update_or_create(
+                        code=unique_code,
                         defaults={
                             'name': ten_mon_hoc,
+                            'curriculum': curriculum,
                             'credits': so_tin_chi,
                             'total_hours': tong_so_gio,
                             'theory_hours': ly_thuyet,
@@ -650,24 +676,25 @@ class ImportExcelView(View):
                             'exam_hours': kiem_tra_thi,
                             'department': department,
                             'subject_type': subject_type,
-                            'subject_group': subject_group
+                            'subject_group': subject_group,
+                            'original_code': original_code
                         }
                     )
                     
-                    # Tạo hoặc cập nhật CurriculumSubject
-                    curriculum_subject, cs_created = CurriculumSubject.objects.update_or_create(
-                        curriculum=curriculum,
-                        subject=subject,
-                        defaults={
-                            'credits': so_tin_chi,
-                            'total_hours': tong_so_gio,
-                            'theory_hours': ly_thuyet,
-                            'practice_hours': thuc_hanh,
-                            'exam_hours': kiem_tra_thi,
-                            'order_number': order_number,
-                            'semester': default_semester
-                        }
-                    )
+                    # # Tạo hoặc cập nhật CurriculumSubject
+                    # curriculum_subject, cs_created = CurriculumSubject.objects.update_or_create(
+                    #     curriculum=curriculum,
+                    #     subject=base_subject,
+                    #     defaults={
+                    #         'credits': so_tin_chi,
+                    #         'total_hours': tong_so_gio,
+                    #         'theory_hours': ly_thuyet,
+                    #         'practice_hours': thuc_hanh,
+                    #         'exam_hours': kiem_tra_thi,
+                    #         'order_number': order_number,
+                    #         'semester': default_semester
+                    #     }
+                    # )
                     
                     if created:
                         created_count += 1
@@ -683,7 +710,7 @@ class ImportExcelView(View):
                                 try:
                                     credit_value = float(credits_value)
                                     SemesterAllocation.objects.update_or_create(
-                                        curriculum_subject=curriculum_subject,
+                                        base_subject=base_subject,
                                         semester=hk,
                                         defaults={'credits': credit_value}
                                     )
@@ -691,11 +718,12 @@ class ImportExcelView(View):
                                     errors.append(f"Dòng {index + 2} - HK{hk}: Giá trị tín chỉ không hợp lệ: {credits_value}")
                     
                     processed_data.append({
-                        'ma_mon_hoc': subject.code,
-                        'ten_mon_hoc': subject.name,
-                        'so_tin_chi': float(curriculum_subject.credits),
-                        'tong_so_gio': curriculum_subject.total_hours,
-                        'hoc_ky': curriculum_subject.semester
+                        'ma_mon_hoc_goc': original_code,
+                        'ma_mon_hoc_moi': base_subject.code,
+                        'ten_mon_hoc': base_subject.name,
+                        'so_tin_chi': float(base_subject.credits),
+                        'tong_so_gio': base_subject.total_hours,
+                        'hoc_ky': default_semester
                     })
                     
                 except Exception as e:
@@ -746,7 +774,6 @@ class ImportExcelView(View):
         except Curriculum.DoesNotExist:
             return {'status': 'error', 'message': 'Chương trình đào tạo không tồn tại'}
         except Exception as e:
-            print(f"Error in process_excel_data: {str(e)}")
             return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}
     
     def get_sheet_names(self, excel_file):
@@ -758,6 +785,39 @@ class ImportExcelView(View):
         except Exception as e:
             print(f"Error getting sheet names: {str(e)}")
             return []
+
+# Hàm tạo mã duy nhất (helper)
+def generate_subject_code(self, curriculum, original_code, name, credits, total_hours):
+    """Tạo mã môn học duy nhất"""
+    curriculum_prefix = curriculum.code.replace(' ', '_').upper()[:10]
+    base_code = original_code
+    
+    # Tạo mã đề xuất
+    proposed_code = f"{curriculum_prefix}_{base_code}"
+    
+    # Kiểm tra xem mã đã tồn tại chưa
+    counter = 1
+    unique_code = proposed_code
+    
+    while Subject.objects.filter(code=unique_code).exists():
+        existing_subject = Subject.objects.get(code=unique_code)
+        
+        # Kiểm tra xem có phải cùng một môn học không
+        is_same_subject = (
+            existing_subject.name == name and
+            float(existing_subject.credits) == credits and
+            existing_subject.total_hours == total_hours
+        )
+        
+        if is_same_subject:
+            # Nếu là cùng môn học, sử dụng mã hiện tại
+            break
+        else:
+            # Nếu khác môn học, tạo mã mới
+            unique_code = f"{proposed_code}_{counter}"
+            counter += 1
+    
+    return unique_code
     
 class ThongKeView(View):
     def get(self, request):

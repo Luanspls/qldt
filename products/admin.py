@@ -3,7 +3,7 @@ from django.contrib import admin
 from .models import (
     Department, SubjectGroup, Major, Curriculum, SubjectType, 
     Subject, SemesterAllocation, Instructor, TeachingAssignment, 
-    Course, ImportHistory, CurriculumSubject, Class, CombinedClass
+    Course, ImportHistory, Class, CombinedClass
 )
 
 
@@ -12,11 +12,6 @@ class SemesterAllocationInline(admin.TabularInline):
     extra = 1
     fields = ['semester', 'credits']
     
-class CurriculumSubjectInline(admin.TabularInline):
-    model = CurriculumSubject
-    extra = 1
-    fields = ['subject', 'credits', 'total_hours', 'semester', 'order_number']
-
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ['code', 'name', 'created_at']
@@ -46,7 +41,7 @@ class CurriculumAdmin(admin.ModelAdmin):
     search_fields = ['code', 'name', 'academic_year']
     list_filter = ['major', 'status', 'academic_year', 'created_at']
     readonly_fields = ['created_at', 'updated_at', 'approved_at']
-    inlines = [CurriculumSubjectInline]
+    # inlines = [CurriculumSubjectInline]
     
     def subject_count(self, obj):
         return obj.subjects.count()
@@ -55,7 +50,7 @@ class CurriculumAdmin(admin.ModelAdmin):
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
     list_display = [
-        'code', 'name', 'subject_type', 'credits', 
+        'code', 'name', 'subject_type', 'credits', 'semester',
         'total_hours', 'is_elective', 'curriculum_count', 'created_at'
     ]
     search_fields = ['code', 'name']
@@ -63,20 +58,20 @@ class SubjectAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
     
     def curriculum_count(self, obj):
-        return obj.curricula.count()
+        return obj.curriculum.count()
     curriculum_count.short_description = 'Số chương trình'
 
-@admin.register(CurriculumSubject)
-class CurriculumSubjectAdmin(admin.ModelAdmin):
-    list_display = [
-        'curriculum', 'subject', 'credits', 'total_hours', 
-        'semester', 'order_number', 'created_at'
-    ]
-    list_filter = ['curriculum', 'semester', 'created_at']
-    search_fields = ['curriculum__code', 'curriculum__name', 'subject__code', 'subject__name']
-    readonly_fields = ['created_at', 'updated_at']
-    list_editable = ['credits', 'total_hours', 'semester', 'order_number']
-    inlines = [SemesterAllocationInline]
+# # @admin.register(CurriculumSubject)
+# class CurriculumSubjectAdmin(admin.ModelAdmin):
+#     list_display = [
+#         'curriculum', 'subject', 'credits', 'total_hours', 
+#         'semester', 'order_number', 'created_at'
+#     ]
+#     list_filter = ['curriculum', 'semester', 'created_at']
+#     search_fields = ['curriculum__code', 'curriculum__name', 'subject__code', 'subject__name']
+#     readonly_fields = ['created_at', 'updated_at']
+#     list_editable = ['credits', 'total_hours', 'semester', 'order_number']
+#     inlines = [SemesterAllocationInline]
 
 @admin.register(SemesterAllocation)
 class SemesterAllocationAdmin(admin.ModelAdmin):
@@ -130,11 +125,11 @@ class TeachingAssignmentAdmin(admin.ModelAdmin):
     ]
     
     def get_subject_code(self, obj):
-        return obj.curriculum_subject.subject.code
+        return obj.curriculum_subject.code
     get_subject_code.short_description = 'Mã môn học'
     
     def get_subject_name(self, obj):
-        return obj.curriculum_subject.subject.name
+        return obj.curriculum_subject.name
     get_subject_name.short_description = 'Tên môn học'
     
     def get_class_info(self, obj):
