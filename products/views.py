@@ -64,7 +64,7 @@ class TrainProgramManagerView(View):
             context = {
                 'departments': [],
                 'subject_groups': [],
-                'curricula': [],
+                'curriculum': [],
                 'courses': [],
                 'subject_types': [],
                 'majors': [],
@@ -298,6 +298,10 @@ class TrainProgramManagerView(View):
                     'id': cs.id,
                     'ma_mon_hoc': cs.code,
                     'ten_mon_hoc': cs.name,
+                    'curriculum_id': cs.curriculum.id if cs.curriculum else None,
+                    'curriculum_code': cs.curriculum.code if cs.curriculum else '',
+                    'curriculum_academic_year': cs.curriculum.academic_year if cs.curriculum else '',
+                    'loai_mon': cs.subject_type.name if cs.subject_type else '',
                     'so_tin_chi': float(cs.credits),
                     'tong_so_gio': cs.total_hours,
                     'ly_thuyet': cs.theory_hours,
@@ -310,18 +314,15 @@ class TrainProgramManagerView(View):
                     'hk5': semester_data.get('hk5', ''),
                     'hk6': semester_data.get('hk6', ''),
                     'don_vi': cs.department.name if cs.department else '',
+                    'bo_mon': cs.subject_group.name if cs.subject_group else '',
                     'giang_vien': self.get_instructors_for_subject(cs),
-                    'loai_mon': cs.subject_type.name if cs.subject_type else '',
                     'order_number': cs.order_number,
-                    'curriculum_id': cs.curriculum.id if cs.curriculum else None,
-                    'curriculum_code': cs.curriculum.code if cs.curriculum else '',
-                    'curriculum_academic_year': cs.curriculum.academic_year if cs.curriculum else '',
+                    'original_code': cs.original_code if cs.original_code else '',
                     'subject_id': cs.id
                 })
             
             return subject_data
         except Exception as e:
-            print(f"Error in get_subject_data: {str(e)}")
             return self.get_sample_data()
     
     def get_instructors_for_subject(self, curriculum_subject):
@@ -929,15 +930,15 @@ def api_subjects(request):
     
     # subjects = Subject.objects.all()
     curriculum_subjects = Subject.objects.select_related(
-        'subject__subject_type', 'subject__department', 'curriculum'
+        'subject_type', 'department', 'curriculum'
     ).all()
     
     if curriculum_id:
         curriculum_subjects = curriculum_subjects.filter(curriculum_id=curriculum_id)
     if department_id:
-        curriculum_subjects = curriculum_subjects.filter(subject__department_id=department_id)
+        curriculum_subjects = curriculum_subjects.filter(department_id=department_id)
     if subject_group_id:
-        curriculum_subjects = curriculum_subjects.filter(subject__subject_group_id=subject_group_id)
+        curriculum_subjects = curriculum_subjects.filter(subject_group_id=subject_group_id)
     
     # Sắp xếp theo loại môn và thứ tự
     curriculum_subjects = curriculum_subjects.order_by('order_number')

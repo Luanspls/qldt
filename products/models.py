@@ -194,7 +194,7 @@ class Subject(models.Model):
     department = models.ForeignKey(
         Department, 
         on_delete=models.SET_NULL, 
-        null=True, 
+        null=True,
         blank=True,
         verbose_name="Đơn vị quản lý",
         db_column="department_id"
