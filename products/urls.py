@@ -11,7 +11,6 @@ urlpatterns = [
     path('train-program/<int:id>/', views.TrainProgramManagerView.as_view(), name='train_program_update'),
     path('download-excel-template/', views.ImportExcelView.as_view(), name='download_excel_template'),
     path('import-excel/', views.ImportExcelView.as_view(), name='import_excel'),
-    path('download-excel-template/', views.ImportExcelView.as_view(), name='download_excel_template'),
     path('thong-ke/', views.ThongKeView.as_view(), name='thong_ke'),
     path('mon-hoc/<int:id>/', views.TrainProgramManagerView.as_view(), name='update_mon_hoc'),
     path('teaching-management/', views.TeachingManagementView.as_view(), name='teaching_management'),

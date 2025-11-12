@@ -661,14 +661,18 @@ class ImportExcelView(View):
                             counter += 1
                     
                     # Tạo hoặc cập nhật subject
-
+                    if subject_type_name == "Môn học tự chọn":
+                        is_elective = True
+                    else:
+                        is_elective = False
+                        
                     subject, created = Subject.objects.update_or_create(
-                        curricula = curriculum, 
+                        curriculum = curriculum, 
                         code = unique_code,
                         defaults={
                             'name': ten_mon_hoc,
-                            'curriculum': curriculum,
                             'credits': so_tin_chi,
+                            'semeseter': default_semester,
                             'total_hours': tong_so_gio,
                             'theory_hours': ly_thuyet,
                             'practice_hours': thuc_hanh,
@@ -676,6 +680,8 @@ class ImportExcelView(View):
                             'department': department,
                             'subject_type': subject_type,
                             'subject_group': subject_group,
+                            'is_elective': is_elective,
+                            'order_number': order_number,
                             'original_code': original_code
                         }
                     )
@@ -722,6 +728,9 @@ class ImportExcelView(View):
                         'ten_mon_hoc': subject.name,
                         'so_tin_chi': float(subject.credits),
                         'tong_so_gio': subject.total_hours,
+                        'ly_thuyet': subject.theory_hours,
+                        'thuc_hanh': subject.practice_hours,
+                        'kiem_tra_thi': subject.exam_hours,
                         'hoc_ky': subject.semester
                     })
                     
@@ -930,7 +939,7 @@ def api_subjects(request):
     
     # subjects = Subject.objects.all()
     curriculum_subjects = Subject.objects.select_related(
-        'subject_type', 'department', 'curriculum'
+        'semester', 'subject_type', 'department', 'curriculum'
     ).all()
     
     if curriculum_id:
