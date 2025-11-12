@@ -938,7 +938,7 @@ def api_subjects(request):
     
     # subjects = Subject.objects.all()
     curriculum_subjects = Subject.objects.select_related(
-        'semester', 'subject_type', 'department', 'curriculum'
+        'subject_type', 'department', 'curriculum'
     ).all()
     
     if curriculum_id:
