@@ -650,7 +650,7 @@ class ImportExcelView(View):
                         # Kiểm tra xem có phải là cùng một môn học không (dựa trên tên và các thuộc tính)
                         existing_subject = Subject.objects.get(code=unique_code)
                         if (existing_subject.name == ten_mon_hoc and
-                            existing_subject.curriculum.id == curriculum_id and
+                            existing_subject.curriculum.id == curriculum.id and
                             float(existing_subject.credits) == so_tin_chi and
                             int(existing_subject.semester) == default_semester):
                             # Nếu giống hệt, sử dụng môn học hiện có
