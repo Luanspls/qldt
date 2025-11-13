@@ -38,6 +38,9 @@
                     <button id="tab-combined-classes" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
                         Lớp học ghép
                     </button>
+                    <button id="tab-instructors" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        Giảng viên
+                    </button>
                     <button id="tab-teaching-assignments" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
                         Phân công giảng dạy
                     </button>
@@ -155,6 +158,70 @@
                             </tr>
                         </thead>
                         <tbody id="combined-classes-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Giảng viên -->
+            <div id="instructors-tab" class="tab-panel hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Quản lý Giảng viên</h3>
+                    <div class="flex space-x-2">
+                        <button id="btn-them-giang-vien" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Thêm giảng viên
+                        </button>
+                        <button onclick="openImportModal('instructor')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                            <i class="fas fa-file-excel mr-2"></i> Import Excel
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Bộ lọc giảng viên -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Khoa</label>
+                        <select id="filter-instructor-department" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả khoa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tổ bộ môn</label>
+                        <select id="filter-instructor-subject-group" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả tổ bộ môn</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                        <select id="filter-instructor-status" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả</option>
+                            <option value="true">Đang hoạt động</option>
+                            <option value="false">Ngừng hoạt động</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="btn-filter-instructors" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md w-full">
+                            Lọc
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã GV</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ và tên</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số điện thoại</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khoa</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổ BM</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="instructors-table-body" class="bg-white divide-y divide-gray-200">
                             <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
                         </tbody>
                     </table>
@@ -421,6 +488,88 @@
         </div>
     </div>
 
+    <!-- Modal thêm giảng viên -->
+    <div id="modal-them-giang-vien" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Thêm giảng viên mới</h3>
+                <button type="button" id="btn-dong-giang-vien" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="form-them-giang-vien" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Mã giảng viên *</label>
+                        <input type="text" name="code" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Vd: GV001"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Họ và tên *</label>
+                        <input type="text" name="full_name" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Vd: Nguyễn Văn A"
+                            required>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                        <input type="email" name="email" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Vd: nva@example.com">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Số điện thoại</label>
+                        <input type="text" name="phone" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Vd: 0123456789">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Khoa</label>
+                        <select name="department_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Chọn khoa --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Tổ bộ môn</label>
+                        <select name="subject_group_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Chọn tổ bộ môn --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_active" id="is_active" 
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
+                    <label for="is_active" class="ml-2 block text-sm text-gray-700 font-medium">
+                        Đang hoạt động
+                    </label>
+                </div>
+            </form>
+            
+            <div class="flex justify-end mt-6 space-x-3">
+                <button type="button" id="btn-huy-giang-vien" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2.5 px-6 rounded-md">
+                    <i class="fas fa-times mr-2"></i>Hủy
+                </button>
+                <button type="button" id="btn-luu-giang-vien" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-md">
+                    <i class="fas fa-save mr-2"></i>Lưu giảng viên
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal thêm phân công giảng dạy -->
     <div id="modal-them-phan-cong" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
         <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
@@ -624,6 +773,7 @@
         let allCourses = [];
         let allClasses = [];
         let allCombinedClasses = [];
+        let allSubjectGroups = [];
 
         // Khởi tạo khi trang tải xong
         document.addEventListener('DOMContentLoaded', function() {
@@ -640,6 +790,8 @@
                 .then(data => {
                     allInstructors = data;
                     populateDropdown('filter-instructor', data, 'full_name');
+                    // Điền dropdown khoa cho bộ lọc giảng viên
+                    populateDropdown('filter-instructor-department', allDepartments, 'name');
                 });
 
             // Tải danh sách chương trình
@@ -672,6 +824,14 @@
                 .then(response => response.json())
                 .then(data => {
                     allCombinedClasses = data;
+                });
+            
+            // Tải danh sách tổ bộ môn
+            fetch('/api/subject-groups/')
+                .then(response => response.json())
+                .then(data => {
+                    allSubjectGroups = data;
+                    populateDropdown('filter-instructor-subject-group', data, 'name');
                 });
         }
 
@@ -837,6 +997,15 @@
                     });
                 }
             });
+
+            // Xử lý modal giảng viên
+            document.getElementById('btn-them-giang-vien').addEventListener('click', openThemGiangVienModal);
+            document.getElementById('btn-dong-giang-vien').addEventListener('click', closeThemGiangVienModal);
+            document.getElementById('btn-huy-giang-vien').addEventListener('click', closeThemGiangVienModal);
+            document.getElementById('btn-luu-giang-vien').addEventListener('click', createGiangVien);
+
+            // Bộ lọc giảng viên
+            document.getElementById('btn-filter-instructors').addEventListener('click', loadInstructorsData);
         }
 
         // Hàm cập nhật tiêu đề trang
@@ -862,6 +1031,9 @@
                     break;
                 case 'teaching-assignments-tab':
                     loadTeachingAssignmentsData();
+                    break;
+                case 'instructors-tab':
+                    loadInstructorsData();
                     break;
                 case 'statistics-tab':
                     loadStatisticsData();
@@ -1496,6 +1668,175 @@
             });
         }
 
+        // Hàm tải dữ liệu giảng viên
+        function loadInstructorsData() {
+            const departmentId = document.getElementById('filter-instructor-department').value;
+            const subjectGroupId = document.getElementById('filter-instructor-subject-group').value;
+            const status = document.getElementById('filter-instructor-status').value;
+            
+            let url = '/api/instructors/?';
+            const params = [];
+            
+            if (departmentId) params.push(`department_id=${departmentId}`);
+            if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
+            if (status) params.push(`is_active=${status}`);
+            
+            url += params.join('&');
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('instructors-table-body');
+                    tbody.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                                    Không có dữ liệu giảng viên
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    data.forEach(instructor => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructor.code}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.full_name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.email || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.phone || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.department__name || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.subject_group__name || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${instructor.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${instructor.is_active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="editInstructor(${instructor.id})">Sửa</button>
+                                <button class="text-red-600 hover:text-red-900" onclick="deleteInstructor(${instructor.id})">Xóa</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error loading instructors:', error));
+        }
+
+        // Hàm điền dropdown cho modal giảng viên
+        function populateInstructorModalDropdowns() {
+            // Điền khoa
+            const departmentSelect = document.querySelector('#form-them-giang-vien select[name="department_id"]');
+            if (departmentSelect) {
+                departmentSelect.innerHTML = '<option value="">-- Chọn khoa --</option>';
+                allDepartments.forEach(department => {
+                    const option = document.createElement('option');
+                    option.value = department.id;
+                    option.textContent = department.name;
+                    departmentSelect.appendChild(option);
+                });
+            }
+
+            // Điền tổ bộ môn
+            const subjectGroupSelect = document.querySelector('#form-them-giang-vien select[name="subject_group_id"]');
+            if (subjectGroupSelect) {
+                subjectGroupSelect.innerHTML = '<option value="">-- Chọn tổ bộ môn --</option>';
+                allSubjectGroups.forEach(subjectGroup => {
+                    const option = document.createElement('option');
+                    option.value = subjectGroup.id;
+                    option.textContent = subjectGroup.name;
+                    subjectGroupSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Modal functions cho giảng viên
+        function openThemGiangVienModal() {
+            populateInstructorModalDropdowns();
+            document.getElementById('modal-them-giang-vien').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeThemGiangVienModal() {
+            document.getElementById('modal-them-giang-vien').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+            document.getElementById('form-them-giang-vien').reset();
+        }
+
+        function createGiangVien() {
+            const form = document.getElementById('form-them-giang-vien');
+            const formData = new FormData(form);
+            const data = {
+                code: formData.get('code'),
+                full_name: formData.get('full_name'),
+                email: formData.get('email') || null,
+                phone: formData.get('phone') || null,
+                department_id: formData.get('department_id') || null,
+                subject_group_id: formData.get('subject_group_id') || null,
+                is_active: formData.get('is_active') === 'on'
+            };
+
+            // Validate
+            if (!data.code || !data.full_name) {
+                alert('Vui lòng điền đầy đủ các trường bắt buộc');
+                return;
+            }
+
+            // Hiển thị loading
+            const saveBtn = document.getElementById('btn-luu-giang-vien');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang tạo...';
+            saveBtn.disabled = true;
+
+            // Gửi request tạo giảng viên
+            fetch('/api/instructors/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('✅ Đã tạo giảng viên thành công!');
+                    closeThemGiangVienModal();
+                    loadInstructorsData();
+                } else {
+                    alert('❌ Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Có lỗi xảy ra khi tạo giảng viên: ' + error.message);
+            })
+            .finally(() => {
+                // Khôi phục trạng thái nút
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            });
+        }
+
+        // Placeholder functions cho giảng viên
+        function editInstructor(id) {
+            alert('Chức năng sửa giảng viên đang được phát triển. ID: ' + id);
+        }
+
+        function deleteInstructor(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa giảng viên này?')) {
+                alert('Chức năng xóa giảng viên đang được phát triển. ID: ' + id);
+            }
+        }
+
+
         // Biến lưu trữ loại đối tượng đang import
         let currentImportObjectType = '';
 
@@ -1529,6 +1870,16 @@
                         'Mã lớp ghép không được trùng',
                         'Mã chương trình và các mã lớp thành phần phải tồn tại trong hệ thống',
                         'Các mã lớp thành phần phân cách bằng dấu phẩy'
+                    ];
+                    break;
+                case 'instructor':
+                    title = 'Import Giảng viên';
+                    notes = [
+                        'File Excel phải theo đúng định dạng mẫu',
+                        'Các cột bắt buộc: Mã giảng viên*, Họ và tên*',
+                        'Mã giảng viên không được trùng',
+                        'Email phải đúng định dạng',
+                        'Mã khoa và mã tổ bộ môn phải tồn tại trong hệ thống (nếu có)'
                     ];
                     break;
                 case 'teaching-assignment':
