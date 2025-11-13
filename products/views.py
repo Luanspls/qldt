@@ -401,14 +401,14 @@ class ImportExcelView(View):
                     'Khoa Kinh tế - Nông, Lâm nghiệp'
                 ],
                 'Loại môn': [
-                    'Bắt buộc', 'Bắt buộc', 'Bắt buộc', 
-                    'Bắt buộc', 'Bắt buộc', 'Bắt buộc',
-                    'Bắt buộc', 'Bắt buộc'
+                    'Môn học chung', 'Môn học chung', 'Môn học chung', 
+                    'Môn học bắt buộc', 'Môn học chung', 'Môn học chung',
+                    'Môn học cơ sở', 'Môn học chuyên ngành'
                 ],
                 'Tổ bộ môn': [
-                    'BM Lý luận chính trị', 'BM Lý luận chính trị', 'BM GD Thể chất & GD Quốc phòng và An ninh',
-                    'BM GD Thể chất & GD Quốc phòng và An ninh', 'BM Công nghệ thông tin', 'BM Tiếng Anh', 
-                    'BM Tâm lý học và Giáo dục học', 'BM Kinh tế'
+                    'Bộ môn Lý luận chính trị', 'Bộ môn Lý luận chính trị', 'Bộ môn GD Thể chất & GD Quốc phòng và An ninh',
+                    'Bộ môn GD Thể chất & GD Quốc phòng và An ninh', 'Bộ môn Công nghệ thông tin', 'Bộ môn Tiếng Anh', 
+                    'Bộ môn Tâm lý học và Giáo dục học', 'Bộ môn Kinh tế'
                 ],
                 'Điều kiện tiên quyết': ['', '', '', '', '', '', '', ''],
                 'Chuẩn đầu ra': ['', '', '', '', '', '', '', ''],
@@ -1575,7 +1575,7 @@ class ImportTeachingDataView(View):
             # Tạo workbook
             output = io.BytesIO()
                 
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 # Tạo sheet dữ liệu mẫu
                 if object_type == 'class':
                     sample_data = self.get_class_template()
@@ -1622,251 +1622,231 @@ class ImportTeachingDataView(View):
             return JsonResponse({'status': 'error', 'message': f"Lỗi tạo file mẫu: {str(e)}"})
     
     def create_class_guide_sheet(self, writer):
-        """Tạo sheet hướng dẫn cho import lớp học"""
-        guide_data = {}
+        """Tạo sheet hướng dẫn cho import lớp học - SỬA CHO XLSXWRITER"""
+        try:
+            # Lấy workbook và worksheet từ writer
+            workbook = writer.book
+            worksheet = workbook.add_worksheet('Hướng dẫn nhập liệu')
             
-        # Lấy danh sách chương trình
-        curricula = Curriculum.objects.all().values('code', 'name', 'academic_year')
-        guide_data['Chương trình đào tạo'] = {
-            'Mã chương trình': [c['code'] for c in curricula],
-            'Tên chương trình': [c['name'] for c in curricula],
-            'Năm học': [c['academic_year'] for c in curricula]
-        }
+            # Định dạng
+            bold_format = workbook.add_format({'bold': True})
+            header_format = workbook.add_format({'bold': True, 'bg_color': '#DDEBF7'})
             
-        # Lấy danh sách khóa học
-        courses = Course.objects.all().values('code', 'name', 'curriculum__code')
-        guide_data['Khóa học'] = {
-            'Mã khóa học': [c['code'] for c in courses],
-            'Tên khóa học': [c['name'] for c in courses],
-            'Mã chương trình': [c['curriculum__code'] for c in courses]
-        }
+            # Lấy danh sách chương trình
+            curricula = Curriculum.objects.all().values('code', 'name', 'academic_year')
+            # Lấy danh sách khóa học
+            courses = Course.objects.all().values('code', 'name', 'curriculum__code')
+            # Lấy danh sách lớp học hiện có
+            classes = Class.objects.all().values('code', 'name', 'curriculum__code', 'course__code')
             
-        # Lấy danh sách lớp học hiện có
-        classes = Class.objects.all().values('code', 'name', 'curriculum__code', 'course__code')
-        guide_data['Lớp học hiện có'] = {
-            'Mã lớp': [c['code'] for c in classes],
-            'Tên lớp': [c['name'] for c in classes],
-            'Mã chương trình': [c['curriculum__code'] for c in classes],
-            'Mã khóa học': [c['course__code'] for c in classes]
-        }
+            row = 0
             
-        # Tạo sheet hướng dẫn
-        workbook = writer.book
-        worksheet = workbook.create_sheet("Hướng dẫn nhập liệu")
-            
-        row = 1
-        for section, data in guide_data.items():
-            # Tiêu đề section
-            worksheet.cell(row=row, column=1, value=section.upper())
-            worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
+            # Section Chương trình đào tạo
+            worksheet.write(row, 0, "DANH SÁCH CHƯƠNG TRÌNH ĐÀO TẠO CÓ SẴN", bold_format)
             row += 1
-                
-            # Tiêu đề cột
-            col = 1
-            for col_name in data.keys():
-                worksheet.cell(row=row, column=col, value=col_name)
-                col += 1
+            worksheet.write(row, 0, "Mã chương trình", header_format)
+            worksheet.write(row, 1, "Tên chương trình", header_format)
+            worksheet.write(row, 2, "Năm học", header_format)
             row += 1
-                
-            # Dữ liệu
-            max_rows = max(len(values) for values in data.values())
-            for i in range(max_rows):
-                col = 1
-                for col_name, values in data.items():
-                    if i < len(values):
-                        worksheet.cell(row=row, column=col, value=values[i])
-                    col += 1
+            
+            for curriculum in curricula:
+                worksheet.write(row, 0, curriculum['code'])
+                worksheet.write(row, 1, curriculum['name'])
+                worksheet.write(row, 2, curriculum['academic_year'])
                 row += 1
                 
-            row += 2  # Thêm khoảng cách giữa các section
+            row += 2
             
-        # Thêm ghi chú
-        worksheet.cell(row=row, column=1, value="LƯU Ý QUAN TRỌNG:")
-        worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
-        row += 1
-            
-        notes = [
-            "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
-            "2. Các cột có dấu * là bắt buộc",
-            "3. Sử dụng các giá trị từ sheet này để đảm bảo tính nhất quán",
-            "4. Mã lớp không được trùng với các lớp đã có trong hệ thống",
-            "5. Ngày tháng nhập theo định dạng YYYY-MM-DD (ví dụ: 2023-09-01)"
-        ]
-            
-        for note in notes:
-            worksheet.cell(row=row, column=1, value=note)
+            # Section Khóa học
+            worksheet.write(row, 0, "DANH SÁCH KHÓA HỌC CÓ SẴN", bold_format)
             row += 1
-        
+            worksheet.write(row, 0, "Mã khóa học", header_format)
+            worksheet.write(row, 1, "Tên khóa học", header_format)
+            worksheet.write(row, 2, "Mã chương trình", header_format)
+            row += 1
+            
+            for course in courses:
+                worksheet.write(row, 0, course['code'])
+                worksheet.write(row, 1, course['name'])
+                worksheet.write(row, 2, course['curriculum__code'])
+                row += 1
+                
+            row += 2
+            
+            # Section Lớp học hiện có
+            worksheet.write(row, 0, "DANH SÁCH LỚP HỌC HIỆN CÓ", bold_format)
+            row += 1
+            worksheet.write(row, 0, "Mã lớp", header_format)
+            worksheet.write(row, 1, "Tên lớp", header_format)
+            worksheet.write(row, 2, "Mã chương trình", header_format)
+            worksheet.write(row, 3, "Mã khóa học", header_format)
+            row += 1
+            
+            for class_item in classes:
+                worksheet.write(row, 0, class_item['code'])
+                worksheet.write(row, 1, class_item['name'])
+                worksheet.write(row, 2, class_item['curriculum__code'])
+                worksheet.write(row, 3, class_item['course__code'])
+                row += 1
+                
+            row += 2
+            
+            # Thêm ghi chú
+            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format)
+            row += 1
+            
+            notes = [
+                "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
+                "2. Các cột có dấu * là bắt buộc",
+                "3. Sử dụng các giá trị từ danh sách trên để đảm bảo tính nhất quán",
+                "4. Mã lớp không được trùng với các lớp đã có trong hệ thống",
+                "5. Ngày tháng nhập theo định dạng YYYY-MM-DD (ví dụ: 2023-09-01)"
+            ]
+            
+            for note in notes:
+                worksheet.write(row, 0, note)
+                row += 1
+                
+        except Exception as e:
+            print(f"Error creating guide sheet: {str(e)}")
+
     def create_combined_class_guide_sheet(self, writer):
-        """Tạo sheet hướng dẫn cho import lớp học ghép"""
-        guide_data = {}
+        """Tạo sheet hướng dẫn cho import lớp học ghép - SỬA CHO XLSXWRITER"""
+        try:
+            workbook = writer.book
+            worksheet = workbook.add_worksheet('Hướng dẫn nhập liệu')
             
-        # Lấy danh sách chương trình
-        curricula = Curriculum.objects.all().values('code', 'name', 'academic_year')
-        guide_data['Chương trình đào tạo'] = {
-            'Mã chương trình': [c['code'] for c in curricula],
-            'Tên chương trình': [c['name'] for c in curricula],
-            'Năm học': [c['academic_year'] for c in curricula]
-        }
+            bold_format = workbook.add_format({'bold': True})
+            header_format = workbook.add_format({'bold': True, 'bg_color': '#E2EFDA'})
             
-        # Lấy danh sách lớp học có thể ghép
-        classes = Class.objects.filter(is_combined=False).values('code', 'name', 'curriculum__code')
-        guide_data['Lớp học có thể ghép'] = {
-            'Mã lớp': [c['code'] for c in classes],
-            'Tên lớp': [c['name'] for c in classes],
-            'Mã chương trình': [c['curriculum__code'] for c in classes]
-        }
+            # Lấy dữ liệu
+            curricula = Curriculum.objects.all().values('code', 'name', 'academic_year')
+            classes = Class.objects.filter(is_combined=False).values('code', 'name', 'curriculum__code')
+            combined_classes = CombinedClass.objects.all().values('code', 'name', 'curriculum__code')
             
-        # Lấy danh sách lớp học ghép hiện có
-        combined_classes = CombinedClass.objects.all().values('code', 'name', 'curriculum__code')
-        guide_data['Lớp học ghép hiện có'] = {
-            'Mã lớp ghép': [c['code'] for c in combined_classes],
-            'Tên lớp ghép': [c['name'] for c in combined_classes],
-            'Mã chương trình': [c['curriculum__code'] for c in combined_classes]
-        }
+            row = 0
             
-        # Tạo sheet hướng dẫn
-        workbook = writer.book
-        worksheet = workbook.create_sheet("Hướng dẫn nhập liệu")
-            
-        row = 1
-        for section, data in guide_data.items():
-            # Tiêu đề section
-            worksheet.cell(row=row, column=1, value=section.upper())
-            worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
+            # Section Chương trình đào tạo
+            worksheet.write(row, 0, "DANH SÁCH CHƯƠNG TRÌNH ĐÀO TẠO CÓ SẴN", bold_format)
             row += 1
-                
-            # Tiêu đề cột
-            col = 1
-            for col_name in data.keys():
-                worksheet.cell(row=row, column=col, value=col_name)
-                col += 1
+            worksheet.write(row, 0, "Mã chương trình", header_format)
+            worksheet.write(row, 1, "Tên chương trình", header_format)
+            worksheet.write(row, 2, "Năm học", header_format)
             row += 1
-                
-            # Dữ liệu
-            max_rows = max(len(values) for values in data.values())
-            for i in range(max_rows):
-                col = 1
-                for col_name, values in data.items():
-                    if i < len(values):
-                        worksheet.cell(row=row, column=col, value=values[i])
-                    col += 1
+            
+            for curriculum in curricula:
+                worksheet.write(row, 0, curriculum['code'])
+                worksheet.write(row, 1, curriculum['name'])
+                worksheet.write(row, 2, curriculum['academic_year'])
                 row += 1
                 
-            row += 2  # Thêm khoảng cách giữa các section
+            row += 2
             
-        # Thêm ghi chú
-        worksheet.cell(row=row, column=1, value="LƯU Ý QUAN TRỌNG:")
-        worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
-        row += 1
-            
-        notes = [
-            "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
-            "2. Các cột có dấu * là bắt buộc",
-            "3. Sử dụng các giá trị từ sheet này để đảm bảo tính nhất quán",
-            "4. Mã lớp ghép không được trùng với các lớp ghép đã có",
-            "5. Các mã lớp thành phần phân cách bằng dấu phẩy (ví dụ: DHTI001,DHTI002)",
-            "6. Các lớp thành phần phải thuộc cùng chương trình đào tạo"
-        ]
-            
-        for note in notes:
-            worksheet.cell(row=row, column=1, value=note)
+            # Section Lớp học có thể ghép
+            worksheet.write(row, 0, "DANH SÁCH LỚP HỌC CÓ THỂ GHÉP", bold_format)
             row += 1
-        
+            worksheet.write(row, 0, "Mã lớp", header_format)
+            worksheet.write(row, 1, "Tên lớp", header_format)
+            worksheet.write(row, 2, "Mã chương trình", header_format)
+            row += 1
+            
+            for class_item in classes:
+                worksheet.write(row, 0, class_item['code'])
+                worksheet.write(row, 1, class_item['name'])
+                worksheet.write(row, 2, class_item['curriculum__code'])
+                row += 1
+                
+            row += 2
+            
+            # Thêm ghi chú
+            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format)
+            row += 1
+            
+            notes = [
+                "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
+                "2. Các cột có dấu * là bắt buộc",
+                "3. Sử dụng các giá trị từ danh sách trên để đảm bảo tính nhất quán",
+                "4. Mã lớp ghép không được trùng với các lớp ghép đã có",
+                "5. Các mã lớp thành phần phân cách bằng dấu phẩy (ví dụ: DHTI001,DHTI002)",
+                "6. Các lớp thành phần phải thuộc cùng chương trình đào tạo"
+            ]
+            
+            for note in notes:
+                worksheet.write(row, 0, note)
+                row += 1
+                
+        except Exception as e:
+            print(f"Error creating combined class guide sheet: {str(e)}")
+
     def create_teaching_assignment_guide_sheet(self, writer):
-        """Tạo sheet hướng dẫn cho import phân công giảng dạy"""
-        guide_data = {}
+        """Tạo sheet hướng dẫn cho import phân công giảng dạy - SỬA CHO XLSXWRITER"""
+        try:
+            workbook = writer.book
+            worksheet = workbook.add_worksheet('Hướng dẫn nhập liệu')
             
-        # Lấy danh sách giảng viên
-        instructors = Instructor.objects.all().values('code', 'full_name', 'department__name')
-        guide_data['Giảng viên'] = {
-            'Mã giảng viên': [i['code'] for i in instructors],
-            'Họ tên': [i['full_name'] for i in instructors],
-            'Khoa': [i['department__name'] for i in instructors]
-        }
+            bold_format = workbook.add_format({'bold': True})
+            header_format = workbook.add_format({'bold': True, 'bg_color': '#FCE4D6'})
             
-        # Lấy danh sách môn học
-        curriculum_subjects = Subject.objects.select_related('code', 'curriculum').all()
-        guide_data['Môn học'] = {
-            'Mã môn học': [cs.code for cs in curriculum_subjects],
-            'Tên môn học': [cs.name for cs in curriculum_subjects],
-            'Mã chương trình': [cs.curriculum.code for cs in curriculum_subjects]
-        }
+            # Lấy dữ liệu
+            instructors = Instructor.objects.all().values('code', 'full_name', 'department__name')
+            curriculum_subjects = Subject.objects.select_related('curriculum').all()
+            classes = Class.objects.all().values('code', 'name', 'curriculum__code')
+            combined_classes = CombinedClass.objects.all().values('code', 'name', 'curriculum__code')
             
-        # Lấy danh sách lớp học thường
-        classes = Class.objects.all().values('code', 'name', 'curriculum__code')
-        guide_data['Lớp học thường'] = {
-            'Mã lớp': [c['code'] for c in classes],
-            'Tên lớp': [c['name'] for c in classes],
-            'Mã chương trình': [c['curriculum__code'] for c in classes]
-        }
+            row = 0
             
-        # Lấy danh sách lớp học ghép
-        combined_classes = CombinedClass.objects.all().values('code', 'name', 'curriculum__code')
-        guide_data['Lớp học ghép'] = {
-            'Mã lớp ghép': [c['code'] for c in combined_classes],
-            'Tên lớp ghép': [c['name'] for c in combined_classes],
-            'Mã chương trình': [c['curriculum__code'] for c in combined_classes]
-        }
-            
-        # Danh sách loại lớp
-        guide_data['Loại lớp'] = {
-            'Giá trị hợp lệ': ['Thường', 'Ghép']
-        }
-            
-        # Danh sách học kỳ
-        guide_data['Học kỳ'] = {
-            'Giá trị hợp lệ': [str(i) for i in range(1, 13)]
-        }
-            
-        # Tạo sheet hướng dẫn
-        workbook = writer.book
-        worksheet = workbook.create_sheet("Hướng dẫn nhập liệu")
-            
-        row = 1
-        for section, data in guide_data.items():
-            # Tiêu đề section
-            worksheet.cell(row=row, column=1, value=section.upper())
-            worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
+            # Section Giảng viên
+            worksheet.write(row, 0, "DANH SÁCH GIẢNG VIÊN", bold_format)
             row += 1
-                
-            # Tiêu đề cột
-            col = 1
-            for col_name in data.keys():
-                worksheet.cell(row=row, column=col, value=col_name)
-                col += 1
+            worksheet.write(row, 0, "Mã giảng viên", header_format)
+            worksheet.write(row, 1, "Họ tên", header_format)
+            worksheet.write(row, 2, "Khoa", header_format)
             row += 1
-                
-            # Dữ liệu
-            max_rows = max(len(values) for values in data.values())
-            for i in range(max_rows):
-                col = 1
-                for col_name, values in data.items():
-                    if i < len(values):
-                        worksheet.cell(row=row, column=col, value=values[i])
-                    col += 1
+            
+            for instructor in instructors:
+                worksheet.write(row, 0, instructor['code'])
+                worksheet.write(row, 1, instructor['full_name'])
+                worksheet.write(row, 2, instructor['department__name'] or '')
                 row += 1
                 
-            row += 2  # Thêm khoảng cách giữa các section
+            row += 2
             
-        # Thêm ghi chú
-        worksheet.cell(row=row, column=1, value="LƯU Ý QUAN TRỌNG:")
-        worksheet.cell(row=row, column=1).font = pd.ExcelWriter().book.add_format({'bold': True})
-        row += 1
-            
-        notes = [
-            "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
-            "2. Các cột có dấu * là bắt buộc",
-            "3. Sử dụng các giá trị từ sheet này để đảm bảo tính nhất quán",
-            "4. Loại lớp phải là 'Thường' hoặc 'Ghép'",
-            "5. Học kỳ phải là số từ 1 đến 12",
-            "6. Năm học theo định dạng YYYY-YYYY (ví dụ: 2023-2024)",
-            "7. Là giảng viên chính: 'Có' hoặc 'Không'"
-        ]
-            
-        for note in notes:
-            worksheet.cell(row=row, column=1, value=note)
+            # Section Môn học
+            worksheet.write(row, 0, "DANH SÁCH MÔN HỌC", bold_format)
             row += 1
+            worksheet.write(row, 0, "Mã môn học", header_format)
+            worksheet.write(row, 1, "Tên môn học", header_format)
+            worksheet.write(row, 2, "Mã chương trình", header_format)
+            row += 1
+            
+            for subject in curriculum_subjects:
+                worksheet.write(row, 0, subject.code)
+                worksheet.write(row, 1, subject.name)
+                worksheet.write(row, 2, subject.curriculum.code if subject.curriculum else '')
+                row += 1
+                
+            row += 2
+            
+            # Thêm ghi chú
+            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format)
+            row += 1
+            
+            notes = [
+                "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
+                "2. Các cột có dấu * là bắt buộc",
+                "3. Sử dụng các giá trị từ danh sách trên để đảm bảo tính nhất quán",
+                "4. Loại lớp phải là 'Thường' hoặc 'Ghép'",
+                "5. Học kỳ phải là số từ 1 đến 12",
+                "6. Năm học theo định dạng YYYY-YYYY (ví dụ: 2023-2024)",
+                "7. Là giảng viên chính: 'Có' hoặc 'Không'"
+            ]
+            
+            for note in notes:
+                worksheet.write(row, 0, note)
+                row += 1
+                
+        except Exception as e:
+            print(f"Error creating teaching assignment guide sheet: {str(e)}")
         
     def post(self, request, object_type):
         """Xử lý import file Excel với chức năng chọn sheet"""
