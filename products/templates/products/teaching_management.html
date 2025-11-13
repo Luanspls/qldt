@@ -1297,7 +1297,7 @@
                 allClasses.forEach(classItem => {
                     const option = document.createElement('option');
                     option.value = classItem.id;
-                    option.textContent = `${classItem.code} - ${classItem.name}`;
+                    option.textContent = `${classItem.code}`;
                     classesSelect.appendChild(option);
                 });
             }
@@ -1312,7 +1312,7 @@
                 allInstructors.forEach(instructor => {
                     const option = document.createElement('option');
                     option.value = instructor.id;
-                    option.textContent = `${instructor.full_name} (${instructor.code})`;
+                    option.textContent = `(${instructor.code}) ${instructor.full_name}`;
                     instructorSelect.appendChild(option);
                 });
             }
@@ -1322,13 +1322,13 @@
             if (subjectSelect) {
                 subjectSelect.innerHTML = '<option value="">-- Chọn môn học --</option>';
                 // Gọi API để lấy danh sách môn học
-                fetch('/api/curriculum-subjects/')
+                fetch('/api/all-subjects/')
                     .then(response => response.json())
                     .then(data => {
                         data.forEach(subject => {
                             const option = document.createElement('option');
                             option.value = subject.id;
-                            option.textContent = `${subject.subject_code} - ${subject.subject_name}`;
+                            option.textContent = `(${subject.code}) ${subject.name}`;
                             subjectSelect.appendChild(option);
                         });
                     })
