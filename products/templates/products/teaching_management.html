@@ -61,7 +61,7 @@
                         <button id="btn-them-lop-hoc" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
                             <i class="fas fa-plus mr-2"></i> Thêm lớp học
                         </button>
-                        <button onclick="openImportModal('class')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                        <button onclick="openImportModal('class')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
                             <i class="fas fa-file-excel mr-2"></i> Import Excel
                         </button>
                     </div>
@@ -121,10 +121,10 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold">Quản lý lớp học ghép</h3>
                     <div class="flex space-x-2">
-                        <button id="btn-them-lop-ghep" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
+                        <button id="btn-them-lop-ghep" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
                             <i class="fas fa-plus mr-2"></i> Thêm lớp ghép
                         </button>
-                        <button onclick="openImportModal('combined-class')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                        <button onclick="openImportModal('combined-class')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
                             <i class="fas fa-file-excel mr-2"></i> Import Excel
                         </button>
                     </div>
@@ -172,7 +172,7 @@
                         <button id="btn-them-giang-vien" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
                             <i class="fas fa-plus mr-2"></i> Thêm giảng viên
                         </button>
-                        <button onclick="openImportModal('instructor')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                        <button onclick="openImportModal('instructor')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
                             <i class="fas fa-file-excel mr-2"></i> Import Excel
                         </button>
                     </div>
@@ -233,10 +233,10 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold">Phân công giảng dạy</h3>
                     <div class="flex space-x-2">
-                        <button id="btn-them-phan-cong" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                        <button id="btn-them-phan-cong" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
                             <i class="fas fa-plus mr-2"></i> Thêm phân công
                         </button>
-                        <button onclick="openImportModal('teaching-assignment')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                        <button onclick="openImportModal('teaching-assignment')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
                             <i class="fas fa-file-excel mr-2"></i> Import Excel
                         </button>
                     </div>
@@ -769,6 +769,7 @@
         // Biến toàn cục lưu trữ dữ liệu
         let allInstructors = [];
         let allCurricula = [];
+        let allSubjects = [];
         let allDepartments = [];
         let allCourses = [];
         let allClasses = [];
@@ -789,7 +790,7 @@
                 .then(response => response.json())
                 .then(data => {
                     allDepartments = data;
-                    populateDropdown('filter-instructor-department', data, 'name');
+                    populateDropdown('filter-instructor', data, 'name');
                 });
 
             // Tải danh sách giảng viên
@@ -798,6 +799,7 @@
                 .then(data => {
                     allInstructors = data;
                     populateDropdown('filter-instructor', data, 'full_name');
+                    populateDropdown('instructor_id', data, 'full_name');
                 });
 
             // Tải danh sách chương trình
@@ -809,7 +811,15 @@
                     populateDropdown('filter-combined-curriculum', data, 'name');
                     populateDropdown('filter-curriculum', data, 'name');
                 });
-
+            
+            // Tải danh sách môn học
+            fetch('/api/all-subjects/')
+                .then(response => response.json())
+                .then(data => {
+                    allSubjects = data;
+                    populateDropdown('curriculum_subject_id', data, 'name');
+                });
+            
             // Tải danh sách khóa học
             fetch('/api/courses/')
                 .then(response => response.json())
