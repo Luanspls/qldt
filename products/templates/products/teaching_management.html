@@ -790,7 +790,7 @@
                 .then(response => response.json())
                 .then(data => {
                     allDepartments = data;
-                    populateDropdown('filter-instructor', data, 'name');
+                    populateDropdown('filter-instructor-department', data, 'name');
                 });
 
             // Tải danh sách giảng viên
