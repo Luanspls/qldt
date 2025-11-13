@@ -1487,31 +1487,65 @@ def api_create_class(request):
         'message': 'Method not allowed'
     })
 
-# @csrf_exempt
-# def api_curriculum_subjects(request):
-#     """API lấy danh sách môn học trong chương trình"""
-#     curriculum_id = request.GET.get('curriculum_id')
+@csrf_exempt
+def api_create_instructor(request):
+    """API tạo giảng viên mới"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Kiểm tra các trường bắt buộc
+            required_fields = ['code', 'full_name']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': f'Thiếu trường bắt buộc: {field}'
+                    })
+            
+            # Xử lý department
+            department = None
+            if data.get('department_id'):
+                try:
+                    department = Department.objects.get(id=data['department_id'])
+                except Department.DoesNotExist:
+                    pass
+            
+            # Xử lý subject_group
+            subject_group = None
+            if data.get('subject_group_id'):
+                try:
+                    subject_group = SubjectGroup.objects.get(id=data['subject_group_id'])
+                except SubjectGroup.DoesNotExist:
+                    pass
+            
+            # Tạo giảng viên
+            instructor = Instructor.objects.create(
+                code=data['code'],
+                full_name=data['full_name'],
+                email=data.get('email'),
+                phone=data.get('phone'),
+                department=department,
+                subject_group=subject_group,
+                is_active=data.get('is_active', True)
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã tạo giảng viên thành công',
+                'id': instructor.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error', 
+                'message': f'Lỗi khi tạo giảng viên: {str(e)}'
+            })
     
-#     curriculum_subjects = CurriculumSubject.objects.select_related(
-#         'subject', 'curriculum'
-#     )
-    
-#     if curriculum_id:
-#         curriculum_subjects = curriculum_subjects.filter(curriculum_id=curriculum_id)
-    
-#     subjects_data = []
-#     for cs in curriculum_subjects:
-#         subjects_data.append({
-#             'id': cs.id,
-#             'subject_id': cs.subject.id,
-#             'subject_code': cs.subject.code,
-#             'subject_name': cs.subject.name,
-#             'curriculum_id': cs.curriculum.id,
-#             'curriculum_name': cs.curriculum.name,
-#             'credits': float(cs.credits)
-#         })
-    
-#     return JsonResponse(subjects_data, safe=False)
+    return JsonResponse({
+        'status': 'error', 
+        'message': 'Method not allowed'
+    })
 
 @csrf_exempt
 def api_create_combined_class(request):
@@ -1594,6 +1628,15 @@ class ImportTeachingDataView(View):
                         
                     # Tạo sheet hướng dẫn cho lớp học ghép
                     self.create_combined_class_guide_sheet(writer)
+                
+                elif object_type == 'instructor':
+                    sample_data = self.get_instructor_template()
+                    filename = "mau_import_giang_vien.xlsx"
+                    df = pd.DataFrame(sample_data)
+                    df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
+                        
+                    # Tạo sheet hướng dẫn cho giảng viên
+                    self.create_instructor_guide_sheet(writer)
                         
                 elif object_type == 'teaching-assignment':
                     sample_data = self.get_teaching_assignment_template()
@@ -1778,6 +1821,71 @@ class ImportTeachingDataView(View):
         except Exception as e:
             print(f"Error creating combined class guide sheet: {str(e)}")
 
+    def create_instructor_guide_sheet(self, writer):
+        """Tạo sheet hướng dẫn cho import giảng viên"""
+        try:
+            workbook = writer.book
+            worksheet = workbook.add_worksheet('Hướng dẫn nhập liệu')
+            
+            bold_format = workbook.add_format({'bold': True})
+            header_format = workbook.add_format({'bold': True, 'bg_color': '#DDEBF7'})
+            
+            # Lấy dữ liệu từ database
+            departments = Department.objects.all().values('code', 'name')
+            subject_groups = SubjectGroup.objects.all().values('code', 'name', 'department__code')
+            
+            row = 0
+            
+            # Section Khoa
+            worksheet.write(row, 0, "DANH SÁCH KHOA CÓ SẴN", bold_format)
+            row += 1
+            worksheet.write(row, 0, "Mã khoa", header_format)
+            worksheet.write(row, 1, "Tên khoa", header_format)
+            row += 1
+            
+            for department in departments:
+                worksheet.write(row, 0, department['code'])
+                worksheet.write(row, 1, department['name'])
+                row += 1
+                
+            row += 2
+            
+            # Section Tổ bộ môn
+            worksheet.write(row, 0, "DANH SÁCH TỔ BỘ MÔN CÓ SẴN", bold_format)
+            row += 1
+            worksheet.write(row, 0, "Mã tổ bộ môn", header_format)
+            worksheet.write(row, 1, "Tên tổ bộ môn", header_format)
+            worksheet.write(row, 2, "Mã khoa", header_format)
+            row += 1
+            
+            for subject_group in subject_groups:
+                worksheet.write(row, 0, subject_group['code'])
+                worksheet.write(row, 1, subject_group['name'])
+                worksheet.write(row, 2, subject_group['department__code'] or '')
+                row += 1
+                
+            row += 2
+            
+            # Thêm ghi chú
+            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format)
+            row += 1
+            
+            notes = [
+                "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
+                "2. Các cột có dấu * là bắt buộc",
+                "3. Sử dụng các giá trị từ danh sách trên để đảm bảo tính nhất quán",
+                "4. Mã giảng viên không được trùng",
+                "5. Trạng thái: 'Đang hoạt động' hoặc 'Ngừng hoạt động'",
+                "6. Mã khoa và mã tổ bộ môn phải tồn tại trong hệ thống (nếu có)"
+            ]
+            
+            for note in notes:
+                worksheet.write(row, 0, note)
+                row += 1
+                
+        except Exception as e:
+            print(f"Error creating instructor guide sheet: {str(e)}")
+    
     def create_teaching_assignment_guide_sheet(self, writer):
         """Tạo sheet hướng dẫn cho import phân công giảng dạy - SỬA CHO XLSXWRITER"""
         try:
@@ -1885,6 +1993,8 @@ class ImportTeachingDataView(View):
                     result = self.process_class_import(df, request.user, excel_file, selected_sheet)
                 elif object_type == 'combined-class':
                     result = self.process_combined_class_import(df, request.user, excel_file, selected_sheet)
+                elif object_type == 'instructor':
+                    result = self.process_instructor_import(df, request.user, excel_file, selected_sheet)
                 elif object_type == 'teaching-assignment':
                     result = self.process_teaching_assignment_import(df, request.user, excel_file, selected_sheet)
                 else:
@@ -1941,7 +2051,19 @@ class ImportTeachingDataView(View):
             'Mã các lớp thành phần*': ['DHTI001,DHTI002', 'DHTI003,DHTI004'],
             'Mô tả': ['Lớp ghép cho các môn đại cương', 'Lớp ghép cho các môn chuyên ngành']
         }
-        
+    
+    def get_instructor_template(self):
+        """Tạo template cho import giảng viên"""
+        return {
+            'Mã giảng viên*': ['GV001', 'GV002', 'GV003'],
+            'Họ và tên*': ['Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C'],
+            'Email': ['nva@example.com', 'ttb@example.com', 'lvc@example.com'],
+            'Số điện thoại': ['0123456789', '0987654321', '0912345678'],
+            'Mã khoa': ['KHOA_CNTT', 'KHOA_CNTT', 'KHOA_KT'],
+            'Mã tổ bộ môn': ['BM_HTTT', 'BM_MMT', 'BM_QTKD'],
+            'Trạng thái': ['Đang hoạt động', 'Đang hoạt động', 'Ngừng hoạt động']
+        }
+
     def get_teaching_assignment_template(self):
         """Tạo template cho import phân công giảng dạy"""
         return {
@@ -2194,6 +2316,123 @@ class ImportTeachingDataView(View):
                 
         except Exception as e:
             print(f"Error in process_combined_class_import: {str(e)}")
+            return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}
+    
+    def process_instructor_import(self, df, user, excel_file, sheet_name):
+        """Xử lý import giảng viên"""
+        try:
+            created_count = 0
+            updated_count = 0
+            errors = []
+            processed_data = []
+                
+            # Kiểm tra cấu trúc file
+            required_columns = ['Mã giảng viên*', 'Họ và tên*']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                return {
+                    'status': 'error', 
+                    'message': f'File thiếu các cột bắt buộc: {", ".join(missing_columns)}'
+                }
+                
+            for index, row in df.iterrows():
+                try:
+                    # Bỏ qua các dòng trống
+                    if pd.isna(row.get('Mã giảng viên*')) or str(row.get('Mã giảng viên*')).strip() in ['', 'Mã giảng viên*', 'nan']:
+                        continue
+                        
+                    # Chuẩn hóa dữ liệu
+                    code = str(row.get('Mã giảng viên*')).strip()
+                    full_name = str(row.get('Họ và tên*')).strip()
+                        
+                    if not code or not full_name:
+                        errors.append(f"Dòng {index + 2}: Thiếu thông tin bắt buộc")
+                        continue
+
+                    # Xử lý email
+                    email = str(row.get('Email', '')).strip()
+                    if email in ['', 'nan']:
+                        email = None
+
+                    # Xử lý số điện thoại
+                    phone = str(row.get('Số điện thoại', '')).strip()
+                    if phone in ['', 'nan']:
+                        phone = None
+
+                    # Xử lý khoa
+                    department_code = str(row.get('Mã khoa', '')).strip()
+                    department = None
+                    if department_code and department_code not in ['', 'nan']:
+                        try:
+                            department = Department.objects.get(code=department_code)
+                        except Department.DoesNotExist:
+                            errors.append(f"Dòng {index + 2}: Không tìm thấy khoa với mã '{department_code}'")
+                            continue
+
+                    # Xử lý tổ bộ môn
+                    subject_group_code = str(row.get('Mã tổ bộ môn', '')).strip()
+                    subject_group = None
+                    if subject_group_code and subject_group_code not in ['', 'nan']:
+                        try:
+                            subject_group = SubjectGroup.objects.get(code=subject_group_code)
+                        except SubjectGroup.DoesNotExist:
+                            errors.append(f"Dòng {index + 2}: Không tìm thấy tổ bộ môn với mã '{subject_group_code}'")
+                            continue
+
+                    # Xử lý trạng thái
+                    status_str = str(row.get('Trạng thái', 'Đang hoạt động')).strip()
+                    is_active = status_str.lower() in ['đang hoạt động', 'active', 'true', '1', 'có', 'yes']
+
+                    # Tạo hoặc cập nhật giảng viên
+                    instructor, created = Instructor.objects.update_or_create(
+                        code=code,
+                        defaults={
+                            'full_name': full_name,
+                            'email': email,
+                            'phone': phone,
+                            'department': department,
+                            'subject_group': subject_group,
+                            'is_active': is_active
+                        }
+                    )
+                        
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+                        
+                    processed_data.append({
+                        'code': instructor.code,
+                        'full_name': instructor.full_name,
+                        'email': instructor.email,
+                        'department': department.name if department else 'N/A'
+                    })
+                        
+                except Exception as e:
+                    errors.append(f"Dòng {index + 2}: {str(e)}")
+                
+            # Lưu lịch sử import
+            ImportHistory.objects.create(
+                file_name=excel_file.name,
+                file_size=excel_file.size,
+                imported_by=user,
+                record_count=len(processed_data),
+                status='success' if not errors else 'partial',
+                errors=errors if errors else None,
+                additional_info=f"Sheet được sử dụng: {sheet_name}"
+            )
+                
+            return {
+                'status': 'success',
+                'message': f'Import thành công: {created_count} giảng viên được tạo, {updated_count} giảng viên được cập nhật',
+                'created_count': created_count,
+                'updated_count': updated_count,
+                'processed_data': processed_data,
+                'errors': errors
+            }
+                
+        except Exception as e:
+            print(f"Error in process_instructor_import: {str(e)}")
             return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}
         
     def process_teaching_assignment_import(self, df, user, excel_file, sheet_name):

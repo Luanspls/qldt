@@ -784,14 +784,20 @@
 
         // Tải dữ liệu ban đầu
         function loadInitialData() {
+            // Tải danh sách đơn vị
+            fetch('/api/departments/')
+                .then(response => response.json())
+                .then(data => {
+                    allDepartments = data;
+                    populateDropdown('filter-instructor-department', data, 'name');
+                });
+
             // Tải danh sách giảng viên
             fetch('/api/instructors/')
                 .then(response => response.json())
                 .then(data => {
                     allInstructors = data;
                     populateDropdown('filter-instructor', data, 'full_name');
-                    // Điền dropdown khoa cho bộ lọc giảng viên
-                    populateDropdown('filter-instructor-department', allDepartments, 'name');
                 });
 
             // Tải danh sách chương trình
