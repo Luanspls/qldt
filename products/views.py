@@ -666,7 +666,7 @@ class ImportExcelView(View):
                         is_elective = True                        
                         
                     subject, created = Subject.objects.update_or_create(
-                        curriculum = curriculum, 
+                        curriculum = curriculum,
                         code = unique_code,
                         defaults={
                             'name': ten_mon_hoc,
@@ -1569,58 +1569,57 @@ import io
 from django.core.files.base import ContentFile
 
 class ImportTeachingDataView(View):
-    class ImportTeachingDataView(View):
-        def get(self, request, object_type):
-            """Tải file Excel mẫu cho từng loại đối tượng với sheet hướng dẫn"""
-            try:
-                # Tạo workbook
-                output = io.BytesIO()
-                
-                with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    # Tạo sheet dữ liệu mẫu
-                    if object_type == 'class':
-                        sample_data = self.get_class_template()
-                        filename = "mau_import_lop_hoc.xlsx"
-                        df = pd.DataFrame(sample_data)
-                        df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
-                        
-                        # Tạo sheet hướng dẫn cho lớp học
-                        self.create_class_guide_sheet(writer)
-                        
-                    elif object_type == 'combined-class':
-                        sample_data = self.get_combined_class_template()
-                        filename = "mau_import_lop_hoc_ghep.xlsx"
-                        df = pd.DataFrame(sample_data)
-                        df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
-                        
-                        # Tạo sheet hướng dẫn cho lớp học ghép
-                        self.create_combined_class_guide_sheet(writer)
-                        
-                    elif object_type == 'teaching-assignment':
-                        sample_data = self.get_teaching_assignment_template()
-                        filename = "mau_import_phan_cong_giang_day.xlsx"
-                        df = pd.DataFrame(sample_data)
-                        df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
-                        
-                        # Tạo sheet hướng dẫn cho phân công giảng dạy
-                        self.create_teaching_assignment_guide_sheet(writer)
-                        
-                    else:
-                        return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
-                
-                output.seek(0)
-                
-                # Trả về file để download
-                response = HttpResponse(
-                    output.getvalue(),
-                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
-                response['Content-Disposition'] = f'attachment; filename="{filename}"'
-                response['Content-Length'] = len(output.getvalue())
-                
-                return response
-            except Exception as e:
-                return JsonResponse({'status': 'error', 'message': f"Lỗi tạo file mẫu: {str(e)}"})
+    def get(self, request, object_type):
+        """Tải file Excel mẫu cho từng loại đối tượng với sheet hướng dẫn"""
+        try:
+            # Tạo workbook
+            output = io.BytesIO()
+            
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                # Tạo sheet dữ liệu mẫu
+                if object_type == 'class':
+                    sample_data = self.get_class_template()
+                    filename = "mau_import_lop_hoc.xlsx"
+                    df = pd.DataFrame(sample_data)
+                    df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
+                    
+                    # Tạo sheet hướng dẫn cho lớp học
+                    self.create_class_guide_sheet(writer)
+                    
+                elif object_type == 'combined-class':
+                    sample_data = self.get_combined_class_template()
+                    filename = "mau_import_lop_hoc_ghep.xlsx"
+                    df = pd.DataFrame(sample_data)
+                    df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
+                    
+                    # Tạo sheet hướng dẫn cho lớp học ghép
+                    self.create_combined_class_guide_sheet(writer)
+                    
+                elif object_type == 'teaching-assignment':
+                    sample_data = self.get_teaching_assignment_template()
+                    filename = "mau_import_phan_cong_giang_day.xlsx"
+                    df = pd.DataFrame(sample_data)
+                    df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
+                    
+                    # Tạo sheet hướng dẫn cho phân công giảng dạy
+                    self.create_teaching_assignment_guide_sheet(writer)
+                    
+                else:
+                    return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
+            
+            output.seek(0)
+            
+            # Trả về file để download
+            response = HttpResponse(
+                output.getvalue(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            response['Content-Length'] = len(output.getvalue())
+            
+            return response
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f"Lỗi tạo file mẫu: {str(e)}"})
     
     def create_class_guide_sheet(self, writer):
         """Tạo sheet hướng dẫn cho import lớp học"""
