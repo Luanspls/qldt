@@ -942,70 +942,7 @@
 			// Khởi tạo Select2 cho tất cả dropdown
 			setTimeout(initializeSelect2, 500);
             
-            // Tải danh sách đơn vị
-            fetch('/api/departments/')
-                .then(response => response.json())
-                .then(data => {
-                    allDepartments = data;
-                    populateDropdown('filter-instructor-department', data, 'name');
-                });
-
-            // Tải danh sách giảng viên
-            fetch('/api/instructors/')
-                .then(response => response.json())
-                .then(data => {
-                    allInstructors = data;
-                    populateDropdown('filter-instructor', data, 'full_name');
-                    populateDropdown('instructor_id', data, 'full_name');
-                });
-
-            // Tải danh sách chương trình
-            fetch('/api/curricula/')
-                .then(response => response.json())
-                .then(data => {
-                    allCurricula = data;
-                    populateDropdown('filter-class-curriculum', data, 'name');
-                    populateDropdown('filter-combined-curriculum', data, 'name');
-                    populateDropdown('filter-curriculum', data, 'name');
-                });
             
-            // Tải danh sách môn học
-            fetch('/api/all-subjects/')
-                .then(response => response.json())
-                .then(data => {
-                    allSubjects = data;
-                    populateDropdown('curriculum_subject_id', data, 'name');
-                });
-            
-            // Tải danh sách khóa học
-            fetch('/api/courses/')
-                .then(response => response.json())
-                .then(data => {
-                    allCourses = data;
-                    populateDropdown('filter-class-course', data, 'name');
-                });
-            
-            // Tải danh sách lớp học
-            fetch('/api/classes/')
-                .then(response => response.json())
-                .then(data => {
-                    allClasses = data;
-                });
-
-            // Tải danh sách lớp học ghép
-            fetch('/api/combined-classes/')
-                .then(response => response.json())
-                .then(data => {
-                    allCombinedClasses = data;
-                });
-            
-            // Tải danh sách tổ bộ môn
-            fetch('/api/subject-groups/')
-                .then(response => response.json())
-                .then(data => {
-                    allSubjectGroups = data;
-                    populateDropdown('filter-instructor-subject-group', data, 'name');
-                });
         }
 
         // Thiết lập event listeners
