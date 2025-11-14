@@ -5,19 +5,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý Phân công Giảng dạy</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
 		/* Đảm bảo dropdown Select2 hiển thị trên modal */
-		.select2-container {
-    		z-index: 9999;
-		}
-    
-		/* Style cho Select2 trong modal */
-		.modal-open .select2-container--open {
-    		z-index: 99999;
-		}
+		/* Fix Select2 trong modal */
+        .select2-container {
+            z-index: 99999 !important;
+        }
+
+        .modal {
+            z-index: 10000;
+        }
+
+        /* Đảm bảo dropdown Select2 hiển thị trên modal */
+        .modal-open .select2-container--open {
+            z-index: 99999 !important;
+        }
     
 		.select2-container--default .select2-selection--single,
 		.select2-container--default .select2-selection--multiple {
@@ -806,101 +812,145 @@
         </div>
     </div>
 
-
+    <!-- jQuery trước -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Select2 sau -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script>
+    
     <script>
 		// Hàm khởi tạo Select2 cho tất cả dropdown
-		function initializeSelect2() {
-			// Khởi tạo cho các dropdown thông thường
-			$('select:not([multiple])').select2({
-    			language: 'vi',
-    			placeholder: "Chọn hoặc nhập để tìm kiếm...",
-    			allowClear: true,
-    			width: '100%',
-    			dropdownAutoWidth: true,
-    			minimumResultsForSearch: 0 // Luôn hiển thị ô tìm kiếm
-			});
+        function initializeSelect2() {
+            console.log('Initializing Select2...');
+            
+            // Khởi tạo cho các dropdown thông thường
+            $('select:not([multiple]):not(.select2-hidden-accessible)').each(function() {
+                try {
+                    $(this).select2({
+                        language: 'vi',
+                        placeholder: "Chọn hoặc nhập để tìm kiếm...",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $(this).closest('.modal').length ? $(this).closest('.modal') : $(document.body),
+                        dropdownAutoWidth: true,
+                        minimumResultsForSearch: 0
+                    });
+                } catch (e) {
+                    console.error('Error initializing Select2 for:', this, e);
+                }
+            });
 
-			// Khởi tạo cho các dropdown multiple
-			$('select[multiple]').select2({
-    			language: 'vi',
-    			placeholder: "Chọn hoặc nhập để tìm kiếm...",
-    			allowClear: true,
-    			width: '100%',
-    			dropdownAutoWidth: true,
-    			closeOnSelect: false
-			});
-		}
+            // Khởi tạo cho các dropdown multiple
+            $('select[multiple]:not(.select2-hidden-accessible)').each(function() {
+                try {
+                    $(this).select2({
+                        language: 'vi',
+                        placeholder: "Chọn hoặc nhập để tìm kiếm...",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $(this).closest('.modal').length ? $(this).closest('.modal') : $(document.body),
+                        dropdownAutoWidth: true,
+                        closeOnSelect: false
+                    });
+                } catch (e) {
+                    console.error('Error initializing Select2 for multiple:', this, e);
+                }
+            });
+        }
 
 		// Hàm tải dữ liệu từ API và điền vào dropdown với Select2
 		function populateSelect2Dropdown(elementId, data, displayField, searchFields = []) {
-			const dropdown = $(`#${elementId}`);
-			if (!dropdown.length) return;
-    
-			// Giữ option đầu tiên nếu có
-			const firstOption = dropdown.find('option').first();
-			dropdown.empty();
-			if (firstOption.length) {
-    			dropdown.append(firstOption);
-			}
-    
-			data.forEach(item => {
-    			const option = new Option(
-        			item[displayField] + (item.academic_year ? ` (${item.academic_year})` : ''),
-        			item.id,
-        			false,
-        			false
-    			);
-        
-    			// Thêm dữ liệu tìm kiếm vào option
-    			if (searchFields.length > 0) {
-        			const searchText = searchFields.map(field => item[field] || '').join(' ');
-        			$(option).data('search-text', searchText);
-    			}
-        
-    			dropdown.append(option);
-			});
-    
-			// Khởi tạo lại Select2 để cập nhật dữ liệu
-			dropdown.select2({
-    			language: 'vi',
-    			placeholder: "Chọn hoặc nhập để tìm kiếm...",
-    			allowClear: true,
-    			width: '100%',
-    			dropdownAutoWidth: true,
-    			minimumResultsForSearch: 0,
-    			matcher: function(params, data) {
-        			// Nếu không có từ khóa tìm kiếm, hiển thị tất cả
-        			if ($.trim(params.term) === '') {
-            			return data;
-        			}
+            const dropdown = $(`#${elementId}`);
+            if (!dropdown.length) {
+                console.error(`Element #${elementId} not found`);
+                return;
+            }
+
+            // Hủy Select2 nếu đã được khởi tạo trước đó
+            if (dropdown.hasClass('select2-hidden-accessible')) {
+                dropdown.select2('destroy');
+            }
+
+            // Giữ option đầu tiên nếu có
+            const firstOption = dropdown.find('option').first();
+            dropdown.empty();
+            if (firstOption.length) {
+                dropdown.append(firstOption);
+            }
+
+            // Thêm dữ liệu
+            data.forEach(item => {
+                const displayText = item[displayField] + (item.academic_year ? ` (${item.academic_year})` : '');
+                const option = new Option(displayText, item.id, false, false);
+                
+                // Thêm dữ liệu tìm kiếm vào option
+                if (searchFields.length > 0) {
+                    const searchText = searchFields.map(field => item[field] || '').join(' ');
+                    $(option).data('search-text', searchText);
+                }
+                
+                dropdown.append(option);
+            });
+
+            // Khởi tạo lại Select2
+            dropdown.select2({
+                language: 'vi',
+                placeholder: "Chọn hoặc nhập để tìm kiếm...",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: dropdown.closest('.modal').length ? dropdown.closest('.modal') : $(document.body),
+                dropdownAutoWidth: true,
+                minimumResultsForSearch: 0,
+                matcher: function(params, data) {
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+                    
+                    if (data.text && data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
+                        return data;
+                    }
+                    
+                    const searchText = $(data.element).data('search-text');
+                    if (searchText && searchText.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
+                        return data;
+                    }
+                    
+                    return null;
+                }
+            });
             
-        			// Tìm kiếm trong text hiển thị
-        			if (data.text && data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
-            			return data;
-        			}
-            
-        			// Tìm kiếm trong dữ liệu bổ sung
-        			const searchText = $(data.element).data('search-text');
-        			if (searchText && searchText.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
-            			return data;
-        			}
-            
-        			return null;
-    			}
-			});
-		}
+            console.log(`Select2 initialized for ${elementId} with`, data.length, 'items');
+        }
 
 		// Hàm tải dữ liệu cho dropdown với tìm kiếm theo điều kiện
 		function loadSelect2Data(url, elementId, displayField, searchFields = []) {
-			fetch(url)
-    			.then(response => response.json())
-    			.then(data => {
-        			populateSelect2Dropdown(elementId, data, displayField, searchFields);
-    			})
-    			.catch(error => {
-        			console.error(`Error loading data for ${elementId}:`, error);
-    			});
-		}
+            console.log(`Loading data for ${elementId} from ${url}`);
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(`Data loaded for ${elementId}:`, data.length, 'items');
+                    populateSelect2Dropdown(elementId, data, displayField, searchFields);
+                })
+                .catch(error => {
+                    console.error(`Error loading data for ${elementId}:`, error);
+                    // Fallback: khởi tạo Select2 ngay cả khi không có dữ liệu
+                    setTimeout(() => {
+                        $(`#${elementId}`).select2({
+                            language: 'vi',
+                            placeholder: "Không có dữ liệu",
+                            allowClear: true,
+                            width: '100%',
+                            dropdownParent: $(`#${elementId}`).closest('.modal').length ? $(`#${elementId}`).closest('.modal') : $(document.body)
+                        });
+                    }, 100);
+                });
+        }
 
         
         // Biến toàn cục lưu trữ dữ liệu
@@ -922,27 +972,28 @@
 
         // Tải dữ liệu ban đầu
         function loadInitialData() {
-			// Tải danh sách giảng viên với tìm kiếm theo mã và tên
-			loadSelect2Data('/api/instructors/', 'filter-instructor', 'full_name', ['code', 'full_name']);
+			console.log('Loading initial data...');
+    
+            // Tải danh sách cho các dropdown filter
+            const loadPromises = [
+                loadSelect2Data('/api/instructors/', 'filter-instructor', 'full_name', ['code', 'full_name']),
+                loadSelect2Data('/api/curricula/', 'filter-class-curriculum', 'name', ['code', 'name', 'academic_year']),
+                loadSelect2Data('/api/curricula/', 'filter-combined-curriculum', 'name', ['code', 'name', 'academic_year']),
+                loadSelect2Data('/api/curricula/', 'filter-curriculum', 'name', ['code', 'name', 'academic_year']),
+                loadSelect2Data('/api/courses/', 'filter-class-course', 'name', ['code', 'name']),
+                loadSelect2Data('/api/departments/', 'filter-instructor-department', 'name', ['code', 'name']),
+                loadSelect2Data('/api/subject-groups/', 'filter-instructor-subject-group', 'name', ['code', 'name'])
+            ];
 
-			// Tải danh sách chương trình với tìm kiếm theo mã, tên và năm học
-			loadSelect2Data('/api/curricula/', 'filter-class-curriculum', 'name', ['code', 'name', 'academic_year']);
-			loadSelect2Data('/api/curricula/', 'filter-combined-curriculum', 'name', ['code', 'name', 'academic_year']);
-			loadSelect2Data('/api/curricula/', 'filter-curriculum', 'name', ['code', 'name', 'academic_year']);
-
-			// Tải danh sách khóa học với tìm kiếm theo mã và tên
-			loadSelect2Data('/api/courses/', 'filter-class-course', 'name', ['code', 'name']);
-
-			// Tải danh sách khoa với tìm kiếm theo mã và tên
-			loadSelect2Data('/api/departments/', 'filter-instructor-department', 'name', ['code', 'name']);
-
-			// Tải danh sách tổ bộ môn với tìm kiếm theo mã và tên
-			loadSelect2Data('/api/subject-groups/', 'filter-instructor-subject-group', 'name', ['code', 'name']);
-
-			// Khởi tạo Select2 cho tất cả dropdown
-			setTimeout(initializeSelect2, 500);
-            
-            
+            // Khởi tạo Select2 sau khi tất cả dữ liệu đã tải
+            Promise.all(loadPromises).then(() => {
+                console.log('All data loaded, initializing Select2...');
+                setTimeout(initializeSelect2, 500);
+            }).catch(error => {
+                console.error('Error loading initial data:', error);
+                // Vẫn thử khởi tạo Select2 ngay cả khi có lỗi
+                setTimeout(initializeSelect2, 500);
+            });
         }
 
         // Thiết lập event listeners
@@ -1643,16 +1694,15 @@
         }
 
 		function openThemLopHocModal() {
-			populateClassModalDropdowns();
-			document.getElementById('modal-them-lop-hoc').classList.remove('hidden');
-			document.body.classList.add('overflow-hidden');
-    
-			// Khởi tạo lại Select2 sau khi modal hiển thị
-			setTimeout(() => {
-    			$('.select2-container').remove(); // Xóa các instance cũ
-    			initializeSelect2();
-			}, 100);
-		}
+            populateClassModalDropdowns();
+            document.getElementById('modal-them-lop-hoc').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            
+            // Khởi tạo lại Select2 sau khi modal hiển thị
+            setTimeout(() => {
+                initializeSelect2();
+            }, 300);
+        }
 
 		function openThemLopGhepModal() {
 			populateCombinedClassModalDropdowns();
@@ -1660,9 +1710,8 @@
 			document.body.classList.add('overflow-hidden');
     
 			setTimeout(() => {
-    			$('.select2-container').remove();
     			initializeSelect2();
-			}, 100);
+			}, 300);
 		}
 
 		function openThemPhanCongModal() {
@@ -1671,9 +1720,8 @@
 			document.body.classList.add('overflow-hidden');
     
 			setTimeout(() => {
-    			$('.select2-container').remove();
     			initializeSelect2();
-			}, 100);
+			}, 300);
 		}
 
 		function openThemGiangVienModal() {
@@ -1682,9 +1730,8 @@
 			document.body.classList.add('overflow-hidden');
     
 			setTimeout(() => {
-    			$('.select2-container').remove();
     			initializeSelect2();
-			}, 100);
+			}, 300);
 		}
 
 		function closeThemLopHocModal() {
@@ -2318,7 +2365,6 @@
             }
         }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script>
+    
 </body>
 </html>
