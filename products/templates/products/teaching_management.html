@@ -58,11 +58,13 @@
         /* Select2 trong modal */
         .modal .select2-container {
             z-index: 99992 !important;
+			opacity: 1 !important;
+    		pointer-events: auto !important;
         }
 
         .modal .select2-dropdown {
             z-index: 99993 !important;
-            position: absolute !important;
+            display: block !important;
         }
 
         /* ===== TAB STYLES ===== */
@@ -135,11 +137,24 @@
 
         /* Reset các style có thể ảnh hưởng đến việc hiển thị */
         body.modal-open .select2-dropdown:not(.modal .select2-dropdown) {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            pointer-events: auto !important;
+            display: none !important;
+            /* visibility: visible !important;*/
+            /* opacity: 1 !important;*/
+            /* pointer-events: auto !important;*/
         }
+
+		/* Select2 bên ngoài modal khi modal mở */
+		body.modal-open .select2-container:not(.modal .select2-container) {
+    		opacity: 0.5 !important;
+    		pointer-events: none !important;
+			z-index: 1 !important;
+		}
+
+		/* Hiệu ứng làm mờ cho nền khi modal mở */
+		body.modal-open .container {
+    		filter: blur(1px);
+    		transition: filter 0.3s ease;
+		}
 
         /* ===== RESPONSIVE FIXES ===== */
         @media (max-width: 768px) {
@@ -1288,7 +1303,24 @@
                     allCombinedClasses = [];
                 });
         }
-        
+
+		function disableOutsideSelect2() {
+			// Đóng tất cả dropdown đang mở
+			$('.select2-container--open').select2('close');
+    
+			// Vô hiệu hóa tất cả Select2 bên ngoài modal
+			$('select.select2-hidden-accessible').not('.modal select').each(function() {
+    			$(this).next('.select2-container').css('opacity', '0.5').css('pointer-events', 'none');
+			});
+		}
+
+		// Hàm kích hoạt lại Select2 bên ngoài modal
+		function enableOutsideSelect2() {
+			$('select.select2-hidden-accessible').not('.modal select').each(function() {
+    			$(this).next('.select2-container').css('opacity', '1').css('pointer-events', 'auto');
+			});
+		}
+
         // Thiết lập event listeners
         function setupEventListeners() {
             // Xử lý tab navigation
@@ -2000,6 +2032,8 @@
 		function openThemLopHocModal() {
             // Đóng tất cả dropdown trước khi mở modal
             closeAllSelect2Dropdowns();
+			// Vô hiệu hóa Select2 bên ngoài
+			disableOutsideSelect2();
 
             populateClassModalDropdowns();
             document.getElementById('modal-them-lop-hoc').classList.remove('hidden');
@@ -2029,6 +2063,8 @@
 
 		function openThemLopGhepModal() {
 			closeAllSelect2Dropdowns();
+			// Vô hiệu hóa Select2 bên ngoài
+			disableOutsideSelect2();
             populateCombinedClassModalDropdowns();
 			document.getElementById('modal-them-lop-ghep').classList.remove('hidden');
 			document.body.classList.add('overflow-hidden');
@@ -2055,6 +2091,10 @@
 		}
 
 		function openThemPhanCongModal() {
+			// Đóng tất cả dropdown trước khi mở modal
+            closeAllSelect2Dropdowns();
+			// Vô hiệu hóa Select2 bên ngoài
+			disableOutsideSelect2();
 			populateTeachingAssignmentModalDropdowns();
 			document.getElementById('modal-them-phan-cong').classList.remove('hidden');
 			document.body.classList.add('overflow-hidden');
@@ -2081,6 +2121,10 @@
 		}
 
 		function openThemGiangVienModal() {
+			// Đóng tất cả dropdown trước khi mở modal
+            closeAllSelect2Dropdowns();
+			// Vô hiệu hóa Select2 bên ngoài
+			disableOutsideSelect2();
 			populateInstructorModalDropdowns();
 			document.getElementById('modal-them-giang-vien').classList.remove('hidden');
 			document.body.classList.add('overflow-hidden');
@@ -2109,6 +2153,8 @@
 		function closeThemLopHocModal() {
             // Đóng tất cả dropdown trước
             closeAllSelect2Dropdowns();
+			// Kích hoạt lại Select2 bên ngoài
+			enableOutsideSelect2();
 			// Hủy Select2 trước khi đóng modal
 			$('select').select2('destroy');
 			document.getElementById('modal-them-lop-hoc').classList.add('hidden');
@@ -2121,6 +2167,8 @@
 		function closeThemLopGhepModal() {
             // Đóng tất cả dropdown trước
             closeAllSelect2Dropdowns();
+			// Kích hoạt lại Select2 bên ngoài
+			enableOutsideSelect2();
 			$('select').select2('destroy');
 			document.getElementById('modal-them-lop-ghep').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
@@ -2132,6 +2180,8 @@
 		function closeThemPhanCongModal() {
             // Đóng tất cả dropdown trước
             closeAllSelect2Dropdowns();
+			// Kích hoạt lại Select2 bên ngoài
+			enableOutsideSelect2();
 			$('select').select2('destroy');
 			document.getElementById('modal-them-phan-cong').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
@@ -2143,6 +2193,8 @@
 		function closeThemGiangVienModal() {
             // Đóng tất cả dropdown trước
             closeAllSelect2Dropdowns();
+			// Kích hoạt lại Select2 bên ngoài
+			enableOutsideSelect2();
 			$('select').select2('destroy');
 			document.getElementById('modal-them-giang-vien').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
@@ -2154,6 +2206,8 @@
 		function closeImportModal() {
             // Đóng tất cả dropdown trước
             closeAllSelect2Dropdowns();
+			// Kích hoạt lại Select2 bên ngoài
+			enableOutsideSelect2();
 			$('select').select2('destroy');
 			document.getElementById('modal-import').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
@@ -2534,6 +2588,8 @@
 
         // Hàm mở modal import
         function openImportModal(objectType) {
+			closeAllSelect2Dropdowns();
+			disableOutsideSelect2();
             currentImportObjectType = objectType;
             
             // Đặt tiêu đề và nội dung theo loại đối tượng
