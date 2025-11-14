@@ -17,7 +17,7 @@
 
         /* ===== MODAL STYLES ===== */
         .modal {
-            position: fixed !important;
+            /* position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
@@ -25,9 +25,9 @@
             background-color: rgba(0, 0, 0, 0.5) !important;
             display: flex !important;
             align-items: center !important;
-            justify-content: center !important;
+            justify-content: center !important;*/
             z-index: 99990 !important;
-            padding: 20px;
+            /* padding: 20px;*/
         }
 
         .modal.hidden {
@@ -35,14 +35,14 @@
         }
 
         .modal > div {
-            position: relative !important;
+            /* position: relative !important;
             background: white !important;
             border-radius: 8px !important;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
             width: 100% !important;
             max-width: 800px !important;
             max-height: 90vh !important;
-            overflow-y: auto !important;
+            overflow-y: auto !important;*/
             z-index: 99991 !important;
         }
 
@@ -58,6 +58,8 @@
         /* Select2 trong modal */
         .modal .select2-container {
             z-index: 99992 !important;
+			display: block !important;
+    		visibility: visible !important;
 			opacity: 1 !important;
     		pointer-events: auto !important;
         }
@@ -65,8 +67,21 @@
         .modal .select2-dropdown {
             z-index: 99993 !important;
             display: block !important;
+			visibility: visible !important;
+    		opacity: 1 !important;
+    		pointer-events: auto !important;
         }
 
+		/* Đảm bảo backdrop của modal không bị ảnh hưởng */
+		.modal-backdrop {
+    		z-index: 99989 !important;
+		}
+
+		/* Ẩn tất cả dropdown ngoại trừ trong modal đang active */
+		body.modal-open .select2-container--open:not(.modal .select2-container--open) {
+    		display: none !important;
+		}
+		
         /* ===== TAB STYLES ===== */
         .tab-button.active {
             border-bottom-color: #3b82f6;
@@ -138,14 +153,17 @@
         /* Reset các style có thể ảnh hưởng đến việc hiển thị */
         body.modal-open .select2-dropdown:not(.modal .select2-dropdown) {
             display: none !important;
-            /* visibility: visible !important;*/
-            /* opacity: 1 !important;*/
-            /* pointer-events: auto !important;*/
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+			z-index: 1 !important;
         }
 
 		/* Select2 bên ngoài modal khi modal mở */
 		body.modal-open .select2-container:not(.modal .select2-container) {
-    		opacity: 0 !important;
+    		display: none !important;
+    		visibility: hidden !important;
+			opacity: 0 !important;
     		pointer-events: none !important;
 			z-index: 1 !important;
 		}
