@@ -1331,7 +1331,7 @@
     
 			// Vô hiệu hóa tất cả Select2 bên ngoài modal
 			$('select.select2-hidden-accessible').not('.modal select').each(function() {
-    			$(this).next('.select2-container').css('opacity', '0.5').css('pointer-events', 'none');
+    			$(this).next('.select2-container').css('display', 'none').css('opacity', '0').css('pointer-events', 'none');
 			});
 		}
 
