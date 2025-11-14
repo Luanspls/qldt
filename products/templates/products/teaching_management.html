@@ -88,7 +88,7 @@
             pointer-events: none !important;
         }
 
-
+        
 		.select2-container--default .select2-selection--single,
 		.select2-container--default .select2-selection--multiple {
     		border: 1px solid #d1d5db;
@@ -910,6 +910,48 @@
                     } catch (e) {
                         console.error('Error initializing Select2 for:', this, e);
                     }
+                }
+            });
+
+            // Khởi tạo cho các dropdown thông thường
+            $('select:not([multiple]):not(.select2-hidden-accessible)').each(function() {
+                try {
+                    const $select = $(this);
+                    const isInModal = $select.closest('.modal').length > 0;
+                    if (!isInModal) {
+                        $select.select2({
+                            language: 'vi',
+                            placeholder: "Chọn hoặc nhập để tìm kiếm...",
+                            allowClear: true,
+                            width: '100%',
+                            dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
+                            dropdownAutoWidth: true,
+                            minimumResultsForSearch: 0
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error initializing Select2 for:', this, e);
+                }
+            });
+
+            // Khởi tạo cho các dropdown multiple
+            $('select[multiple]:not(.select2-hidden-accessible)').each(function() {
+                try {
+                    const $select = $(this);
+                    const isInModal = $select.closest('.modal').length > 0;
+                    if (!isInModal) {
+                        $select.select2({
+                            language: 'vi',
+                            placeholder: "Chọn hoặc nhập để tìm kiếm...",
+                            allowClear: true,
+                            width: '100%',
+                            dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
+                            dropdownAutoWidth: true,
+                            closeOnSelect: false
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error initializing Select2 for multiple:', this, e);
                 }
             });
         }
