@@ -1202,7 +1202,7 @@ def api_combined_classes(request):
             'id': cc.id,
             'code': cc.code,
             'name': cc.name,
-            'curriculum_id': cc.curriculum_id,
+            'curriculum_id': cc.curriculum.id,
             'classes_count': cc.classes.count(),
             'class_codes': [c.code for c in cc.classes.all()]
         })
