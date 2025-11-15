@@ -1676,6 +1676,63 @@
                 .catch(error => console.error('Error loading combined classes:', error));
         }
 
+		// Hàm tải dữ liệu giảng viên
+        function loadInstructorsData() {
+            const departmentId = document.getElementById('filter-instructor-department').value;
+            const subjectGroupId = document.getElementById('filter-instructor-subject-group').value;
+            const status = document.getElementById('filter-instructor-status').value;
+            
+            let url = '/api/instructors/?';
+            const params = [];
+            
+            if (departmentId) params.push(`department_id=${departmentId}`);
+            if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
+            if (status) params.push(`is_active=${status}`);
+            
+            url += params.join('&');
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('instructors-table-body');
+                    tbody.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                                    Không có dữ liệu giảng viên
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    data.forEach(instructor => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructor.code}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.full_name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.email || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.phone || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getDepartmentName(instructor.department_id) || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getSubjectGroupName(instructor.subject_group_id) || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${instructor.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${instructor.is_active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="editInstructor(${instructor.id})">Sửa</button>
+                                <button class="text-red-600 hover:text-red-900" onclick="deleteInstructor(${instructor.id})">Xóa</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error loading instructors:', error));
+        }
+
         function loadTeachingAssignmentsData() {
             const instructorFilter = document.getElementById('filter-instructor').value;
             const curriculumFilter = document.getElementById('filter-curriculum').value;
@@ -2265,6 +2322,16 @@
             return course ? course.name : 'N/A';
         }
 
+		function getSubjectGroupName(subjectgroupId) {
+            const subjectgroup = allSubjectGroups.find(sg => sg.id == subjectgroupId);
+            return subjectgroup ? subjectgroup.name : 'N/A';
+        }
+
+		function getDepartmentName(departmentId) {
+            const department = allDepartments.find(d => d.id == departmentId);
+            return department ? department.name : 'N/A';
+        }
+
         function createLopHoc() {
             const form = document.getElementById('form-them-lop-hoc');
             const formData = new FormData(form);
@@ -2465,62 +2532,7 @@
             });
         }
 
-        // Hàm tải dữ liệu giảng viên
-        function loadInstructorsData() {
-            const departmentId = document.getElementById('filter-instructor-department').value;
-            const subjectGroupId = document.getElementById('filter-instructor-subject-group').value;
-            const status = document.getElementById('filter-instructor-status').value;
-            
-            let url = '/api/instructors/?';
-            const params = [];
-            
-            if (departmentId) params.push(`department_id=${departmentId}`);
-            if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
-            if (status) params.push(`is_active=${status}`);
-            
-            url += params.join('&');
-            
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    const tbody = document.getElementById('instructors-table-body');
-                    tbody.innerHTML = '';
-                    
-                    if (data.length === 0) {
-                        tbody.innerHTML = `
-                            <tr>
-                                <td colspan="8" class="px-6 py-4 text-center text-gray-500">
-                                    Không có dữ liệu giảng viên
-                                </td>
-                            </tr>
-                        `;
-                        return;
-                    }
-                    
-                    data.forEach(instructor => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructor.code}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.full_name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.email || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.phone || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.department__name || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.subject_group__name || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${instructor.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                    ${instructor.is_active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="editInstructor(${instructor.id})">Sửa</button>
-                                <button class="text-red-600 hover:text-red-900" onclick="deleteInstructor(${instructor.id})">Xóa</button>
-                            </td>
-                        `;
-                        tbody.appendChild(row);
-                    });
-                })
-                .catch(error => console.error('Error loading instructors:', error));
-        }
+        
 
         // Hàm điền dropdown cho modal giảng viên
         function populateInstructorModalDropdowns() {
