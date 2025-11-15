@@ -1400,7 +1400,8 @@
             // Xử lý bộ lọc
             document.getElementById('btn-filter-classes').addEventListener('click', loadClassesData);
             document.getElementById('btn-filter-combined').addEventListener('click', loadCombinedClassesData);
-			document.getElementById('btn-filter-structors').addEventListener('click', loadTeachingAssignmentData);
+			// Bộ lọc giảng viên
+            document.getElementById('btn-filter-instructors').addEventListener('click', loadInstructorsData);
 
             // Xử lý bộ lọc phân công giảng dạy
             document.getElementById('filter-instructor').addEventListener('change', loadTeachingAssignmentsData);
@@ -1515,8 +1516,7 @@
             document.getElementById('btn-huy-giang-vien').addEventListener('click', closeThemGiangVienModal);
             document.getElementById('btn-luu-giang-vien').addEventListener('click', createGiangVien);
 
-            // Bộ lọc giảng viên
-            document.getElementById('btn-filter-instructors').addEventListener('click', loadInstructorsData);
+            
         }
 
         // Hàm cập nhật tiêu đề trang
