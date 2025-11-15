@@ -1419,7 +1419,7 @@ class TeachingManagementView(View):
 @csrf_exempt
 def api_instructors(request):
     """API lấy danh sách giảng viên"""
-    instructors = Instructor.objects.all().values('id', 'code', 'full_name', 'department__name', 'subject_group__name', 'is_active')
+    instructors = Instructor.objects.all().values('id', 'code', 'full_name', 'email', 'phone', 'department__name', 'subject_group__name', 'is_active')
     return JsonResponse(list(instructors), safe=False)
 
 @csrf_exempt
