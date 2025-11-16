@@ -1422,19 +1422,19 @@ def api_instructors(request):
      # Áp dụng bộ lọc nếu có
     department_id = request.GET.get('department_id')
     if department_id:
-        instructors = instructors.filter(id=department_id)
+        instructors = instructors.filter(department_id=department_id)
     
     subject_group_id = request.GET.get('subject_group_id')
     if subject_group_id:
-        instructors = instructors.filter(id=subject_group_id)
+        instructors = instructors.filter(subject_group_id=subject_group_id)
     
     is_active = request.GET.get('is_active')
     if is_active is not None:
         # Chuyển đổi từ string sang boolean
         is_active_bool = is_active.lower() == 'true'
         instructors = instructors.filter(is_active=is_active_bool)
-    instructors = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'department_id', 'department__name', 'subject_group_id', 'subject_group__name', 'is_active')
-    return JsonResponse(list(instructors), safe=False)
+    instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'department_id', 'department__name', 'subject_group_id', 'subject_group__name', 'is_active')
+    return JsonResponse(list(instructors_data), safe=False)
 
 @csrf_exempt
 def api_create_class(request):
