@@ -1419,7 +1419,7 @@ class TeachingManagementView(View):
 @csrf_exempt
 def api_instructors(request):
     """API lấy danh sách giảng viên"""
-    instructors = Instructors.objects.select_related('department', 'subject_group')
+    instructors = Instructor.objects.select_related('department', 'subject_group')
      # Áp dụng bộ lọc nếu có
     department_id = request.GET.get('department_id')
     if department_id:
