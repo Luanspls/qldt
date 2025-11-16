@@ -369,6 +369,7 @@ class Instructor(models.Model):
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
+        related_name="instructors", 
         verbose_name="Khoa",
         db_column="department_id"
     )
@@ -377,6 +378,7 @@ class Instructor(models.Model):
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
+        related_name="instructors",
         verbose_name="Tổ bộ môn",
         db_column="subject_group_id"
     )
