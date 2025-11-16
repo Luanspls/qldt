@@ -1433,7 +1433,7 @@ def api_instructors(request):
         # Chuyển đổi từ string sang boolean
         is_active_bool = is_active.lower() == 'true'
         instructors = instructors.filter(is_active=is_active_bool)
-    instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'department_id', 'department__name', 'subject_group_id', 'subject_group__name', 'is_active')
+    instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'department_id', 'subject_group_id', 'is_active')
     return JsonResponse(list(instructors_data), safe=False)
 
 @csrf_exempt
