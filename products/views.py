@@ -2621,3 +2621,322 @@ class ImportTeachingDataView(View):
         except Exception as e:
             print(f"Error in process_teaching_assignment_import: {str(e)}")
             return {'status': 'error', 'message': f'Lỗi xử lý dữ liệu: {str(e)}'}
+
+@csrf_exempt
+def api_class_detail(request, id):
+    """API lấy thông tin chi tiết lớp học"""
+    if request.method == 'GET':
+        try:
+            class_obj = Class.objects.get(id=id)
+            class_data = {
+                'id': class_obj.id,
+                'code': class_obj.code,
+                'name': class_obj.name,
+                'curriculum_id': class_obj.curriculum.id if class_obj.curriculum else None,
+                'course_id': class_obj.course.id if class_obj.course else None,
+                'start_date': class_obj.start_date,
+                'end_date': class_obj.end_date,
+                'is_combined': class_obj.is_combined,
+                'combined_class_code': class_obj.combined_class_code,
+                'description': class_obj.description
+            }
+            return JsonResponse({'status': 'success', 'data': class_data})
+        except Class.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Lớp học không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_update_class(request, id):
+    """API cập nhật lớp học"""
+    if request.method == 'PUT':
+        try:
+            class_obj = Class.objects.get(id=id)
+            data = json.loads(request.body)
+            
+            # Cập nhật các trường
+            if 'code' in data:
+                class_obj.code = data['code']
+            if 'name' in data:
+                class_obj.name = data['name']
+            if 'curriculum_id' in data:
+                class_obj.curriculum_id = data['curriculum_id']
+            if 'course_id' in data:
+                class_obj.course_id = data['course_id']
+            if 'start_date' in data:
+                class_obj.start_date = data['start_date'] if data['start_date'] else None
+            if 'end_date' in data:
+                class_obj.end_date = data['end_date'] if data['end_date'] else None
+            if 'is_combined' in data:
+                class_obj.is_combined = data['is_combined']
+            if 'combined_class_code' in data:
+                class_obj.combined_class_code = data['combined_class_code'] if data['combined_class_code'] else None
+            if 'description' in data:
+                class_obj.description = data['description'] if data['description'] else None
+            
+            class_obj.save()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã cập nhật lớp học thành công'
+            })
+            
+        except Class.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Lớp học không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_delete_class(request, id):
+    """API xóa lớp học"""
+    if request.method == 'DELETE':
+        try:
+            class_obj = Class.objects.get(id=id)
+            class_name = class_obj.name
+            class_obj.delete()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Đã xóa lớp học {class_name} thành công'
+            })
+            
+        except Class.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Lớp học không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_combined_class_detail(request, id):
+    """API lấy thông tin chi tiết lớp học ghép"""
+    if request.method == 'GET':
+        try:
+            combined_class = CombinedClass.objects.prefetch_related('classes').get(id=id)
+            class_data = {
+                'id': combined_class.id,
+                'code': combined_class.code,
+                'name': combined_class.name,
+                'curriculum_id': combined_class.curriculum.id if combined_class.curriculum else None,
+                'description': combined_class.description,
+                'classes': [{'id': c.id, 'code': c.code, 'name': c.name} for c in combined_class.classes.all()]
+            }
+            return JsonResponse({'status': 'success', 'data': class_data})
+        except CombinedClass.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Lớp học ghép không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_update_combined_class(request, id):
+    """API cập nhật lớp học ghép"""
+    if request.method == 'PUT':
+        try:
+            combined_class = CombinedClass.objects.get(id=id)
+            data = json.loads(request.body)
+            
+            # Cập nhật các trường
+            if 'code' in data:
+                combined_class.code = data['code']
+            if 'name' in data:
+                combined_class.name = data['name']
+            if 'curriculum_id' in data:
+                combined_class.curriculum_id = data['curriculum_id']
+            if 'description' in data:
+                combined_class.description = data['description'] if data['description'] else None
+            
+            combined_class.save()
+            
+            # Cập nhật các lớp thành phần
+            if 'classes' in data:
+                classes = Class.objects.filter(id__in=data['classes'])
+                combined_class.classes.set(classes)
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã cập nhật lớp học ghép thành công'
+            })
+            
+        except CombinedClass.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Lớp học ghép không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_delete_combined_class(request, id):
+    """API xóa lớp học ghép"""
+    if request.method == 'DELETE':
+        try:
+            combined_class = CombinedClass.objects.get(id=id)
+            class_name = combined_class.name
+            combined_class.delete()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Đã xóa lớp học ghép {class_name} thành công'
+            })
+            
+        except CombinedClass.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Lớp học ghép không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_instructor_detail(request, id):
+    """API lấy thông tin chi tiết giảng viên"""
+    if request.method == 'GET':
+        try:
+            instructor = Instructor.objects.get(id=id)
+            instructor_data = {
+                'id': instructor.id,
+                'code': instructor.code,
+                'full_name': instructor.full_name,
+                'email': instructor.email,
+                'phone': instructor.phone,
+                'department_id': instructor.department.id if instructor.department else None,
+                'subject_group_id': instructor.subject_group.id if instructor.subject_group else None,
+                'is_active': instructor.is_active
+            }
+            return JsonResponse({'status': 'success', 'data': instructor_data})
+        except Instructor.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Giảng viên không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_update_instructor(request, id):
+    """API cập nhật giảng viên"""
+    if request.method == 'PUT':
+        try:
+            instructor = Instructor.objects.get(id=id)
+            data = json.loads(request.body)
+            
+            # Cập nhật các trường
+            if 'code' in data:
+                instructor.code = data['code']
+            if 'full_name' in data:
+                instructor.full_name = data['full_name']
+            if 'email' in data:
+                instructor.email = data['email'] if data['email'] else None
+            if 'phone' in data:
+                instructor.phone = data['phone'] if data['phone'] else None
+            if 'department_id' in data:
+                instructor.department_id = data['department_id'] if data['department_id'] else None
+            if 'subject_group_id' in data:
+                instructor.subject_group_id = data['subject_group_id'] if data['subject_group_id'] else None
+            if 'is_active' in data:
+                instructor.is_active = data['is_active']
+            
+            instructor.save()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã cập nhật giảng viên thành công'
+            })
+            
+        except Instructor.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Giảng viên không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_delete_instructor(request, id):
+    """API xóa giảng viên"""
+    if request.method == 'DELETE':
+        try:
+            instructor = Instructor.objects.get(id=id)
+            instructor_name = instructor.full_name
+            instructor.delete()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Đã xóa giảng viên {instructor_name} thành công'
+            })
+            
+        except Instructor.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Giảng viên không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_teaching_assignment_detail(request, id):
+    """API lấy thông tin chi tiết phân công giảng dạy"""
+    if request.method == 'GET':
+        try:
+            assignment = TeachingAssignment.objects.select_related(
+                'instructor', 'curriculum_subject', 'class_obj', 'combined_class'
+            ).get(id=id)
+            
+            assignment_data = {
+                'id': assignment.id,
+                'instructor_id': assignment.instructor.id,
+                'curriculum_subject_id': assignment.curriculum_subject.id,
+                'class_obj_id': assignment.class_obj.id if assignment.class_obj else None,
+                'combined_class_id': assignment.combined_class.id if assignment.combined_class else None,
+                'academic_year': assignment.academic_year,
+                'semester': assignment.semester,
+                'is_main_instructor': assignment.is_main_instructor,
+                'student_count': assignment.student_count,
+                'teaching_hours': assignment.teaching_hours
+            }
+            return JsonResponse({'status': 'success', 'data': assignment_data})
+        except TeachingAssignment.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Phân công giảng dạy không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_update_teaching_assignment(request, id):
+    """API cập nhật phân công giảng dạy"""
+    if request.method == 'PUT':
+        try:
+            assignment = TeachingAssignment.objects.get(id=id)
+            data = json.loads(request.body)
+            
+            # Cập nhật các trường
+            if 'instructor_id' in data:
+                assignment.instructor_id = data['instructor_id']
+            if 'curriculum_subject_id' in data:
+                assignment.curriculum_subject_id = data['curriculum_subject_id']
+            if 'class_obj_id' in data:
+                assignment.class_obj_id = data['class_obj_id'] if data['class_obj_id'] else None
+            if 'combined_class_id' in data:
+                assignment.combined_class_id = data['combined_class_id'] if data['combined_class_id'] else None
+            if 'academic_year' in data:
+                assignment.academic_year = data['academic_year']
+            if 'semester' in data:
+                assignment.semester = data['semester']
+            if 'is_main_instructor' in data:
+                assignment.is_main_instructor = data['is_main_instructor']
+            if 'student_count' in data:
+                assignment.student_count = data['student_count']
+            if 'teaching_hours' in data:
+                assignment.teaching_hours = data['teaching_hours']
+            
+            assignment.save()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã cập nhật phân công giảng dạy thành công'
+            })
+            
+        except TeachingAssignment.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Phân công giảng dạy không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def api_delete_teaching_assignment(request, id):
+    """API xóa phân công giảng dạy"""
+    if request.method == 'DELETE':
+        try:
+            assignment = TeachingAssignment.objects.get(id=id)
+            assignment.delete()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã xóa phân công giảng dạy thành công'
+            })
+            
+        except TeachingAssignment.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Phân công giảng dạy không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
