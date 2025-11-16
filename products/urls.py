@@ -61,4 +61,3 @@ urlpatterns = [
     path('api/teaching-assignments/update/<int:id>/', views.api_update_teaching_assignment, name='api_update_teaching_assignment'),
     path('api/teaching-assignments/delete/<int:id>/', views.api_delete_teaching_assignment, name='api_delete_teaching_assignment'),
 ]
-]
