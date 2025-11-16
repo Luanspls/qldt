@@ -1708,23 +1708,23 @@
                         return;
                     }
                     
-                    data.forEach(instructor => {
+                    data.forEach(instructorItem => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructor.code}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.full_name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.email || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructor.phone || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getDepartmentName(instructor.department_id) || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getSubjectGroupName(instructor.subject_group_id) || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructorItem.code}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.full_name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.email || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.phone || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getDepartmentName(instructorItem.department_id) || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getSubjectGroupName(instructorItem.subject_group_id) || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${instructor.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                    ${instructor.is_active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${instructorItem.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${instructorItem.is_active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="editInstructor(${instructor.id})">Sửa</button>
-                                <button class="text-red-600 hover:text-red-900" onclick="deleteInstructor(${instructor.id})">Xóa</button>
+                                <button class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="editInstructor(${instructorItem.id})">Sửa</button>
+                                <button class="text-red-600 hover:text-red-900" onclick="deleteInstructor(${instructorItem.id})">Xóa</button>
                             </td>
                         `;
                         tbody.appendChild(row);
