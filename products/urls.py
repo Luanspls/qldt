@@ -40,4 +40,25 @@ urlpatterns = [
     path('api/instructors/create/', views.api_create_instructor, name='api_create_instructor'),
     # path('api/curriculum-subjects/', views.api_curriculum_subjects, name='api_curriculum_subjects'),
     path('api/get-sheet-names/', views.api_get_sheet_names, name='api_get_sheet_names'),
+
+    # API cho Lớp học
+    path('api/classes/<int:id>/', views.api_class_detail, name='api_class_detail'),
+    path('api/classes/update/<int:id>/', views.api_update_class, name='api_update_class'),
+    path('api/classes/delete/<int:id>/', views.api_delete_class, name='api_delete_class'),
+    
+    # API cho Lớp học ghép
+    path('api/combined-classes/<int:id>/', views.api_combined_class_detail, name='api_combined_class_detail'),
+    path('api/combined-classes/update/<int:id>/', views.api_update_combined_class, name='api_update_combined_class'),
+    path('api/combined-classes/delete/<int:id>/', views.api_delete_combined_class, name='api_delete_combined_class'),
+    
+    # API cho Giảng viên
+    path('api/instructors/<int:id>/', views.api_instructor_detail, name='api_instructor_detail'),
+    path('api/instructors/update/<int:id>/', views.api_update_instructor, name='api_update_instructor'),
+    path('api/instructors/delete/<int:id>/', views.api_delete_instructor, name='api_delete_instructor'),
+    
+    # API cho Phân công giảng dạy
+    path('api/teaching-assignments/<int:id>/', views.api_teaching_assignment_detail, name='api_teaching_assignment_detail'),
+    path('api/teaching-assignments/update/<int:id>/', views.api_update_teaching_assignment, name='api_update_teaching_assignment'),
+    path('api/teaching-assignments/delete/<int:id>/', views.api_delete_teaching_assignment, name='api_delete_teaching_assignment'),
+]
 ]
