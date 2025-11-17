@@ -1391,6 +1391,11 @@
             document.getElementById('btn-huy-lop-hoc').addEventListener('click', closeThemLopHocModal);
             document.getElementById('btn-luu-lop-hoc').addEventListener('click', createLopHoc);
 
+			document.getElementById('form-them-lop-hoc').addEventListener('submit', function(e) {
+				e.preventDefault();
+				return false;
+			});
+
             // Xử lý checkbox lớp ghép
             document.getElementById('is_combined').addEventListener('change', function() {
                 const combinedFields = document.getElementById('combined-class-fields');
@@ -1419,11 +1424,21 @@
             document.getElementById('btn-huy-lop-ghep').addEventListener('click', closeThemLopGhepModal);
             document.getElementById('btn-luu-lop-ghep').addEventListener('click', createLopGhep);
 
+			document.getElementById('form-them-lop-ghep').addEventListener('submit', function(e) {
+				e.preventDefault();
+				return false;
+			});
+
             // Xử lý modal phân công giảng dạy
             document.getElementById('btn-them-phan-cong').addEventListener('click', openThemPhanCongModal);
             document.getElementById('btn-dong-phan-cong').addEventListener('click', closeThemPhanCongModal);
             document.getElementById('btn-huy-phan-cong').addEventListener('click', closeThemPhanCongModal);
             document.getElementById('btn-luu-phan-cong').addEventListener('click', createPhanCong);
+
+			document.getElementById('form-them-phan-cong').addEventListener('submit', function(e) {
+				e.preventDefault();
+				return false;
+			});
 
             // Xử lý thay đổi loại lớp trong modal phân công giảng dạy
             document.getElementById('class_type').addEventListener('change', function() {
@@ -1519,8 +1534,11 @@
             document.getElementById('btn-dong-giang-vien').addEventListener('click', closeThemGiangVienModal);
             document.getElementById('btn-huy-giang-vien').addEventListener('click', closeThemGiangVienModal);
             document.getElementById('btn-luu-giang-vien').addEventListener('click', createGiangVien);
-
-            
+			
+			document.getElementById('form-them-giang-vien').addEventListener('submit', function(e) {
+				e.preventDefault();
+				return false;
+			});
         }
 
         // Hàm cập nhật tiêu đề trang
@@ -1615,12 +1633,15 @@
                     
                     data.forEach((classItem, index) => {
                         const row = document.createElement('tr');
+						// Sử dụng hàm helper đã sửa
+            			const curriculumName = getCurriculumName(classItem.curriculum || classItem.curriculum_id);
+            			const courseName = getCourseName(classItem.course || classItem.course_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${classItem.code}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${classItem.name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getCurriculumName(classItem.curriculum_id)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getCourseName(classItem.course_id)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${classItem.name || 'N/A}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${curriculumName}</td>
+                			<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${courseName}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${classItem.is_combined ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
                                     ${classItem.is_combined ? 'Lớp ghép' : 'Lớp thường'}
@@ -1666,13 +1687,14 @@
                         return;
                     }
                     
-                    data.forEach((CombinedClass, index) => {
+                    data.forEach((combinedClass, index) => {
                         const row = document.createElement('tr');
+						const curriculumName = getCurriculumName(combinedClass.curriculum || combinedClass.curriculum_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${combinedClass.code}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${combinedClass.name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getCurriculumName(combinedClass.curriculum_id)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${curriculumName}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${combinedClass.classes_count} lớp</td>
                             <td class="px-6 py-4 text-sm text-gray-500">
                                 ${combinedClass.class_codes ? combinedClass.class_codes.join(', ') : 'Không có'}
@@ -1725,14 +1747,16 @@
                     
                     data.forEach((instructorItem, index) => {
                         const row = document.createElement('tr');
+						const departmentName = getDepartmentName(instructorItem.department || instructorItem.curriculum_id);
+						const subjectGroupName = getSubjectGroupName(instructorItem.subject_group || instructorItem.subject_group_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructorItem.code}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.full_name}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.email || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.phone || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getDepartmentName(instructorItem.department_id) || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getSubjectGroupName(instructorItem.subject_group_id) || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${departmentName || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${subjectGroupName || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${instructorItem.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                                     ${instructorItem.is_active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
@@ -2335,26 +2359,54 @@
             setTimeout(initializeSelect2, 100);
 		}
         
-        // Hàm hỗ trợ
-        function getCurriculumName(curriculumId) {
-            const curriculum = allCurricula.find(c => c.id == curriculumId);
-            return curriculum ? curriculum.name : 'N/A';
-        }
-        
-        function getCourseName(courseId) {
-            const course = allCourses.find(c => c.id == courseId);
-            return course ? course.name : 'N/A';
-        }
+        // Các hàm helper để xử lý cả object và ID
+		function getCurriculumName(curriculum) {
+			if (!curriculum) return 'N/A';
+    
+			// Nếu curriculum là object
+			if (typeof curriculum === 'object' && curriculum !== null) {
+    			return curriculum.name || 'N/A';
+			}
+    
+			// Nếu curriculum là ID, tìm trong allCurricula
+			const curriculumObj = allCurricula.find(c => c.id == curriculum);
+			return curriculumObj ? curriculumObj.name : 'N/A';
+		}
 
-		function getSubjectGroupName(subjectgroupId) {
-            const subjectgroup = allSubjectGroups.find(sg => sg.id == subjectgroupId);
-            return subjectgroup ? subjectgroup.name : 'N/A';
-        }
+		function getCourseName(course) {
+			if (!course) return 'N/A';
+    
+			// Nếu course là object
+			if (typeof course === 'object' && course !== null) {
+    			return course.name || 'N/A';
+			}
+    
+			// Nếu course là ID, tìm trong allCourses
+			const courseObj = allCourses.find(c => c.id == course);
+			return courseObj ? courseObj.name : 'N/A';
+		}
 
-		function getDepartmentName(departmentId) {
-            const department = allDepartments.find(d => d.id == departmentId);
-            return department ? department.name : 'N/A';
-        }
+		function getDepartmentName(department) {
+			if (!department) return 'N/A';
+    
+			if (typeof department === 'object' && department !== null) {
+    			return department.name || 'N/A';
+			}
+    
+			const departmentObj = allDepartments.find(d => d.id == department);
+			return departmentObj ? departmentObj.name : 'N/A';
+		}
+
+		function getSubjectGroupName(subjectGroup) {
+			if (!subjectGroup) return 'N/A';
+    
+			if (typeof subjectGroup === 'object' && subjectGroup !== null) {
+    			return subjectGroup.name || 'N/A';
+			}
+    
+			const subjectGroupObj = allSubjectGroups.find(sg => sg.id == subjectGroup);
+			return subjectGroupObj ? subjectGroupObj.name : 'N/A';
+		}
 
         function createLopHoc() {
             const form = document.getElementById('form-them-lop-hoc');
@@ -2903,9 +2955,10 @@
         				document.querySelector('#modal-them-lop-hoc h3').textContent = 'Sửa lớp học';
         				const saveBtn = document.getElementById('btn-luu-lop-hoc');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật lớp học';
-        				saveBtn.onclick = function(e) { updateLopHoc(id, e); };
-
-						
+        				saveBtn.onclick = function(e) { 
+							updateLopHoc(id, e);
+							return false;
+						};
         			} else {
             			alert('Không thể tải dữ liệu lớp học: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -2919,14 +2972,16 @@
 		let isLopUpdating = false;
 		// Hàm cập nhật lớp học
 		function updateLopHoc(id, event) {
-			// Ngăn chặn gọi nhiều lần
-			if (isLopUpdating) {
-    			return;
-			}
+			
 			// Ngăn sự kiện mặc định nếu có
 			if (event) {
     			event.preventDefault();
     			event.stopPropagation();
+				event.stopImmediatePropagation();
+			}
+			// Ngăn chặn gọi nhiều lần
+			if (isLopUpdating) {
+    			return false;
 			}
 			const form = document.getElementById('form-them-lop-hoc');
 			const formData = new FormData(form);
@@ -2939,7 +2994,7 @@
     			is_combined: formData.get('is_combined') === 'on',
     			description: formData.get('description')
 			};
-    
+
 			// Xử lý ngày tháng
 			const startDate = formData.get('start_date');
 			if (startDate) data.start_date = startDate;
@@ -2952,14 +3007,21 @@
     			if (combinedClassCode) data.combined_class_code = combinedClassCode;
 			}
 
+			// Validate
+			if (!data.code || !data.name || !data.curriculum_id || !data.course_id) {
+    			alert('Vui lòng điền đầy đủ các trường bắt buộc');
+    			return false;
+			}
 			// Đánh dấu đang cập nhật
 			isLopUpdating = true;
 			
 			// Hiển thị loading
 			const saveBtn = document.getElementById('btn-luu-lop-hoc');
 			const originalText = saveBtn.innerHTML;
+			const originalOnClick = saveBtn.onclick;
 			saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
 			saveBtn.disabled = true;
+			saveBtn.onclick = null; // Tạm thời vô hiệu hóa onclick
     
 			// Gửi request cập nhật
 			fetch(`/api/classes/update/${id}/`, {
@@ -2992,8 +3054,10 @@
 			.finally(() => {
     			saveBtn.innerHTML = originalText;
     			saveBtn.disabled = false;
+				saveBtn.onclick = originalOnClick;
 				isLopUpdating = false;
 			});
+			return false; // Ngăn form submit mặc định
 		}
 
 		// Hàm xóa lớp học
@@ -3020,8 +3084,6 @@
     			});
 			}
 		}
-
-		// Tương tự cho các hàm khác...
 
 		// Hàm sửa lớp ghép
 		function editCombinedClass(id) {
@@ -3065,7 +3127,10 @@
         				document.querySelector('#modal-them-lop-ghep h3').textContent = 'Sửa lớp ghép';
         				const saveBtn = document.getElementById('btn-luu-lop-ghep');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật lớp ghép';
-        				saveBtn.onclick = function(e) { updateLopGhep(id, e); };
+        				saveBtn.onclick = function(e) { 
+							updateLopGhep(id, e);
+							return false;
+						};
         			} else {
             			alert('Không thể tải dữ liệu lớp ghép: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -3078,16 +3143,17 @@
 
 		let isLopGhepUpdating = false;
 		function updateLopGhep(id, event) {
-			// Ngăn chặn gọi nhiều lần
-			if (isLopGhepUpdating) {
-    			return;
-			}
+			
 			// Ngăn sự kiện mặc định nếu có
 			if (event) {
     			event.preventDefault();
     			event.stopPropagation();
+				event.stopImmediatePropagation();
 			}
-			
+			// Ngăn chặn gọi nhiều lần
+			if (isLopGhepUpdating) {
+    			return false;
+			}
 			const form = document.getElementById('form-them-lop-ghep');
 			const formData = new FormData(form);
 			const data = {
@@ -3104,8 +3170,10 @@
 			
 			const saveBtn = document.getElementById('btn-luu-lop-ghep');
 			const originalText = saveBtn.innerHTML;
+			const originalOnClick = saveBtn.onclick;
 			saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
 			saveBtn.disabled = true;
+			saveBtn.onclick = null;
 
 			fetch(`/api/combined-classes/update/${id}/`, {
     			method: 'PUT',
@@ -3132,8 +3200,10 @@
 			.finally(() => {
     			saveBtn.innerHTML = originalText;
     			saveBtn.disabled = false;
+				saveBtn.onclick = originalOnClick
 				isLopGhepUpdating = false;
 			});
+			return false;
 		}
 
 		function deleteCombinedClass(id) {
@@ -3195,7 +3265,10 @@
         				document.querySelector('#modal-them-giang-vien h3').textContent = 'Sửa giảng viên';
         				const saveBtn = document.getElementById('btn-luu-giang-vien');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật giảng viên';
-        				saveBtn.onclick = function(e) { updateInstructor(id, e); };
+        				saveBtn.onclick = function(e) { 
+							updateInstructor(id, e);
+							return false;
+						};
         			} else {
             			alert('Không thể tải dữ liệu giảng viên: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -3208,14 +3281,16 @@
 
 		let isInstructorUpdate = false;
 		function updateInstructor(id, event) {
-			// Ngăn chặn gọi nhiều lần
-			if (isInstructorUpdate) {
-    			return;
-			}
+			
 			// Ngăn sự kiện mặc định nếu có
 			if (event) {
     			event.preventDefault();
     			event.stopPropagation();
+				event.stopImmediatePropagation();
+			}
+			// Ngăn chặn gọi nhiều lần
+			if (isInstructorUpdate) {
+    			return false;
 			}
 			const form = document.getElementById('form-them-giang-vien');
 			const formData = new FormData(form);
@@ -3232,8 +3307,10 @@
 			isInstructorUpdate = true;
 			const saveBtn = document.getElementById('btn-luu-giang-vien');
 			const originalText = saveBtn.innerHTML;
+			const originalOnClick = saveBtn.onclick;
 			saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
 			saveBtn.disabled = true;
+			saveBtn.onclick = null;
 
 			fetch(`/api/instructors/update/${id}/`, {
     			method: 'PUT',
@@ -3265,8 +3342,10 @@
 			.finally(() => {
     			saveBtn.innerHTML = originalText;
     			saveBtn.disabled = false;
+				saveBtn.onclick = originalOnClick;
 				isInstructorUpdate = false;
 			});
+			return false;
 		}
 
 		function deleteInstructor(id) {
@@ -3354,7 +3433,10 @@
 						document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
         				const saveBtn = document.getElementById('btn-luu-phan-cong');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật phân công';
-        				saveBtn.onclick = function(e) { updateTeachingAssignment(id, e); };
+        				saveBtn.onclick = function(e) { 
+							updateTeachingAssignment(id, e);
+							return false;
+						};
         			} else {
             			alert('Không thể tải dữ liệu phân công giảng dạy: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -3367,14 +3449,16 @@
 
 		let isTeachingAssignUpdate = false;
 		function updateTeachingAssignment(id, event) {
-			// Ngăn chặn gọi nhiều lần
-			if (isInstructorUpdate) {
-    			return;
-			}
+			
 			// Ngăn sự kiện mặc định nếu có
 			if (event) {
     			event.preventDefault();
     			event.stopPropagation();
+				event.stopImmediatePropagation();
+			}
+			// Ngăn chặn gọi nhiều lần
+			if (isInstructorUpdate) {
+    			return false;
 			}
 			const form = document.getElementById('form-them-phan-cong');
 			const formData = new FormData(form);
@@ -3399,8 +3483,10 @@
 			
 			const saveBtn = document.getElementById('btn-luu-phan-cong');
 			const originalText = saveBtn.innerHTML;
+			const originalOnClick = saveBtn.onclick;
 			saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
 			saveBtn.disabled = true;
+			saveBtn.onclick = null;
 
 			fetch(`/api/teaching-assignments/update/${id}/`, {
     			method: 'PUT',
@@ -3432,8 +3518,10 @@
 			.finally(() => {
     			saveBtn.innerHTML = originalText;
     			saveBtn.disabled = false;
+				saveBtn.onclick = originalOnClick;
 				isTeachingAssignUpdate = false;
 			});
+			return false;
 		}
 
 		function deleteTeachingAssignment(id) {
