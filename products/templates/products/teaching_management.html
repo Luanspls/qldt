@@ -2254,8 +2254,8 @@
 			$('select').select2('destroy');
 			document.getElementById('modal-them-lop-hoc').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
-			document.getElementById('form-them-lop-hoc').reset();
-			// resetModalToAddState('modal-them-lop-hoc', 'form-them-lop-hoc', 'btn-luu-lop-hoc', '<i class="fas fa-save mr-2"></i>Lưu lớp học');
+			// document.getElementById('form-them-lop-hoc').reset();
+			resetModalToAddState('modal-them-lop-hoc', 'form-them-lop-hoc', 'btn-luu-lop-hoc', '<i class="fas fa-save mr-2"></i>Lưu lớp học');
             // Khởi tạo lại Select2 cho các dropdown bên ngoài
             setTimeout(initializeSelect2, 100);
 		}
@@ -2270,8 +2270,8 @@
 			$('select').select2('destroy');
 			document.getElementById('modal-them-lop-ghep').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
-			document.getElementById('form-them-lop-ghep').reset();
-			// resetModalToAddState('modal-them-lop-ghep', 'form-them-lop-ghep', 'btn-luu-lop-ghep', '<i class="fas fa-save mr-2"></i>Lưu lớp ghép');
+			// document.getElementById('form-them-lop-ghep').reset();
+			resetModalToAddState('modal-them-lop-ghep', 'form-them-lop-ghep', 'btn-luu-lop-ghep', '<i class="fas fa-save mr-2"></i>Lưu lớp ghép');
             // Khởi tạo lại Select2 cho các dropdown bên ngoài
             setTimeout(initializeSelect2, 100);
 		}
@@ -2286,8 +2286,8 @@
 			$('select').select2('destroy');
 			document.getElementById('modal-them-phan-cong').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
-			document.getElementById('form-them-phan-cong').reset();
-			// resetModalToAddState('modal-them-phan-cong', 'form-them-phan-cong', 'btn-luu-phan-cong', '<i class="fas fa-save mr-2"></i>Lưu phân công');
+			// document.getElementById('form-them-phan-cong').reset();
+			resetModalToAddState('modal-them-phan-cong', 'form-them-phan-cong', 'btn-luu-phan-cong', '<i class="fas fa-save mr-2"></i>Lưu phân công');
             // Khởi tạo lại Select2 cho các dropdown bên ngoài
             setTimeout(initializeSelect2, 100);
 		}
@@ -2302,8 +2302,8 @@
 			$('select').select2('destroy');
 			document.getElementById('modal-them-giang-vien').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
-			document.getElementById('form-them-giang-vien').reset();
-			// resetModalToAddState('modal-them-giang-vien', 'form-them-giang-vien', 'btn-luu-giang-vien', '<i class="fas fa-save mr-2"></i>Lưu giảng viên');
+			// document.getElementById('form-them-giang-vien').reset();
+			resetModalToAddState('modal-them-giang-vien', 'form-them-giang-vien', 'btn-luu-giang-vien', '<i class="fas fa-save mr-2"></i>Lưu giảng viên');
             // Khởi tạo lại Select2 cho các dropdown bên ngoài
             setTimeout(initializeSelect2, 100);
 		}
@@ -2852,7 +2852,19 @@
         			document.querySelector('#form-them-lop-hoc input[name="end_date"]').value = classData.end_date;
         			document.querySelector('#form-them-lop-hoc input[name="is_combined"]').checked = classData.is_combined;
         			document.querySelector('#form-them-lop-hoc textarea[name="description"]').value = classData.description || '';
+
+					// Xử lý trường combined_class_code
+        			if (classData.is_combined && classData.combined_class_code) {
+            			document.querySelector('#form-them-lop-hoc input[name="combined_class_code"]').value = classData.combined_class_code;
+        			}
             
+        			// Hiển thị/ẩn combined fields
+        			const combinedFields = document.getElementById('combined-class-fields');
+        			if (classData.is_combined) {
+            			combinedFields.classList.remove('hidden');
+        			} else {
+            			combinedFields.classList.add('hidden');
+        			}
         			// Hiển thị modal
         			openThemLopHocModal();
             
@@ -3296,19 +3308,6 @@
     			else if (modalId === 'modal-them-phan-cong') title.textContent = 'Thêm phân công giảng dạy mới';
 			}
 		}
-
-		// Cập nhật các hàm close modal để gọi reset
-		function closeThemLopHocModal() {
-			closeAllSelect2Dropdowns();
-    enableOutsideSelect2();
-    $('select').select2('destroy');
-    document.getElementById('modal-them-lop-hoc').classList.add('hidden');
-    document.body.classList.remove('overflow-hidden');
-    
-    setTimeout(initializeSelect2, 100);
-}
-
-// Tương tự cho các hàm close modal khác...
     </script>
     
 </body>
