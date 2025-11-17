@@ -2847,7 +2847,7 @@
         			}
         			return response.json();
     			})
-    			.then(classData => {
+    			.then(data => {
 					// Kiểm tra status của response
         			if (data.status === 'success' && data.data) {
             			const classData = data.data;
@@ -3114,7 +3114,7 @@
         			}
         			return response.json();
 				})
-    			.then(instructorData => {
+    			.then(data => {
 					if (data.status === 'success' && data.data) {
             			const instructorData = data.data;
         				document.querySelector('#form-them-giang-vien input[name="code"]').value = instructorData.code;
