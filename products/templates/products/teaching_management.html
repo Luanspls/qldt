@@ -2363,22 +2363,29 @@
 		function getCurriculumName(curriculum) {
 			if (!curriculum) return 'N/A';
     
-			// Nếu curriculum là object
-			if (typeof curriculum === 'object' && curriculum !== null) {
-    			return curriculum.name || 'N/A';
+			if (typeof curriculumData === 'object' && curriculumData !== null && curriculumData.name) {
+    			return curriculumData.name;
+			}
+			if (typeof curriculumData === 'object' && curriculumData !== null && curriculumData.code) {
+    			return curriculumData.code || 'N/A';
 			}
     
 			// Nếu curriculum là ID, tìm trong allCurricula
-			const curriculumObj = allCurricula.find(c => c.id == curriculum);
-			return curriculumObj ? curriculumObj.name : 'N/A';
+			if (allCurricula && allCurricula.length > 0) {
+				const curriculumObj = allCurricula.find(c => c.id == curriculum);
+				return curriculumObj ? curriculumObj.name : 'N/A';
+			} 
 		}
 
 		function getCourseName(course) {
 			if (!course) return 'N/A';
     
 			// Nếu course là object
-			if (typeof course === 'object' && course !== null) {
+			if (typeof course === 'object' && course !== null && course.name) {
     			return course.name || 'N/A';
+			}
+			if (typeof course === 'object' && course !== null && course.code) {
+    			return course.code || 'N/A';
 			}
     
 			// Nếu course là ID, tìm trong allCourses
@@ -2395,12 +2402,13 @@
     
 			const departmentObj = allDepartments.find(d => d.id == department);
 			return departmentObj ? departmentObj.name : 'N/A';
+		
 		}
 
 		function getSubjectGroupName(subjectGroup) {
 			if (!subjectGroup) return 'N/A';
     
-			if (typeof subjectGroup === 'object' && subjectGroup !== null) {
+			if (typeof subjectGroup === 'object' && subjectGroup !== null && subjectGroup.name) {
     			return subjectGroup.name || 'N/A';
 			}
     
