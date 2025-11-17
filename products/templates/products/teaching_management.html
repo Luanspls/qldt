@@ -1634,8 +1634,8 @@
                     data.forEach((classItem, index) => {
                         const row = document.createElement('tr');
 						// Sử dụng hàm helper đã sửa
-            			const curriculumName = getCurriculumName(classItem.curriculum || classItem.curriculum_id);
-            			const courseName = getCourseName(classItem.course || classItem.course_id);
+            			const curriculumName = getCurriculumName(classItem.curriculum_id);
+            			const courseName = getCourseName(classItem.course_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${classItem.code}</td>
