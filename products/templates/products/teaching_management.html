@@ -1610,7 +1610,7 @@
                         return;
                     }
                     
-                    data.forEach(classItem => {
+                    data.forEach((classItem, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
@@ -1660,7 +1660,7 @@
                         return;
                     }
                     
-                    data.forEach(combinedClass => {
+                    data.forEach((CombinedClass, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
@@ -1714,7 +1714,7 @@
                         return;
                     }
                     
-                    data.forEach(instructorItem => {
+                    data.forEach((instructorItem, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
@@ -1773,7 +1773,7 @@
                         return;
                     }
                     
-                    data.forEach(assignment => {
+                    data.forEach((assignment, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
