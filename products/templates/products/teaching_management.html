@@ -977,7 +977,7 @@
     </div>
 
     <!-- jQuery trước -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
     <!-- Select2 sau -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script>
@@ -1639,7 +1639,7 @@
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${classItem.code}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${classItem.name || 'N/A}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${classItem.name || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getCurriculumName(classItem.curriculum_id) || 'N/A'}</td>
                 			<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getCourseName(classItem.course_id) || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -2363,11 +2363,11 @@
 		function getCurriculumName(curriculum) {
 			if (!curriculum) return 'N/A';
     
-			if (typeof curriculumData === 'object' && curriculumData !== null && curriculumData.name) {
-    			return curriculumData.name;
+			if (typeof curriculum === 'object' && curriculum !== null && curriculum.name) {
+    			return curriculum.name;
 			}
-			if (typeof curriculumData === 'object' && curriculumData !== null && curriculumData.code) {
-    			return curriculumData.code || 'N/A';
+			if (typeof curriculum === 'object' && curriculum !== null && curriculum.code) {
+    			return curriculum.code || 'N/A';
 			}
     
 			// Nếu curriculum là ID, tìm trong allCurricula
