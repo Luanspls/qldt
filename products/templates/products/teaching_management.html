@@ -1747,7 +1747,7 @@
                     
                     data.forEach((instructorItem, index) => {
                         const row = document.createElement('tr');
-						const departmentName = getDepartmentName(instructorItem.department || instructorItem.curriculum_id);
+						const departmentName = getDepartmentName(instructorItem.department || instructorItem.department_id);
 						const subjectGroupName = getSubjectGroupName(instructorItem.subject_group || instructorItem.subject_group_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
