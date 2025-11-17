@@ -2373,7 +2373,7 @@
 			// Nếu curriculum là ID, tìm trong allCurricula
 			if (allCurricula && allCurricula.length > 0) {
 				const curriculumObj = allCurricula.find(c => c.id == curriculum);
-				return curriculumObj ? curriculumObj.name : 'N/A';
+				return curriculumObj ? (curriculumObj.name || curriculumObj.code || 'N/A') : 'N/A';
 			} 
 		}
 
@@ -2382,27 +2382,29 @@
     
 			// Nếu course là object
 			if (typeof course === 'object' && course !== null && course.name) {
-    			return course.name || 'N/A';
+    			return course.name;
 			}
 			if (typeof course === 'object' && course !== null && course.code) {
-    			return course.code || 'N/A';
+    			return course.name || course.code;
 			}
     
 			// Nếu course là ID, tìm trong allCourses
 			const courseObj = allCourses.find(c => c.id == course);
-			return courseObj ? courseObj.name : 'N/A';
+			return courseObj ? (courseObj.name || courseObj.code || 'N/A') : 'N/A';
 		}
 
 		function getDepartmentName(department) {
 			if (!department) return 'N/A';
     
-			if (typeof department === 'object' && department !== null) {
+			if (typeof department === 'object' && department !== null && department.name) {
     			return department.name || 'N/A';
+			}
+			if (typeof department === 'object' && department !== null && department.code) {
+    			return department.name || department.code || 'N/A';
 			}
     
 			const departmentObj = allDepartments.find(d => d.id == department);
-			return departmentObj ? departmentObj.name : 'N/A';
-		
+			return departmentObj ? (departmentObj.name || departmentObj.code || 'N/A') : 'N/A';
 		}
 
 		function getSubjectGroupName(subjectGroup) {
@@ -2411,9 +2413,12 @@
 			if (typeof subjectGroup === 'object' && subjectGroup !== null && subjectGroup.name) {
     			return subjectGroup.name || 'N/A';
 			}
+			if (typeof subjectGroup === 'object' && subjectGroup !== null && subjectGroup.code) {
+    			return subjectGroup.name || subjectGroup.code;
+			}
     
 			const subjectGroupObj = allSubjectGroups.find(sg => sg.id == subjectGroup);
-			return subjectGroupObj ? subjectGroupObj.name : 'N/A';
+			return subjectGroupObj ? (subjectGroupObj.name || subjectGroupObj.code || 'N/A') : 'N/A';
 		}
 
         function createLopHoc() {
