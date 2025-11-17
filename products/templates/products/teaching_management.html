@@ -2841,38 +2841,54 @@
         // Hàm sửa lớp học
 		function editClass(id) {
 			fetch(`/api/classes/${id}/`)
-    			.then(response => response.json())
+    			.then(response => {
+					if (!response.ok) {
+            			throw new Error('Network response was not ok');
+        			}
+        			return response.json();
+    			})
     			.then(classData => {
-        			// Điền dữ liệu vào form
-        			document.querySelector('#form-them-lop-hoc input[name="code"]').value = classData.code;
-        			document.querySelector('#form-them-lop-hoc input[name="name"]').value = classData.name;
-        			document.querySelector('#form-them-lop-hoc select[name="curriculum_id"]').value = classData.curriculum_id;
-        			document.querySelector('#form-them-lop-hoc select[name="course_id"]').value = classData.course_id;
-        			document.querySelector('#form-them-lop-hoc input[name="start_date"]').value = classData.start_date;
-        			document.querySelector('#form-them-lop-hoc input[name="end_date"]').value = classData.end_date;
-        			document.querySelector('#form-them-lop-hoc input[name="is_combined"]').checked = classData.is_combined;
-        			document.querySelector('#form-them-lop-hoc textarea[name="description"]').value = classData.description || '';
+					// Kiểm tra status của response
+        			if (data.status === 'success' && data.data) {
+            			const classData = data.data;
+        				// Điền dữ liệu vào form
+        				document.querySelector('#form-them-lop-hoc input[name="code"]').value = classData.code;
+        				document.querySelector('#form-them-lop-hoc input[name="name"]').value = classData.name;
+        				document.querySelector('#form-them-lop-hoc select[name="curriculum_id"]').value = classData.curriculum_id;
+        				document.querySelector('#form-them-lop-hoc select[name="course_id"]').value = classData.course_id;
+        				document.querySelector('#form-them-lop-hoc input[name="start_date"]').value = classData.start_date;
+        				document.querySelector('#form-them-lop-hoc input[name="end_date"]').value = classData.end_date;
+        				document.querySelector('#form-them-lop-hoc input[name="is_combined"]').checked = classData.is_combined;
+        				document.querySelector('#form-them-lop-hoc textarea[name="description"]').value = classData.description || '';
 
-					// Xử lý trường combined_class_code
-        			if (classData.is_combined && classData.combined_class_code) {
-            			document.querySelector('#form-them-lop-hoc input[name="combined_class_code"]').value = classData.combined_class_code;
-        			}
+						// Xử lý trường combined_class_code
+        				if (classData.is_combined && classData.combined_class_code) {
+            				document.querySelector('#form-them-lop-hoc input[name="combined_class_code"]').value = classData.combined_class_code;
+        				}
             
-        			// Hiển thị/ẩn combined fields
-        			const combinedFields = document.getElementById('combined-class-fields');
-        			if (classData.is_combined) {
-            			combinedFields.classList.remove('hidden');
+        				// Hiển thị/ẩn combined fields
+        				const combinedFields = document.getElementById('combined-class-fields');
+        				if (classData.is_combined) {
+            				combinedFields.classList.remove('hidden');
+        				} else {
+            				combinedFields.classList.add('hidden');
+        				}
+        				// Hiển thị modal
+        				openThemLopHocModal();
+            
+        				// Đổi tiêu đề và hành động của nút
+        				document.querySelector('#modal-them-lop-hoc h3').textContent = 'Sửa lớp học';
+        				const saveBtn = document.getElementById('btn-luu-lop-hoc');
+        				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật lớp học';
+        				saveBtn.onclick = function() { updateLopHoc(id); };
+
+						// Cập nhật Select2 sau khi điền giá trị
+            			setTimeout(() => {
+                			$('#modal-them-lop-hoc select').trigger('change.select2');
+            			}, 300);
         			} else {
-            			combinedFields.classList.add('hidden');
+            			alert('Không thể tải dữ liệu lớp học: ' + (data.message || 'Lỗi không xác định'));
         			}
-        			// Hiển thị modal
-        			openThemLopHocModal();
-            
-        			// Đổi tiêu đề và hành động của nút
-        			document.querySelector('#modal-them-lop-hoc h3').textContent = 'Sửa lớp học';
-        			const saveBtn = document.getElementById('btn-luu-lop-hoc');
-        			saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật lớp học';
-        			saveBtn.onclick = function() { updateLopHoc(id); };
     			})
     			.catch(error => {
         			console.error('Error loading class data:', error);
@@ -2971,24 +2987,47 @@
 		// Hàm sửa lớp ghép
 		function editCombinedClass(id) {
 			fetch(`/api/combined-classes/${id}/`)
-    			.then(response => response.json())
-    			.then(classData => {
-        			document.querySelector('#form-them-lop-ghep input[name="code"]').value = classData.code;
-        			document.querySelector('#form-them-lop-ghep input[name="name"]').value = classData.name;
-        			document.querySelector('#form-them-lop-ghep select[name="curriculum_id"]').value = classData.curriculum_id;
-        			document.querySelector('#form-them-lop-ghep textarea[name="description"]').value = classData.description || '';
-            
-        			// Điền các lớp thành phần
-        			if (classData.classes && classData.classes.length > 0) {
-            			const classIds = classData.classes.map(cls => cls.id);
-            			$('#classes').val(classIds).trigger('change');
+    			.then(response =>  {
+        			if (!response.ok) {
+            			throw new Error('Network response was not ok');
         			}
+					return response.json();
+				})
+    			.then(data => {
+					if (data.status === 'success' && data.data) {
+            			const classData = data.data;
+        				document.querySelector('#form-them-lop-ghep input[name="code"]').value = classData.code;
+        				document.querySelector('#form-them-lop-ghep input[name="name"]').value = classData.name;
+        				document.querySelector('#form-them-lop-ghep select[name="curriculum_id"]').value = classData.curriculum_id;
+        				document.querySelector('#form-them-lop-ghep textarea[name="description"]').value = classData.description || '';
             
-        			openThemLopGhepModal();
-        			document.querySelector('#modal-them-lop-ghep h3').textContent = 'Sửa lớp ghép';
-        			const saveBtn = document.getElementById('btn-luu-lop-ghep');
-        			saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật lớp ghép';
-        			saveBtn.onclick = function() { updateLopGhep(id); };
+        				// Điền các lớp thành phần
+        				if (classData.classes && classData.classes.length > 0) {
+            				const classIds = classData.classes.map(cls => cls.id);
+            				$('#classes').val(classIds).trigger('change');
+        				}
+            
+        				openThemLopGhepModal();
+        				document.querySelector('#modal-them-lop-ghep h3').textContent = 'Sửa lớp ghép';
+        				const saveBtn = document.getElementById('btn-luu-lop-ghep');
+        				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật lớp ghép';
+        				saveBtn.onclick = function() { updateLopGhep(id); };
+
+						// Điền các lớp thành phần - SỬA: chờ Select2 khởi tạo xong
+            			if (classData.classes && classData.classes.length > 0) {
+                			const classIds = classData.classes.map(cls => cls.id);
+                    
+                			// Đợi modal mở và Select2 khởi tạo
+                			setTimeout(() => {
+                    			const classesSelect = $('#classes');
+                    			if (classesSelect.length) {
+                        			classesSelect.val(classIds).trigger('change');
+                    			}
+                			}, 500);
+            			}
+        			} else {
+            			alert('Không thể tải dữ liệu lớp ghép: ' + (data.message || 'Lỗi không xác định'));
+        			}
     			})
     			.catch(error => {
         			console.error('Error loading combined class data:', error);
@@ -3069,21 +3108,36 @@
 		// Hàm sửa giảng viên
 		function editInstructor(id) {
 			fetch(`/api/instructors/${id}/`)
-    			.then(response => response.json())
+    			.then(response => {
+        			if (!response.ok) {
+            			throw new Error('Network response was not ok');
+        			}
+        			return response.json();
+				})
     			.then(instructorData => {
-        			document.querySelector('#form-them-giang-vien input[name="code"]').value = instructorData.code;
-        			document.querySelector('#form-them-giang-vien input[name="full_name"]').value = instructorData.full_name;
-        			document.querySelector('#form-them-giang-vien input[name="email"]').value = instructorData.email || '';
-        			document.querySelector('#form-them-giang-vien input[name="phone"]').value = instructorData.phone || '';
-        			document.querySelector('#form-them-giang-vien select[name="department_id"]').value = instructorData.department_id;
-        			document.querySelector('#form-them-giang-vien select[name="subject_group_id"]').value = instructorData.subject_group_id;
-        			document.querySelector('#form-them-giang-vien input[name="is_active"]').checked = instructorData.is_active;
+					if (data.status === 'success' && data.data) {
+            			const instructorData = data.data;
+        				document.querySelector('#form-them-giang-vien input[name="code"]').value = instructorData.code;
+        				document.querySelector('#form-them-giang-vien input[name="full_name"]').value = instructorData.full_name;
+        				document.querySelector('#form-them-giang-vien input[name="email"]').value = instructorData.email || '';
+        				document.querySelector('#form-them-giang-vien input[name="phone"]').value = instructorData.phone || '';
+        				document.querySelector('#form-them-giang-vien select[name="department_id"]').value = instructorData.department_id;
+        				document.querySelector('#form-them-giang-vien select[name="subject_group_id"]').value = instructorData.subject_group_id;
+        				document.querySelector('#form-them-giang-vien input[name="is_active"]').checked = instructorData.is_active;
             
-        			openThemGiangVienModal();
-        			document.querySelector('#modal-them-giang-vien h3').textContent = 'Sửa giảng viên';
-        			const saveBtn = document.getElementById('btn-luu-giang-vien');
-        			saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật giảng viên';
-        			saveBtn.onclick = function() { updateInstructor(id); };
+        				openThemGiangVienModal();
+        				document.querySelector('#modal-them-giang-vien h3').textContent = 'Sửa giảng viên';
+        				const saveBtn = document.getElementById('btn-luu-giang-vien');
+        				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật giảng viên';
+        				saveBtn.onclick = function() { updateInstructor(id); };
+
+						// Cập nhật Select2
+            			setTimeout(() => {
+                			$('#modal-them-giang-vien select').trigger('change.select2');
+            			}, 300);
+        			} else {
+            			alert('Không thể tải dữ liệu giảng viên: ' + (data.message || 'Lỗi không xác định'));
+        			}
     			})
     			.catch(error => {
         			console.error('Error loading instructor data:', error);
@@ -3164,33 +3218,62 @@
 		// Hàm sửa phân công giảng dạy
 		function editTeachingAssignment(id) {
 			fetch(`/api/teaching-assignments/${id}/`)
-    			.then(response => response.json())
-    			.then(assignmentData => {
-        			document.querySelector('#form-them-phan-cong select[name="instructor_id"]').value = assignmentData.instructor_id;
-        			document.querySelector('#form-them-phan-cong select[name="curriculum_subject_id"]').value = assignmentData.curriculum_subject_id;
-        			document.querySelector('#form-them-phan-cong input[name="academic_year"]').value = assignmentData.academic_year;
-        			document.querySelector('#form-them-phan-cong select[name="semester"]').value = assignmentData.semester;
-        			document.querySelector('#form-them-phan-cong input[name="is_main_instructor"]').checked = assignmentData.is_main_instructor;
-        			document.querySelector('#form-them-phan-cong input[name="student_count"]').value = assignmentData.student_count;
-        			document.querySelector('#form-them-phan-cong input[name="teaching_hours"]').value = assignmentData.teaching_hours;
-            
-        			// Xử lý loại lớp và lớp tương ứng
-        			if (assignmentData.class_obj_id) {
-            			document.querySelector('#form-them-phan-cong select[name="class_type"]').value = 'regular';
-            			document.querySelector('#form-them-phan-cong select[name="class_id"]').value = assignmentData.class_obj_id;
-        			} else if (assignmentData.combined_class_id) {
-            			document.querySelector('#form-them-phan-cong select[name="class_type"]').value = 'combined';
-            			document.querySelector('#form-them-phan-cong select[name="combined_class_id"]').value = assignmentData.combined_class_id;
+    			.then(response => {
+        			if (!response.ok) {
+            			throw new Error('Network response was not ok');
         			}
+        			return response.json();
+    			})
+    			.then(data => {
+					if (data.status === 'success' && data.data) {
+            			const assignmentData = data.data;
+        				document.querySelector('#form-them-phan-cong select[name="instructor_id"]').value = assignmentData.instructor_id;
+        				document.querySelector('#form-them-phan-cong select[name="curriculum_subject_id"]').value = assignmentData.curriculum_subject_id;
+        				document.querySelector('#form-them-phan-cong input[name="academic_year"]').value = assignmentData.academic_year;
+        				document.querySelector('#form-them-phan-cong select[name="semester"]').value = assignmentData.semester;
+        				document.querySelector('#form-them-phan-cong input[name="is_main_instructor"]').checked = assignmentData.is_main_instructor;
+        				document.querySelector('#form-them-phan-cong input[name="student_count"]').value = assignmentData.student_count;
+        				document.querySelector('#form-them-phan-cong input[name="teaching_hours"]').value = assignmentData.teaching_hours;
             
-        			// Kích hoạt sự kiện change để hiển thị đúng dropdown
-        			document.querySelector('#form-them-phan-cong select[name="class_type"]').dispatchEvent(new Event('change'));
+        				// Xử lý loại lớp và lớp tương ứng
+        				if (assignmentData.class_obj_id) {
+            				document.querySelector('#form-them-phan-cong select[name="class_type"]').value = 'regular';
+            				document.querySelector('#form-them-phan-cong select[name="class_id"]').value = assignmentData.class_obj_id;
+        				} else if (assignmentData.combined_class_id) {
+            				document.querySelector('#form-them-phan-cong select[name="class_type"]').value = 'combined';
+            				document.querySelector('#form-them-phan-cong select[name="combined_class_id"]').value = assignmentData.combined_class_id;
+        				}
             
-        			openThemPhanCongModal();
-        			document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
-        			const saveBtn = document.getElementById('btn-luu-phan-cong');
-        			saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật phân công';
-        			saveBtn.onclick = function() { updateTeachingAssignment(id); };
+        				// Kích hoạt sự kiện change để hiển thị đúng dropdown
+        				document.querySelector('#form-them-phan-cong select[name="class_type"]').dispatchEvent(new Event('change'));
+            
+        				openThemPhanCongModal();
+        				document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
+        				const saveBtn = document.getElementById('btn-luu-phan-cong');
+        				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật phân công';
+        				saveBtn.onclick = function() { updateTeachingAssignment(id); };
+
+						// Xử lý loại lớp và lớp tương ứng - SỬA: thêm timeout
+            			setTimeout(() => {
+                			const classTypeSelect = document.querySelector('#form-them-phan-cong select[name="class_type"]');
+                    
+                			if (assignmentData.class_obj_id) {
+                    			classTypeSelect.value = 'regular';
+                    			document.querySelector('#form-them-phan-cong select[name="class_id"]').value = assignmentData.class_obj_id;
+                			} else if (assignmentData.combined_class_id) {
+                    			classTypeSelect.value = 'combined';
+                    			document.querySelector('#form-them-phan-cong select[name="combined_class_id"]').value = assignmentData.combined_class_id;
+                			}
+                    
+                			// Kích hoạt sự kiện change để hiển thị đúng dropdown
+                			classTypeSelect.dispatchEvent(new Event('change'));
+                    
+                			// Cập nhật Select2
+                			$('#modal-them-phan-cong select').trigger('change.select2');
+            			}, 500);
+        			} else {
+            			alert('Không thể tải dữ liệu phân công giảng dạy: ' + (data.message || 'Lỗi không xác định'));
+        			}
     			})
     			.catch(error => {
         			console.error('Error loading teaching assignment data:', error);
