@@ -1634,14 +1634,14 @@
                     data.forEach((classItem, index) => {
                         const row = document.createElement('tr');
 						// Sử dụng hàm helper đã sửa
-            			const curriculumName = getCurriculumName(classItem.curriculum_id);
-            			const courseName = getCourseName(classItem.course_id);
+            			// const curriculumName = getCurriculumName(classItem.curriculum_id);
+            			// const courseName = getCourseName(classItem.course_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${classItem.code}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${classItem.name || 'N/A}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${curriculumName}</td>
-                			<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${courseName}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getCurriculumName(classItem.curriculum_id) || 'N/A'}</td>
+                			<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getCourseName(classItem.course_id) || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${classItem.is_combined ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
                                     ${classItem.is_combined ? 'Lớp ghép' : 'Lớp thường'}
