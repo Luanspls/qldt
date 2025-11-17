@@ -2628,16 +2628,17 @@ def api_class_detail(request, id):
     if request.method == 'GET':
         try:
             class_obj = Class.objects.get(id=id)
+            
             class_data = {
                 'id': class_obj.id,
                 'code': class_obj.code,
                 'name': class_obj.name,
-                'curriculum_id': class_obj.curriculum.id if class_obj.curriculum else None,
-                'course_id': class_obj.course.id if class_obj.course else None,
+                'curriculum': Curriculum.objects.get(id=class_obj.curriculum.id) if class_obj.curriculum else None,
+                'course': Course.objects.get(id=class_obj.course.id) if class_obj.course else None,
                 'start_date': class_obj.start_date,
                 'end_date': class_obj.end_date,
                 'is_combined': class_obj.is_combined,
-                'combined_class_code': class_obj.combined_class_code,
+                'combined_class_code': class_obj.combined_class.code,
                 'description': class_obj.description
             }
             return JsonResponse({'status': 'success', 'data': class_data})
@@ -2660,9 +2661,9 @@ def api_update_class(request, id):
             if 'name' in data:
                 class_obj.name = data['name']
             if 'curriculum_id' in data:
-                class_obj.curriculum_id = data['curriculum_id']
+                class_obj.curriculum = data['curriculum']
             if 'course_id' in data:
-                class_obj.course_id = data['course_id']
+                class_obj.course = data['course']
             if 'start_date' in data:
                 class_obj.start_date = data['start_date'] if data['start_date'] else None
             if 'end_date' in data:
@@ -2715,7 +2716,7 @@ def api_combined_class_detail(request, id):
                 'id': combined_class.id,
                 'code': combined_class.code,
                 'name': combined_class.name,
-                'curriculum_id': combined_class.curriculum.id if combined_class.curriculum else None,
+                'curriculum': Curriculum.objects.get(id=combined_class.curriculum.id) if combined_class.curriculum else None,
                 'description': combined_class.description,
                 'classes': [{'id': c.id, 'code': c.code, 'name': c.name} for c in combined_class.classes.all()]
             }
@@ -2739,7 +2740,7 @@ def api_update_combined_class(request, id):
             if 'name' in data:
                 combined_class.name = data['name']
             if 'curriculum_id' in data:
-                combined_class.curriculum_id = data['curriculum_id']
+                combined_class.curriculum = data['curriculum']
             if 'description' in data:
                 combined_class.description = data['description'] if data['description'] else None
             
@@ -2791,8 +2792,8 @@ def api_instructor_detail(request, id):
                 'full_name': instructor.full_name,
                 'email': instructor.email,
                 'phone': instructor.phone,
-                'department_id': instructor.department.id if instructor.department else None,
-                'subject_group_id': instructor.subject_group.id if instructor.subject_group else None,
+                'department': Department.objects.get(id=instructor.department.id) if instructor.department else None,
+                'subject_group': Subject_group.objects.get(id=instructor.subject_group.id) if instructor.subject_group else None,
                 'is_active': instructor.is_active
             }
             return JsonResponse({'status': 'success', 'data': instructor_data})
@@ -2819,9 +2820,9 @@ def api_update_instructor(request, id):
             if 'phone' in data:
                 instructor.phone = data['phone'] if data['phone'] else None
             if 'department_id' in data:
-                instructor.department_id = data['department_id'] if data['department_id'] else None
+                instructor.department = data['department'] if data['department_id'] else None
             if 'subject_group_id' in data:
-                instructor.subject_group_id = data['subject_group_id'] if data['subject_group_id'] else None
+                instructor.subject_group = data['subject_group'] if data['subject_group_id'] else None
             if 'is_active' in data:
                 instructor.is_active = data['is_active']
             
@@ -2867,10 +2868,10 @@ def api_teaching_assignment_detail(request, id):
             
             assignment_data = {
                 'id': assignment.id,
-                'instructor_id': assignment.instructor.id,
-                'curriculum_subject_id': assignment.curriculum_subject.id,
-                'class_obj_id': assignment.class_obj.id if assignment.class_obj else None,
-                'combined_class_id': assignment.combined_class.id if assignment.combined_class else None,
+                'instructor': Instructor.objects.get(id=assignment.instructor.id),
+                'curriculum_subject': Curriculum_subject.objects.get(id=assignment.curriculum_subject.id),
+                'class_obj': Class.objects.get(id=assignment.class_obj.id) if assignment.class_obj else None,
+                'combined_class': Combined_class.objects.get(id=assignment.combined_class.id) if assignment.combined_class else None,
                 'academic_year': assignment.academic_year,
                 'semester': assignment.semester,
                 'is_main_instructor': assignment.is_main_instructor,
@@ -2893,13 +2894,13 @@ def api_update_teaching_assignment(request, id):
             
             # Cập nhật các trường
             if 'instructor_id' in data:
-                assignment.instructor_id = data['instructor_id']
+                assignment.instructor = data['instructor_id']
             if 'curriculum_subject_id' in data:
-                assignment.curriculum_subject_id = data['curriculum_subject_id']
+                assignment.curriculum_subject = data['curriculum_subject_id']
             if 'class_obj_id' in data:
-                assignment.class_obj_id = data['class_obj_id'] if data['class_obj_id'] else None
+                assignment.class_obj = data['class_obj_id'] if data['class_obj_id'] else None
             if 'combined_class_id' in data:
-                assignment.combined_class_id = data['combined_class_id'] if data['combined_class_id'] else None
+                assignment.combined_class = data['combined_class_id'] if data['combined_class_id'] else None
             if 'academic_year' in data:
                 assignment.academic_year = data['academic_year']
             if 'semester' in data:
