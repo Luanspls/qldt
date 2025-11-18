@@ -1565,19 +1565,6 @@
                     return false;
                 }
             });
-
-            // Đảm bảo tất cả button trong modal không submit form
-            document.querySelectorAll('.modal button').forEach(button => {
-                if (!button.getAttribute('type')) {
-                    button.setAttribute('type', 'button');
-                }
-                button.addEventListener('click', function(e) {
-                    if (!this.getAttribute('type') || this.getAttribute('type') === 'submit') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }
-                });
-            });
         }
 
         // Hàm cập nhật tiêu đề trang
