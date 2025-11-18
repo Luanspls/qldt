@@ -1383,8 +1383,31 @@
 			});
 		}
 
+        function removeAllEventListeners() {
+            // Clone và replace các element để xóa event listeners
+            const elementsToClean = [
+                'btn-them-lop-hoc', 'btn-dong-lop-hoc', 'btn-huy-lop-hoc', 'btn-luu-lop-hoc',
+                'btn-them-lop-ghep', 'btn-dong-lop-ghep', 'btn-huy-lop-ghep', 'btn-luu-lop-ghep',
+                'btn-them-giang-vien', 'btn-dong-giang-vien', 'btn-huy-giang-vien', 'btn-luu-giang-vien',
+                'btn-them-phan-cong', 'btn-dong-phan-cong', 'btn-huy-phan-cong', 'btn-luu-phan-cong',
+                'btn-dong-import', 'btn-huy-import', 'btn-luu-import', 'btn-download-template',
+                'btn-dong-error', 'btn-close-error', 'btn-filter-classes', 'btn-filter-combined', 'btn-filter-instructors',
+            ];
+            
+            elementsToClean.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    const newElement = element.cloneNode(true);
+                    element.parentNode.replaceChild(newElement, element);
+                }
+            });
+        }
+
         // Thiết lập event listeners
         function setupEventListeners() {
+            // QUAN TRỌNG: XÓA TẤT CẢ EVENT LISTENERS CŨ TRƯỚC KHI GẮN MỚI
+            removeAllEventListeners();
+
             // Xử lý tab navigation
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabPanels = document.querySelectorAll('.tab-panel');
@@ -1556,15 +1579,38 @@
             document.getElementById('btn-huy-giang-vien').addEventListener('click', closeThemGiangVienModal);
             document.getElementById('btn-luu-giang-vien').addEventListener('click', createGiangVien);
 			
+            // NGĂN CHẶN SUBMIT FORM MẶC ĐỊNH - THÊM ĐOẠN NÀY
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+            });
+
+            // Đảm bảo tất cả button trong form không trigger submit
+            document.querySelectorAll('form button[type="button"]').forEach(button => {
+                button.setAttribute('type', 'button');
+            });
+
             // NGĂN CHẶN HOÀN TOÀN SUBMIT FORM
 			document.addEventListener('submit', function(e) {
-                if (e.target.closest('form')) {
+                if (e.target && e.target.tagName === 'FORM') {
                     e.preventDefault();
                     e.stopPropagation();
                     e.stopImmediatePropagation();
                     return false;
                 }
-            });
+            }, true);
+
+            // Đảm bảo tất cả button trong modal không submit form
+            setTimeout(() => {
+                document.querySelectorAll('.modal button').forEach(button => {
+                    if (!button.getAttribute('type')) {
+                        button.setAttribute('type', 'button');
+                    }
+                });
+            }, 1000);
         }
 
         // Hàm cập nhật tiêu đề trang
@@ -3011,10 +3057,11 @@
         				document.querySelector('#modal-them-lop-hoc h3').textContent = 'Sửa lớp học';
         				const saveBtn = document.getElementById('btn-luu-lop-hoc');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật lớp học';
-        				saveBtn.onclick = function(e) { 
-							updateLopHoc(id, e);
-							return false;
-						};
+        				saveBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            updateLopHoc(id, e);
+                        }, { once: true });
         			} else {
             			alert('Không thể tải dữ liệu lớp học: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -3036,7 +3083,7 @@
 				event.stopImmediatePropagation();
 			}
 			// Ngăn chặn gọi nhiều lần
-			if (isLopUpdating) {
+			if (window.isLopUpdating) {
     			return false;
 			}
 			const form = document.getElementById('form-them-lop-hoc');
@@ -3069,7 +3116,7 @@
     			return false;
 			}
 			// Đánh dấu đang cập nhật
-			isLopUpdating = true;
+			window.isLopUpdating = true;
 			
 			// Hiển thị loading
 			const saveBtn = document.getElementById('btn-luu-lop-hoc');
@@ -3108,10 +3155,9 @@
     			alert('❌ Có lỗi xảy ra khi cập nhật lớp học');
 			})
 			.finally(() => {
+                window.isLopUpdating = false;
     			saveBtn.innerHTML = originalText;
     			saveBtn.disabled = false;
-				saveBtn.onclick = originalOnClick;
-				isLopUpdating = false;
 			});
 			return false; // Ngăn form submit mặc định
 		}
@@ -3185,10 +3231,11 @@
         				document.querySelector('#modal-them-lop-ghep h3').textContent = 'Sửa lớp ghép';
         				const saveBtn = document.getElementById('btn-luu-lop-ghep');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật lớp ghép';
-        				saveBtn.onclick = function(e) { 
-							updateLopGhep(id, e);
-							return false;
-						};
+                        saveBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            updateLopGhep(id, e);
+                        }, { once: true });
         			} else {
             			alert('Không thể tải dữ liệu lớp ghép: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -3208,7 +3255,7 @@
 				event.stopImmediatePropagation();
 			}
 			// Ngăn chặn gọi nhiều lần
-			if (isLopGhepUpdating) {
+			if (window.isLopGhepUpdating) {
     			return false;
 			}
 			const form = document.getElementById('form-them-lop-ghep');
@@ -3223,14 +3270,14 @@
 			const description = formData.get('description');
 			if (description) data.description = description;
 
-			isLopGhepUpdating = true;
+			window.isLopGhepUpdating = true;
 			
 			const saveBtn = document.getElementById('btn-luu-lop-ghep');
 			const originalText = saveBtn.innerHTML;
 			const originalOnClick = saveBtn.onclick;
 			saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
 			saveBtn.disabled = true;
-			saveBtn.onclick = null;
+			// saveBtn.onclick = null;
 
 			fetch(`/api/combined-classes/update/${id}/`, {
     			method: 'PUT',
@@ -3255,10 +3302,9 @@
     			alert('❌ Có lỗi xảy ra khi cập nhật lớp ghép');
 			})
 			.finally(() => {
+                window.isLopGhepUpdating = false;
     			saveBtn.innerHTML = originalText;
     			saveBtn.disabled = false;
-				saveBtn.onclick = originalOnClick
-				isLopGhepUpdating = false;
 			});
 			return false;
 		}
@@ -3323,10 +3369,11 @@
         				document.querySelector('#modal-them-giang-vien h3').textContent = 'Sửa giảng viên';
         				const saveBtn = document.getElementById('btn-luu-giang-vien');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật giảng viên';
-        				saveBtn.onclick = function(e) { 
-							updateInstructor(id, e);
-							return false;
-						};
+                        saveBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            updateInstructor(id, e);
+                        }, { once: true });
         			} else {
             			alert('Không thể tải dữ liệu giảng viên: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -3346,7 +3393,7 @@
 				event.stopImmediatePropagation();
 			}
 			// Ngăn chặn gọi nhiều lần
-			if (isInstructorUpdate) {
+			if (window.isInstructorUpdate) {
     			return false;
 			}
 			const form = document.getElementById('form-them-giang-vien');
@@ -3361,13 +3408,13 @@
     			is_active: formData.get('is_active') === 'on'
 			};
 
-			isInstructorUpdate = true;
+			window.isInstructorUpdate = true;
 			const saveBtn = document.getElementById('btn-luu-giang-vien');
 			const originalText = saveBtn.innerHTML;
 			const originalOnClick = saveBtn.onclick;
 			saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
 			saveBtn.disabled = true;
-			saveBtn.onclick = null;
+			// saveBtn.onclick = null;
 
 			fetch(`/api/instructors/update/${id}/`, {
     			method: 'PUT',
@@ -3397,10 +3444,9 @@
     			alert('❌ Có lỗi xảy ra khi cập nhật giảng viên');
 			})
 			.finally(() => {
+                window.isInstructorUpdate = false;
     			saveBtn.innerHTML = originalText;
     			saveBtn.disabled = false;
-				saveBtn.onclick = originalOnClick;
-				isInstructorUpdate = false;
 			});
 			return false;
 		}
@@ -3490,10 +3536,11 @@
 						document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
         				const saveBtn = document.getElementById('btn-luu-phan-cong');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật phân công';
-        				saveBtn.onclick = function(e) { 
-							updateTeachingAssignment(id, e);
-							return false;
-						};
+                        saveBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            updateTeachingAssignment(id, e);
+                        }, { once: true });
         			} else {
             			alert('Không thể tải dữ liệu phân công giảng dạy: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -3506,7 +3553,6 @@
 
 		let isTeachingAssignUpdate = false;
 		function updateTeachingAssignment(id, event) {
-			
 			// Ngăn sự kiện mặc định nếu có
 			if (event) {
     			event.preventDefault();
@@ -3514,7 +3560,7 @@
 				event.stopImmediatePropagation();
 			}
 			// Ngăn chặn gọi nhiều lần
-			if (isTeachingAssignUpdate) {
+			if (window.isTeachingAssignUpdate) {
     			return false;
 			}
 			const form = document.getElementById('form-them-phan-cong');
@@ -3536,14 +3582,14 @@
     			data.combined_class_id = formData.get('combined_class_id');
 			}
 
-			isTeachingAssignUpdate = true;
+			window.isTeachingAssignUpdate = true;
 			
 			const saveBtn = document.getElementById('btn-luu-phan-cong');
 			const originalText = saveBtn.innerHTML;
 			const originalOnClick = saveBtn.onclick;
 			saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
 			saveBtn.disabled = true;
-			saveBtn.onclick = null;
+			// saveBtn.onclick = null;
 
 			fetch(`/api/teaching-assignments/update/${id}/`, {
     			method: 'PUT',
@@ -3573,10 +3619,9 @@
     			alert('❌ Có lỗi xảy ra khi cập nhật phân công giảng dạy');
 			})
 			.finally(() => {
+                window.isTeachingAssignUpdate = false;
     			saveBtn.innerHTML = originalText;
     			saveBtn.disabled = false;
-				saveBtn.onclick = originalOnClick;
-				isTeachingAssignUpdate = false;
 			});
 			return false;
 		}
@@ -3614,19 +3659,23 @@
 			// Reset form
 			if (form) form.reset();
     
-			// Reset button text và onclick
+			// Reset button - QUAN TRỌNG: clone để xóa event listeners cũ
 			if (saveBtn) {
-    			saveBtn.innerHTML = originalButtonText;
-    			// Đặt lại onclick tùy theo modal
-    			if (modalId === 'modal-them-lop-hoc') {
-        			saveBtn.onclick = createLopHoc;
-    			} else if (modalId === 'modal-them-lop-ghep') {
-        			saveBtn.onclick = createLopGhep;
-    			} else if (modalId === 'modal-them-giang-vien') {
-        			saveBtn.onclick = createGiangVien;
-    			} else if (modalId === 'modal-them-phan-cong') {
-        			saveBtn.onclick = createPhanCong;
-    			}
+    			const newSaveBtn = saveBtn.cloneNode(true);
+                saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+                // Gắn event listener mới với once: true
+                newSaveBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                
+                    if (modalId === 'modal-them-lop-hoc') createLopHoc();
+                    else if (modalId === 'modal-them-lop-ghep') createLopGhep();
+                    else if (modalId === 'modal-them-giang-vien') createGiangVien();
+                    else if (modalId === 'modal-them-phan-cong') createPhanCong();
+                }, { once: true });
+                
+                newSaveBtn.innerHTML = originalButtonText;
 			}
     
 			// Reset tiêu đề
