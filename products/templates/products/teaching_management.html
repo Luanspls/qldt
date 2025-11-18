@@ -1421,17 +1421,26 @@
 
 			// Khởi tạo Select2 khi trang tải xong
 			setTimeout(initializeSelect2, 1000);
+
+            // NGĂN CHẶN SUBMIT FORM MẶC ĐỊNH
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+            });
+
+            // Đảm bảo tất cả button trong form không trigger submit
+            document.querySelectorAll('form button[type="button"]').forEach(button => {
+                button.setAttribute('type', 'button');
+            });
             
             // Xử lý modal lớp học
             document.getElementById('btn-them-lop-hoc').addEventListener('click', openThemLopHocModal);
             document.getElementById('btn-dong-lop-hoc').addEventListener('click', closeThemLopHocModal);
             document.getElementById('btn-huy-lop-hoc').addEventListener('click', closeThemLopHocModal);
             document.getElementById('btn-luu-lop-hoc').addEventListener('click', createLopHoc);
-
-			// document.getElementById('form-them-lop-hoc').addEventListener('submit', function(e) {
-			//	e.preventDefault();
-			//	return false;
-			//});
 
             // Xử lý checkbox lớp ghép
             document.getElementById('is_combined').addEventListener('change', function() {
@@ -1446,7 +1455,6 @@
             // Xử lý bộ lọc
             document.getElementById('btn-filter-classes').addEventListener('click', loadClassesData);
             document.getElementById('btn-filter-combined').addEventListener('click', loadCombinedClassesData);
-			// Bộ lọc giảng viên
             document.getElementById('btn-filter-instructors').addEventListener('click', loadInstructorsData);
 
             // Xử lý bộ lọc phân công giảng dạy
@@ -1461,21 +1469,11 @@
             document.getElementById('btn-huy-lop-ghep').addEventListener('click', closeThemLopGhepModal);
             document.getElementById('btn-luu-lop-ghep').addEventListener('click', createLopGhep);
 
-			//document.getElementById('form-them-lop-ghep').addEventListener('submit', function(e) {
-			//	e.preventDefault();
-			//	return false;
-			//});
-
             // Xử lý modal phân công giảng dạy
             document.getElementById('btn-them-phan-cong').addEventListener('click', openThemPhanCongModal);
             document.getElementById('btn-dong-phan-cong').addEventListener('click', closeThemPhanCongModal);
             document.getElementById('btn-huy-phan-cong').addEventListener('click', closeThemPhanCongModal);
             document.getElementById('btn-luu-phan-cong').addEventListener('click', createPhanCong);
-
-			//document.getElementById('form-them-phan-cong').addEventListener('submit', function(e) {
-			//	e.preventDefault();
-			//	return false;
-			//});
 
             // Xử lý thay đổi loại lớp trong modal phân công giảng dạy
             document.getElementById('class_type').addEventListener('change', function() {
@@ -2190,6 +2188,10 @@
         }
 
 		function openThemLopHocModal() {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
             // Đóng tất cả dropdown trước khi mở modal
             closeAllSelect2Dropdowns();
 			// Vô hiệu hóa Select2 bên ngoài
@@ -2223,6 +2225,11 @@
         }
 
 		function openThemLopGhepModal() {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
 			closeAllSelect2Dropdowns();
 			// Vô hiệu hóa Select2 bên ngoài
 			disableOutsideSelect2();
@@ -2254,6 +2261,11 @@
 		}
 
 		function openThemPhanCongModal() {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
 			// Đóng tất cả dropdown trước khi mở modal
             closeAllSelect2Dropdowns();
 			// Vô hiệu hóa Select2 bên ngoài
@@ -2286,6 +2298,11 @@
 		}
 
 		function openThemGiangVienModal() {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
 			// Đóng tất cả dropdown trước khi mở modal
             closeAllSelect2Dropdowns();
 			// Vô hiệu hóa Select2 bên ngoài
@@ -2317,6 +2334,10 @@
 		}
 
 		function closeThemLopHocModal() {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
             // Đóng tất cả dropdown trước
             closeAllSelect2Dropdowns();
 			// Kích hoạt lại Select2 bên ngoài
@@ -2328,12 +2349,17 @@
 			document.getElementById('modal-them-lop-hoc').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
 			// document.getElementById('form-them-lop-hoc').reset();
-			resetModalToAddState('modal-them-lop-hoc', 'form-them-lop-hoc', 'btn-luu-lop-hoc', '<i class="fas fa-save mr-2"></i>Lưu lớp học');
-            // Khởi tạo lại Select2 cho các dropdown bên ngoài
-            setTimeout(initializeSelect2, 100);
+			setTimeout(() => {
+                resetModalToAddState('modal-them-lop-hoc', 'form-them-lop-hoc', 'btn-luu-lop-hoc', '<i class="fas fa-save mr-2"></i>Lưu lớp học');
+                initializeSelect2; // Khởi tạo lại Select2 cho các dropdown bên ngoài
+            }, 100);
 		}
 
 		function closeThemLopGhepModal() {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
             // Đóng tất cả dropdown trước
             closeAllSelect2Dropdowns();
 			// Kích hoạt lại Select2 bên ngoài
@@ -2344,12 +2370,17 @@
 			document.getElementById('modal-them-lop-ghep').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
 			// document.getElementById('form-them-lop-ghep').reset();
-			resetModalToAddState('modal-them-lop-ghep', 'form-them-lop-ghep', 'btn-luu-lop-ghep', '<i class="fas fa-save mr-2"></i>Lưu lớp ghép');
-            // Khởi tạo lại Select2 cho các dropdown bên ngoài
-            setTimeout(initializeSelect2, 100);
+			setTimeout(() => {
+                resetModalToAddState('modal-them-lop-ghep', 'form-them-lop-ghep', 'btn-luu-lop-ghep', '<i class="fas fa-save mr-2"></i>Lưu lớp ghép');
+                initializeSelect2; // Khởi tạo lại Select2 cho các dropdown bên ngoài
+            }, 100);
 		}
 
 		function closeThemPhanCongModal() {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
             // Đóng tất cả dropdown trước
             closeAllSelect2Dropdowns();
 			// Kích hoạt lại Select2 bên ngoài
@@ -2360,12 +2391,18 @@
 			document.getElementById('modal-them-phan-cong').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
 			// document.getElementById('form-them-phan-cong').reset();
-			resetModalToAddState('modal-them-phan-cong', 'form-them-phan-cong', 'btn-luu-phan-cong', '<i class="fas fa-save mr-2"></i>Lưu phân công');
-            // Khởi tạo lại Select2 cho các dropdown bên ngoài
-            setTimeout(initializeSelect2, 100);
+			setTimeout(() => {
+                resetModalToAddState('modal-them-phan-cong', 'form-them-phan-cong', 'btn-luu-phan-cong', '<i class="fas fa-save mr-2"></i>Lưu phân công');
+                // Khởi tạo lại Select2 cho các dropdown bên ngoài
+                initializeSelect2;
+            }, 100);
 		}
 
 		function closeThemGiangVienModal() {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
             // Đóng tất cả dropdown trước
             closeAllSelect2Dropdowns();
 			// Kích hoạt lại Select2 bên ngoài
@@ -2376,9 +2413,11 @@
 			document.getElementById('modal-them-giang-vien').classList.add('hidden');
 			document.body.classList.remove('overflow-hidden');
 			// document.getElementById('form-them-giang-vien').reset();
-			resetModalToAddState('modal-them-giang-vien', 'form-them-giang-vien', 'btn-luu-giang-vien', '<i class="fas fa-save mr-2"></i>Lưu giảng viên');
-            // Khởi tạo lại Select2 cho các dropdown bên ngoài
-            setTimeout(initializeSelect2, 100);
+			setTimeout(() => {
+                resetModalToAddState('modal-them-giang-vien', 'form-them-giang-vien', 'btn-luu-giang-vien', '<i class="fas fa-save mr-2"></i>Lưu giảng viên');
+                // Khởi tạo lại Select2 cho các dropdown bên ngoài
+                initializeSelect2;
+            }, 100);
 		}
 
 		function closeImportModal() {
