@@ -1421,20 +1421,6 @@
 
 			// Khởi tạo Select2 khi trang tải xong
 			setTimeout(initializeSelect2, 1000);
-
-            // NGĂN CHẶN SUBMIT FORM MẶC ĐỊNH
-            document.querySelectorAll('form').forEach(form => {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                });
-            });
-
-            // Đảm bảo tất cả button trong form không trigger submit
-            document.querySelectorAll('form button[type="button"]').forEach(button => {
-                button.setAttribute('type', 'button');
-            });
             
             // Xử lý modal lớp học
             document.getElementById('btn-them-lop-hoc').addEventListener('click', openThemLopHocModal);
@@ -1570,10 +1556,28 @@
             document.getElementById('btn-huy-giang-vien').addEventListener('click', closeThemGiangVienModal);
             document.getElementById('btn-luu-giang-vien').addEventListener('click', createGiangVien);
 			
-			//document.getElementById('form-them-giang-vien').addEventListener('submit', function(e) {
-			//	e.preventDefault();
-			//	return false;
-			//});
+            // NGĂN CHẶN HOÀN TOÀN SUBMIT FORM
+			document.addEventListener('submit', function(e) {
+                if (e.target.closest('form')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            });
+
+            // Đảm bảo tất cả button trong modal không submit form
+            document.querySelectorAll('.modal button').forEach(button => {
+                if (!button.getAttribute('type')) {
+                    button.setAttribute('type', 'button');
+                }
+                button.addEventListener('click', function(e) {
+                    if (!this.getAttribute('type') || this.getAttribute('type') === 'submit') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                });
+            });
         }
 
         // Hàm cập nhật tiêu đề trang
@@ -3542,7 +3546,7 @@
 				event.stopImmediatePropagation();
 			}
 			// Ngăn chặn gọi nhiều lần
-			if (isInstructorUpdate) {
+			if (isTeachingAssignUpdate) {
     			return false;
 			}
 			const form = document.getElementById('form-them-phan-cong');
