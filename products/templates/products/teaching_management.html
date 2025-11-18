@@ -1225,7 +1225,8 @@
                             allCurricula = [];
                             resolve();
                         });
-
+                }),
+                new Promise((resolve) => {
                     // Tải danh sách khóa học
                     fetch('/api/courses/')
                         .then(response => {
@@ -1243,7 +1244,8 @@
                             allCourses = [];
                             resolve();
                         });
-                    
+                }),
+                new Promise((resolve) => {
                     // Tải danh sách Đơn vị
                     fetch('/api/departments/')
                         .then(response => {
@@ -1262,7 +1264,8 @@
                             allDepartments = [];
                             resolve();
                         });
-                    
+                }),
+                new Promise((resolve) => {
                     // Tải danh sách tổ bộ môn
                     fetch('/api/subject-groups/')
                         .then(response => {
@@ -1280,7 +1283,8 @@
                             allSubjectGroups = [];
                             resolve();
                         });
-
+                }),
+                new Promise((resolve) => {
                     // Tải danh sách môn học
                     fetch('/api/all-subjects/')
                         .then(response => {
@@ -1298,7 +1302,8 @@
                             allSubjects = [];
                             resolve();
                         });
-
+                }),
+                new Promise((resolve) => {
                     // Tải danh sách Giảng viên
                     fetch('/api/instructors/')
                         .then(response => {
@@ -1317,7 +1322,8 @@
                             allInstructors = [];
                             resolve();
                         });
-
+                }),
+                new Promise((resolve) => {
                     // Tải danh sách Lớp học
                     fetch('/api/classes/')
                         .then(response => {
@@ -1336,7 +1342,8 @@
                             allClasses = [];
                             resolve();
                         });
-
+                }),
+                new Promise((resolve) => {
                     // Tải danh sách Lớp ghép
                     fetch('/api/combined-classes/')
                         .then(response => {
@@ -1354,6 +1361,8 @@
                             allCombinedClasses = [];
                             resolve();
                         });
+                })
+            ];
             return Promise.all(promises);
         }
 
