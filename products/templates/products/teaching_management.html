@@ -1192,148 +1192,169 @@
             ];
             
             // Khởi tạo Select2 sau khi tất cả dữ liệu đã tải
-            Promise.all(loadPromises).then(() => {
-                console.log('All data loaded, initializing Select2...');
-                setTimeout(initializeSelect2, 500);
-            }).catch(error => {
-                console.error('Error loading initial data:', error);
-                // Vẫn thử khởi tạo Select2 ngay cả khi có lỗi
-                setTimeout(initializeSelect2, 500);
-            });
+            //Promise.all(loadPromises).then(() => {
+            //    console.log('All data loaded, initializing Select2...');
+            //    setTimeout(initializeSelect2, 500);
+            //}).catch(error => {
+            //    console.error('Error loading initial data:', error);
+            //    // Vẫn thử khởi tạo Select2 ngay cả khi có lỗi
+            //    setTimeout(initializeSelect2, 500);
+            //});
 
-            // Tải danh sách chương trình
-            fetch('/api/curricula/')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    allCurricula = data;
-                    console.log('Loaded curricula:', data.length);
-                    // Cập nhật các dropdown cần thiết
-                    populateSelect2Dropdown('filter-class-curriculum', data, 'name', ['code', 'name', 'academic_year']);
-                    populateSelect2Dropdown('filter-combined-curriculum', data, 'name', ['code', 'name', 'academic_year']);
-                    populateSelect2Dropdown('filter-curriculum', data, 'name', ['code', 'name', 'academic_year']);
-                })
-                .catch(error => {
-                    console.error('Error loading curricula:', error);
-                    allCurricula = [];
-                });
+             // Tạo promises cho tất cả API calls
+            const promises = [
+                // Tải danh sách chương trình
+                new Promise((resolve) => {
+                    // Tải danh sách chương trình
+                    fetch('/api/curricula/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allCurricula = data;
+                            console.log('Loaded curricula:', data.length);
+                            resolve();
+                            // Cập nhật các dropdown cần thiết
+                            //populateSelect2Dropdown('filter-class-curriculum', data, 'name', ['code', 'name', 'academic_year']);
+                            //populateSelect2Dropdown('filter-combined-curriculum', data, 'name', ['code', 'name', 'academic_year']);
+                            //populateSelect2Dropdown('filter-curriculum', data, 'name', ['code', 'name', 'academic_year']);
+                        })
+                        .catch(error => {
+                            console.error('Error loading curricula:', error);
+                            allCurricula = [];
+                            resolve();
+                        });
 
-            // Tải danh sách khóa học
-            fetch('/api/courses/')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    allCourses = data;
-                    console.log('Loaded courses:', data.length);
-                    populateSelect2Dropdown('filter-class-course', data, 'name', ['code', 'name']);
-                })
-                .catch(error => {
-                    console.error('Error loading courses:', error);
-                    allCourses = [];
-                });
-            
-            // Tải danh sách Đơn vị
-            fetch('/api/departments/')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    allDepartments = data;
-                    console.log('Loaded Departments:', data.length);
-                    populateSelect2Dropdown('filter-instructor-department', data, 'name', ['code', 'name']);
-                    populateSelect2Dropdown('department_id', data, 'name', ['code', 'name']);
-                })
-                .catch(error => {
-                    console.error('Error loading Departments:', error);
-                    allDepartments = [];
-                });
-            
-            // Tải danh sách tổ bộ môn
-            fetch('/api/subject-groups/')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    allSubjectGroups = data;
-                    console.log('Loaded SubjectGroups:', data.length);
-                    populateSelect2Dropdown('filter-instructor-subject-group', data, 'name', ['code', 'name']);
-                })
-                .catch(error => {
-                    console.error('Error loading SubjectGroups:', error);
-                    allSubjectGroups = [];
-                });
+                    // Tải danh sách khóa học
+                    fetch('/api/courses/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allCourses = data;
+                            console.log('Loaded courses:', data.length);
+                            resolve();
+                            //populateSelect2Dropdown('filter-class-course', data, 'name', ['code', 'name']);
+                        })
+                        .catch(error => {
+                            console.error('Error loading courses:', error);
+                            allCourses = [];
+                            resolve();
+                        });
+                    
+                    // Tải danh sách Đơn vị
+                    fetch('/api/departments/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allDepartments = data;
+                            console.log('Loaded Departments:', data.length);
+                            resolve();
+                            //populateSelect2Dropdown('filter-instructor-department', data, 'name', ['code', 'name']);
+                            //populateSelect2Dropdown('department_id', data, 'name', ['code', 'name']);
+                        })
+                        .catch(error => {
+                            console.error('Error loading Departments:', error);
+                            allDepartments = [];
+                            resolve();
+                        });
+                    
+                    // Tải danh sách tổ bộ môn
+                    fetch('/api/subject-groups/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allSubjectGroups = data;
+                            console.log('Loaded SubjectGroups:', data.length);
+                            resolve();
+                            //populateSelect2Dropdown('filter-instructor-subject-group', data, 'name', ['code', 'name']);
+                        })
+                        .catch(error => {
+                            console.error('Error loading SubjectGroups:', error);
+                            allSubjectGroups = [];
+                            resolve();
+                        });
 
-            // Tải danh sách môn học
-            fetch('/api/all-subjects/')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    allSubjects = data;
-                    console.log('Loaded Subjects:', data.length);
-                    populateSelect2Dropdown('curriculum_subject_id', data, 'name', ['code', 'name']);
-                })
-                .catch(error => {
-                    console.error('Error loading Subjects:', error);
-                    allSubjects = [];
-                });
+                    // Tải danh sách môn học
+                    fetch('/api/all-subjects/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allSubjects = data;
+                            console.log('Loaded Subjects:', data.length);
+                            resolve();
+                            //populateSelect2Dropdown('curriculum_subject_id', data, 'name', ['code', 'name']);
+                        })
+                        .catch(error => {
+                            console.error('Error loading Subjects:', error);
+                            allSubjects = [];
+                            resolve();
+                        });
 
-            // Tải danh sách Giảng viên
-            fetch('/api/instructors/')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    allInstructors = data;
-                    console.log('Loaded Instructors:', data.length);
-                    populateSelect2Dropdown('filter-instructor', data, 'full_name', ['code', 'full_name']);
-                    populateSelect2Dropdown('instructor_id', data, 'full_name', ['code', 'full_name']);
-                })
-                .catch(error => {
-                    console.error('Error loading Instructors:', error);
-                    allInstructors = [];
-                });
+                    // Tải danh sách Giảng viên
+                    fetch('/api/instructors/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allInstructors = data;
+                            console.log('Loaded Instructors:', data.length);
+                            resolve();
+                            //populateSelect2Dropdown('filter-instructor', data, 'full_name', ['code', 'full_name']);
+                            //populateSelect2Dropdown('instructor_id', data, 'full_name', ['code', 'full_name']);
+                        })
+                        .catch(error => {
+                            console.error('Error loading Instructors:', error);
+                            allInstructors = [];
+                            resolve();
+                        });
 
-            // Tải danh sách Lớp học
-            fetch('/api/classes/')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    allClasses = data;
-                    console.log('Loaded classes:', data.length);
-                    populateSelect2Dropdown('classes', data, 'name', ['code', 'name']);
-                    populateSelect2Dropdown('class_regular', data, 'name', ['code', 'name']);
-                })
-                .catch(error => {
-                    console.error('Error loading classes:', error);
-                    allClasses = [];
-                });
+                    // Tải danh sách Lớp học
+                    fetch('/api/classes/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allClasses = data;
+                            console.log('Loaded classes:', data.length);
+                            resolve();
+                            //populateSelect2Dropdown('classes', data, 'name', ['code', 'name']);
+                            //populateSelect2Dropdown('class_regular', data, 'name', ['code', 'name']);
+                        })
+                        .catch(error => {
+                            console.error('Error loading classes:', error);
+                            allClasses = [];
+                            resolve();
+                        });
 
-            // Tải danh sách Lớp ghép
-            fetch('/api/combined-classes/')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    allCombinedClasses = data;
-                    console.log('Loaded CombinedClasses:', data.length);
-                    populateSelect2Dropdown('class_combined', data, 'name', ['code', 'name']);
-                })
-                .catch(error => {
-                    console.error('Error loading CombinedClasses:', error);
-                    allCombinedClasses = [];
-                });
+                    // Tải danh sách Lớp ghép
+                    fetch('/api/combined-classes/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allCombinedClasses = data;
+                            console.log('Loaded CombinedClasses:', data.length);
+                            resolve();
+                            //populateSelect2Dropdown('class_combined', data, 'name', ['code', 'name']);
+                        })
+                        .catch(error => {
+                            console.error('Error loading CombinedClasses:', error);
+                            allCombinedClasses = [];
+                            resolve();
+                        });
+            return Promise.all(promises);
         }
 
 		function disableOutsideSelect2() {
