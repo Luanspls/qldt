@@ -976,9 +976,6 @@
         </div>
     </div>
 
-    <!-- jQuery trước -->
-    
-    <!-- Select2 sau -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script>
 
@@ -2367,7 +2364,7 @@
     			return curriculum.name;
 			}
 			if (typeof curriculum === 'object' && curriculum !== null && curriculum.code) {
-    			return curriculum.code || 'N/A';
+    			return curriculum.name || curriculum.code;
 			}
     
 			// Nếu curriculum là ID, tìm trong allCurricula
@@ -2397,10 +2394,10 @@
 			if (!department) return 'N/A';
     
 			if (typeof department === 'object' && department !== null && department.name) {
-    			return department.name || 'N/A';
+    			return department.name;
 			}
 			if (typeof department === 'object' && department !== null && department.code) {
-    			return department.name || department.code || 'N/A';
+    			return department.name || department.code;
 			}
     
 			const departmentObj = allDepartments.find(d => d.id == department);
@@ -2411,7 +2408,7 @@
 			if (!subjectGroup) return 'N/A';
     
 			if (typeof subjectGroup === 'object' && subjectGroup !== null && subjectGroup.name) {
-    			return subjectGroup.name || 'N/A';
+    			return subjectGroup.name;
 			}
 			if (typeof subjectGroup === 'object' && subjectGroup !== null && subjectGroup.code) {
     			return subjectGroup.name || subjectGroup.code;
@@ -2931,8 +2928,6 @@
         				// Điền dữ liệu vào form
         				document.querySelector('#form-them-lop-hoc input[name="code"]').value = classData.code;
         				document.querySelector('#form-them-lop-hoc input[name="name"]').value = classData.name;
-        				// document.querySelector('#form-them-lop-hoc select[name="curriculum_id"]').value = classData.curriculum_id;
-        				// document.querySelector('#form-them-lop-hoc select[name="course_id"]').value = classData.course_id;
         				document.querySelector('#form-them-lop-hoc input[name="start_date"]').value = classData.start_date;
         				document.querySelector('#form-them-lop-hoc input[name="end_date"]').value = classData.end_date;
         				document.querySelector('#form-them-lop-hoc input[name="is_combined"]').checked = classData.is_combined;
@@ -2961,7 +2956,7 @@
                 			curriculumSelect.val(classData.curriculum_id || '').trigger('change');
                 			courseSelect.val(classData.course_id || '').trigger('change');
 							
-                			// $('#modal-them-lop-hoc select').trigger('change.select2');
+                			$('#modal-them-lop-hoc select').trigger('change.select2');
             			}, 500);
             
         				// Đổi tiêu đề và hành động của nút
@@ -3132,9 +3127,11 @@
 								const curriculumSelect = $('select[name="curriculum_id"]');
                     
                 				curriculumSelect.val(classData.curriculum_id || '').trigger('change');
+
                     			if (classesSelect.length) {
                         			classesSelect.val(classIds).trigger('change');
                     			}
+                                $('#modal-them-lop-ghep select').trigger('change.select2');
                 			}, 500);
 						}
         				document.querySelector('#modal-them-lop-ghep h3').textContent = 'Sửa lớp ghép';
@@ -3156,7 +3153,6 @@
 
 		let isLopGhepUpdating = false;
 		function updateLopGhep(id, event) {
-			
 			// Ngăn sự kiện mặc định nếu có
 			if (event) {
     			event.preventDefault();
@@ -3272,7 +3268,8 @@
                     
                 			departmentSelect.val(instructorData.department_id || '').trigger('change');
                 			subjectGroupSelect.val(instructorData.subject_group_id || '').trigger('change');
-                			// $('#modal-them-giang-vien select').trigger('change.select2');
+                			
+                            $('#modal-them-giang-vien select').trigger('change.select2');
             			}, 500);
 						
         				document.querySelector('#modal-them-giang-vien h3').textContent = 'Sửa giảng viên';
@@ -3440,7 +3437,7 @@
                 			classTypeSelect.dispatchEvent(new Event('change'));
                     
                 			// Cập nhật Select2
-                			// $('#modal-them-phan-cong select').trigger('change.select2');
+                			$('#modal-them-phan-cong select').trigger('change.select2');
             			}, 500);
 
 						document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
