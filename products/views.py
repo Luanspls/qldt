@@ -2915,17 +2915,17 @@ def api_update_teaching_assignment(request, id):
                     return JsonResponse({'status': 'error', 'message': 'Giảng viên không tồn tại'})
             if 'curriculum_subject_id' in data:
                 try:
-                    asignment.curriculum_subject = Subject.objects.get(id=data['curriculum_subject_id'])
+                    assignment.curriculum_subject = Subject.objects.get(id=data['curriculum_subject_id'])
                 except Subject.DoesNotExist:
                     return JsonResponse({'status': 'error', 'message': 'Môn học không tồn tại'})
             if 'class_obj_id' in data:
                 try:
-                    asignment.class_obj = Class.objects.get(id=data['class_obj_id'])
+                    assignment.class_obj = Class.objects.get(id=data['class_obj_id'])
                 except Class.DoesNotExist:
                     return JsonResponse({'status': 'error', 'message': 'Lớp học không tồn tại'})
             if 'combined_class_id' in data:
                 try:
-                    asignment.combined_class = CombinedClass.objects.get(id=data['combined_class_id'])
+                    assignment.combined_class = CombinedClass.objects.get(id=data['combined_class_id'])
                 except CombinedClass.DoesNotExist:
                     return JsonResponse({'status': 'error', 'message': 'Lớp ghép không tồn tại'})
             if 'academic_year' in data:
