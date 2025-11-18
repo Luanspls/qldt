@@ -1161,9 +1161,19 @@
 
         // Khởi tạo khi trang tải xong
         document.addEventListener('DOMContentLoaded', function() {
-            loadInitialData();
-            setupEventListeners();
-            loadClassesData();
+            // Đợi dữ liệu khởi tạo xong rồi mới load dữ liệu bảng
+            loadInitialData().then(() => {
+                console.log('Initial data loaded, setting up UI...');
+                setupEventListeners();
+                loadClassesData();
+                // Khởi tạo Select2 sau khi tất cả dữ liệu đã tải
+                setTimeout(initializeSelect2, 500);
+            }).catch(error => {
+                console.error('Error loading initial data:', error);
+                // Vẫn tiếp tục setup UI ngay cả khi có lỗi
+                setupEventListeners();
+                loadClassesData();
+            });
         });
 
         // Tải dữ liệu ban đầu
@@ -1180,7 +1190,7 @@
                 loadSelect2Data('/api/departments/', 'filter-instructor-department', 'name', ['code', 'name']),
                 loadSelect2Data('/api/subject-groups/', 'filter-instructor-subject-group', 'name', ['code', 'name'])
             ];
-
+            
             // Khởi tạo Select2 sau khi tất cả dữ liệu đã tải
             Promise.all(loadPromises).then(() => {
                 console.log('All data loaded, initializing Select2...');
@@ -2360,62 +2370,59 @@
 		function getCurriculumName(curriculum) {
 			if (!curriculum) return 'N/A';
     
-			if (typeof curriculum === 'object' && curriculum !== null && curriculum.name) {
-    			return curriculum.name;
-			}
-			if (typeof curriculum === 'object' && curriculum !== null && curriculum.code) {
-    			return curriculum.name || curriculum.code;
+			if (typeof curriculum === 'object' && curriculum !== null) {
+    			return curriculum.name || curriculum.code || 'N/A';
 			}
     
 			// Nếu curriculum là ID, tìm trong allCurricula
 			if (allCurricula && allCurricula.length > 0) {
 				const curriculumObj = allCurricula.find(c => c.id == curriculum);
 				return curriculumObj ? (curriculumObj.name || curriculumObj.code || 'N/A') : 'N/A';
-			} 
+			}
+            return 'N/A';
 		}
 
 		function getCourseName(course) {
 			if (!course) return 'N/A';
     
-			// Nếu course là object
-			if (typeof course === 'object' && course !== null && course.name) {
-    			return course.name;
-			}
 			if (typeof course === 'object' && course !== null && course.code) {
-    			return course.name || course.code;
+    			return course.name || course.code || 'N/A';
 			}
     
 			// Nếu course là ID, tìm trong allCourses
-			const courseObj = allCourses.find(c => c.id == course);
-			return courseObj ? (courseObj.name || courseObj.code || 'N/A') : 'N/A';
+            if (allCourses && allCourses.length > 0) {
+                const courseObj = allCourses.find(c => c.id == course);
+                return courseObj ? (courseObj.name || courseObj.code || 'N/A') : 'N/A';
+            }
+            return 'N/A';
 		}
 
 		function getDepartmentName(department) {
 			if (!department) return 'N/A';
     
-			if (typeof department === 'object' && department !== null && department.name) {
-    			return department.name;
-			}
 			if (typeof department === 'object' && department !== null && department.code) {
-    			return department.name || department.code;
+    			return department.name || department.code || 'N/A';
 			}
     
-			const departmentObj = allDepartments.find(d => d.id == department);
-			return departmentObj ? (departmentObj.name || departmentObj.code || 'N/A') : 'N/A';
+			if (allDepartments && allDepartments.length > 0) {
+                const departmentObj = allDepartments.find(d => d.id == department);
+                return departmentObj ? (departmentObj.name || departmentObj.code || 'N/A') : 'N/A';
+            }
+            return 'N/A';
 		}
 
 		function getSubjectGroupName(subjectGroup) {
 			if (!subjectGroup) return 'N/A';
     
-			if (typeof subjectGroup === 'object' && subjectGroup !== null && subjectGroup.name) {
-    			return subjectGroup.name;
-			}
 			if (typeof subjectGroup === 'object' && subjectGroup !== null && subjectGroup.code) {
-    			return subjectGroup.name || subjectGroup.code;
+    			return subjectGroup.name || subjectGroup.code || 'N/A';
 			}
     
-			const subjectGroupObj = allSubjectGroups.find(sg => sg.id == subjectGroup);
-			return subjectGroupObj ? (subjectGroupObj.name || subjectGroupObj.code || 'N/A') : 'N/A';
+			if (allSubjectGroups && allSubjectGroups.length > 0) {
+                const subjectGroupObj = allSubjectGroups.find(sg => sg.id == subjectGroup);
+                return subjectGroupObj ? (subjectGroupObj.name || subjectGroupObj.code || 'N/A') : 'N/A';
+            }
+            return 'N/A';
 		}
 
         function createLopHoc() {
@@ -3291,7 +3298,6 @@
 
 		let isInstructorUpdate = false;
 		function updateInstructor(id, event) {
-			
 			// Ngăn sự kiện mặc định nếu có
 			if (event) {
     			event.preventDefault();
