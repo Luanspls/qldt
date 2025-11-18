@@ -1161,20 +1161,23 @@
 
         // Khởi tạo khi trang tải xong
         document.addEventListener('DOMContentLoaded', function() {
-            // Đợi dữ liệu khởi tạo xong rồi mới load dữ liệu bảng
-            loadInitialData().then(() => {
-                console.log('Initial data loaded, setting up UI...');
-                setupEventListeners();
-                loadClassesData();
-                // Khởi tạo Select2 sau khi tất cả dữ liệu đã tải
-                setTimeout(initializeSelect2, 500);
-            }).catch(error => {
-                console.error('Error loading initial data:', error);
-                // Vẫn tiếp tục setup UI ngay cả khi có lỗi
-                setupEventListeners();
-                loadClassesData();
-            });
-        });
+			// Khởi tạo Select2 cơ bản trước
+    		initializeSelect2();
+        
+    		// Thiết lập event listeners
+    		setupEventListeners();
+        
+    		// Tải dữ liệu ban đầu
+    		loadInitialData().then(() => {
+        		console.log('Initial data loaded');
+        		loadClassesData();
+        		// Khởi tạo lại Select2 sau khi có dữ liệu
+        		setTimeout(initializeSelect2, 500);
+    		}).catch(error => {
+        		console.error('Error loading initial data:', error);
+        		loadClassesData();
+    		});
+		});
 
         // Tải dữ liệu ban đầu
         function loadInitialData() {
