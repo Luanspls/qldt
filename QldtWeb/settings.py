@@ -23,12 +23,13 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '0.0.0.0',
     '.railway.app',  # Cho phép tất cả subdomain railway
-    # '.onrender.com',  # Cho phép tất cả subdomain onrender
+    '.onrender.com',  # Cho phép tất cả subdomain onrender
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     f'https://*.{RAILWAY_DOMAIN}',
     'https://*.railway.app',
+    'https://*.onrender.com',
 ]
 
 # CORS settings cho phép frontend truy 
