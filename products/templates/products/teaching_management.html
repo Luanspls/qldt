@@ -17,7 +17,7 @@
 
         /* ===== MODAL STYLES ===== */
         .modal {
-            /* position: fixed !important;
+            position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
@@ -25,9 +25,9 @@
             background-color: rgba(0, 0, 0, 0.5) !important;
             display: flex !important;
             align-items: center !important;
-            justify-content: center !important;*/
-            z-index: 99990 !important;
-            /* padding: 20px;*/
+            justify-content: center !important;
+            z-index: 1050 !important;
+            padding: 20px;
         }
 
         .modal.hidden {
@@ -35,20 +35,20 @@
         }
 
         .modal > div {
-            /* position: relative !important;
+            position: relative !important;
             background: white !important;
             border-radius: 8px !important;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
             width: 100% !important;
             max-width: 800px !important;
             max-height: 90vh !important;
-            overflow-y: auto !important;*/
-            z-index: 99991 !important;
+            overflow-y: auto !important;
+            z-index: 1051 !important;
         }
 
         /* ===== SELECT2 STYLES - QUAN TRỌNG: ĐƠN GIẢN HÓA ===== */
         .select2-container {
-            z-index: 1000;
+            z-index: 1;
         }
 
         .select2-dropdown {
@@ -57,26 +57,31 @@
 
         /* Select2 trong modal */
         .modal .select2-container {
-            z-index: 99999 !important;
-			display: block !important;
+            z-index: 1060 !important;
+			/*display: block !important;*/
     		visibility: visible !important;
 			opacity: 1 !important;
     		pointer-events: auto !important;
         }
 
         .modal .select2-dropdown {
-            z-index: 100000 !important;
+            z-index: 1061 !important;
             display: block !important;
 			visibility: visible !important;
     		opacity: 1 !important;
     		pointer-events: auto !important;
         }
 
-		/* Đảm bảo backdrop của modal không bị ảnh hưởng */
-		.modal-backdrop {
-    		z-index: 99989 !important;
+		/* Đảm bảo select2 dropdown xuất hiện phía trên nội dung của modal */
+		.modal .select2-container--open .select2-dropdown {
+    		display: 1062 !important;
 		}
-
+		
+		/* Đảm bảo backdrop của modal ở dưới modal nhưng nằm trên nhũng cái khác*/
+		.modal-backdrop {
+    		z-index: 1049 !important;
+		}
+		
 		/* Ẩn tất cả dropdown ngoại trừ trong modal đang active */
 		body.modal-open .select2-container--open:not(.modal .select2-container--open) {
     		display: none !important;
@@ -153,19 +158,19 @@
         /* Reset các style có thể ảnh hưởng đến việc hiển thị */
         body.modal-open .select2-dropdown:not(.modal .select2-dropdown) {
             display: none !important;
-            visibility: hidden !important;
+            /*visibility: hidden !important;
             opacity: 0 !important;
-            pointer-events: none !important;
-			z-index: 1 !important;
+            pointer-events: none !important;*/
+			z-index: -1 !important;
         }
 
 		/* Select2 bên ngoài modal khi modal mở */
 		body.modal-open .select2-container:not(.modal .select2-container) {
-    		display: none !important;
+    		/*display: none !important;*/
     		visibility: hidden !important;
 			opacity: 0 !important;
     		pointer-events: none !important;
-			z-index: auto !important;
+			z-index: -1 !important;
 		}
 
 		/* Hiệu ứng làm mờ cho nền khi modal mở */
@@ -998,7 +1003,11 @@
 		// Hàm khởi tạo Select2 cho tất cả dropdown
         function initializeSelect2() {
             console.log('Initializing Select2...');
-            
+
+			const $modal = $(`#${modalId}`);
+    
+			// Hủy Select2 cũ nếu tồn tại
+			$modal.find('select.select2-hidden-accessible').select2('destroy');
             // Đóng tất cả dropdown Select2 đang mở trước khi khởi tạo lại
             $('.select2-container--open').select2('close');
 
@@ -1013,7 +1022,8 @@
                         placeholder: "Chọn hoặc nhập để tìm kiếm...",
                         allowClear: true,
                         width: '100%',
-                        dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
+                        // dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
+						dropdownParent: $modal;
                         dropdownAutoWidth: true,
                         minimumResultsForSearch: 0
                     });
@@ -1033,7 +1043,8 @@
                         placeholder: "Chọn hoặc nhập để tìm kiếm...",
                         allowClear: true,
                         width: '100%',
-                        dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
+                        // dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
+						dropdownParent: $modal;
                         dropdownAutoWidth: true,
                         closeOnSelect: false
                     });
@@ -1236,37 +1247,86 @@
         // ===== HÀM QUẢN LÝ MODAL =====
         function openModal(modalId) {
             closeAllSelect2Dropdowns();
+			// Đặt trạng thái modal mở
+			setModalOpenState(true);
             document.getElementById(modalId).classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
+
+			// Khởi tạo lại Select2 bên trong modal sau một khoảng thời gian ngắn
+			setTimeout(() => {
+    			initializeModalSelect2(modalId);
+			}, 50);
         }
 
         function closeModal(modalId) {
             closeAllSelect2Dropdowns();
             document.getElementById(modalId).classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
+
+			// Đặt lại trạng thái modal đóng
+			setModalOpenState(false);
             
             // Reset form và trạng thái
             const form = document.querySelector(`#${modalId} form`);
-            if (form) form.reset();
+            if (form) {
+				form.reset();
+				// Reset các checkbox về trạng thái mặc định
+    			const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+    			checkboxes.forEach(checkbox => {
+        			if (checkbox.id === 'is_active') checkbox.checked = true;
+        			else if (checkbox.id === 'is_main_instructor') checkbox.checked = true;
+        			else checkbox.checked = false;
+				});
+			}
             
 			// Reset trạng thái editing
 			currentEditingId = null;
 			isSubmitting = false;
 			currentModalType = null;
 
-			// Reset các dropdown ẩn
-			const classRegular = document.getElementById('class_regular');
-			const classCombined = document.getElementById('class_combined');
-			if (classRegular) classRegular.classList.add('hidden');
-			if (classCombined) classCombined.classList.add('hidden');
+			// // Reset các dropdown ẩn
+			//const classRegular = document.getElementById('class_regular');
+			//const classCombined = document.getElementById('class_combined');
+			//if (classRegular) classRegular.classList.add('hidden');
+			//if (classCombined) classCombined.classList.add('hidden');
     
-			// Reset nút về trạng thái thêm mới
-			resetModalToAddState(modalId);
+			// // Reset nút về trạng thái thêm mới
+			//resetModalToAddState(modalId);
             
             // Khởi tạo lại Select2 sau khi đóng modal
-            setTimeout(initializeSelect2, 100);
+            setTimeout(initializeSelect2, 200);
         }
 
+		function setModalOpenState(isOpen) {
+			if (isOpen) {
+    			document.body.classList.add('modal-open');
+    			// Force hide all outside select2
+    			$('select.select2-hidden-accessible').not('.modal select').each(function() {
+        			const $container = $(this).next('.select2-container');
+        			$container.css({
+            			'z-index': '-1',
+            			'opacity': '0',
+            			'visibility': 'hidden'
+        			});
+    			});
+			} else {
+    			document.body.classList.remove('modal-open');
+    			// Restore outside select2
+    			setTimeout(() => {
+        			$('select.select2-hidden-accessible').not('.modal select').each(function() {
+            			const $container = $(this).next('.select2-container');
+            			$container.css({
+                			'z-index': '',
+                			'opacity': '',
+                			'visibility': ''
+            			});
+        			});
+    			}, 100);
+			}
+		}
+
+
+		closeAllSelect2Dropdowns
         function openThemLopHocModal() {
             openModal('modal-them-lop-hoc');
             populateClassModalDropdowns();
