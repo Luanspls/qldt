@@ -3158,6 +3158,31 @@
                     }
                 });
             }, 1000);
+
+			 // Xử lý click outside để đóng modal
+			document.addEventListener('click', function(e) {
+    			const modals = document.querySelectorAll('.modal:not(.hidden)');
+    			modals.forEach(modal => {
+        			if (e.target === modal) {
+            			const modalId = modal.id;
+            			switch(modalId) {
+                			case 'modal-them-lop-hoc': closeThemLopHocModal(); break;
+                			case 'modal-them-lop-ghep': closeThemLopGhepModal(); break;
+                			case 'modal-them-giang-vien': closeThemGiangVienModal(); break;
+                			case 'modal-them-phan-cong': closeThemPhanCongModal(); break;
+                			case 'modal-import': closeImportModal(); break;
+                			case 'modal-import-errors': closeImportErrorsModal(); break;
+            			}
+        			}
+    			});
+			});
+
+			// Ngăn chặn sự kiện click trong modal lan ra ngoài
+			document.querySelectorAll('.modal > div').forEach(modalContent => {
+    			modalContent.addEventListener('click', function(e) {
+        			e.stopPropagation();
+    			});
+			});
         }
 
         // Hàm cập nhật tiêu đề trang
@@ -3290,14 +3315,24 @@
 
         // Hàm đóng tất cả dropdown Select2 đang mở
         function closeAllSelect2Dropdowns() {
-            $('.select2-container--open').select2('close');
-            // Alternative approach if above doesn't work
-            $('select.select2-hidden-accessible').each(function() {
-                const $select = $(this);
-                if ($select.data('select2')) {
-                    $select.select2('close');
-                }
-            });
+            // Đóng tất cả dropdown Select2 đang mở
+			$('.select2-container--open').each(function() {
+    			const $select2 = $(this).prev('select.select2-hidden-accessible');
+    			if ($select2.length && $select2.data('select2')) {
+        			$select2.select2('close');
+    			}
+			});
+    
+			// Alternative method
+			$('select.select2-hidden-accessible').each(function() {
+    			const $select = $(this);
+    			if ($select.data('select2') && $select.data('select2').isOpen()) {
+        			$select.select2('close');
+    			}
+			});
+    
+			// Force close by triggering blur
+			$('.select2-selection').blur();
         }
 
         {% comment %} // Đóng dropdown khi click outside
