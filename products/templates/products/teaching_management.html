@@ -165,7 +165,7 @@
     		visibility: hidden !important;
 			opacity: 0 !important;
     		pointer-events: none !important;
-			z-index: 1 !important;
+			z-index: auto !important;
 		}
 
 		/* Hiệu ứng làm mờ cho nền khi modal mở */
@@ -1249,8 +1249,19 @@
             const form = document.querySelector(`#${modalId} form`);
             if (form) form.reset();
             
-            currentEditingId = null;
-            isSubmitting = false;
+			// Reset trạng thái editing
+			currentEditingId = null;
+			isSubmitting = false;
+			currentModalType = null;
+
+			// Reset các dropdown ẩn
+			const classRegular = document.getElementById('class_regular');
+			const classCombined = document.getElementById('class_combined');
+			if (classRegular) classRegular.classList.add('hidden');
+			if (classCombined) classCombined.classList.add('hidden');
+    
+			// Reset nút về trạng thái thêm mới
+			resetModalToAddState(modalId);
             
             // Khởi tạo lại Select2 sau khi đóng modal
             setTimeout(initializeSelect2, 100);
@@ -1572,8 +1583,8 @@
 		}
 
         function createLopHoc() {
-            if (isSubmitting) return;
-            isSubmitting = true;
+            if (isSubmitting || currentModalType === 'edit') return;
+			isSubmitting = true;
 
             const form = document.getElementById('form-them-lop-hoc');
             const formData = new FormData(form);
@@ -1656,8 +1667,8 @@
         }
 
         function createLopGhep() {
-            if (isSubmitting) return;
-            isSubmitting = true;
+            if (isSubmitting || currentModalType === 'edit') return;
+			isSubmitting = true;
 
             const form = document.getElementById('form-them-lop-ghep');
             const formData = new FormData(form);
@@ -1723,8 +1734,8 @@
         }
 
         function createGiangVien() {
-            if (isSubmitting) return;
-            isSubmitting = true;
+            if (isSubmitting || currentModalType === 'edit') return;
+			isSubmitting = true;
             
             const form = document.getElementById('form-them-giang-vien');
             const formData = new FormData(form);
@@ -1787,8 +1798,8 @@
         }
         
         function createPhanCong() {
-            if (isSubmitting) return;
-            isSubmitting = true;
+            if (isSubmitting || currentModalType === 'edit') return;
+			isSubmitting = true;
 
             const form = document.getElementById('form-them-phan-cong');
             const formData = new FormData(form);
@@ -1858,7 +1869,9 @@
 
         // Hàm sửa lớp học
 		function editClass(id) {
+			if (isSubmitting) return;
             currentEditingId = id;
+			currentModalType = 'edit';
 
 			fetch(`/api/classes/${id}/`)
     			.then(response => {
@@ -2022,7 +2035,9 @@
 
 		// Hàm sửa lớp ghép
 		function editCombinedClass(id) {
+            if (isSubmitting) return;
             currentEditingId = id;
+			currentModalType = 'edit';
 
 			fetch(`/api/combined-classes/${id}/`)
     			.then(response =>  {
@@ -2154,7 +2169,9 @@
 
 		// Hàm sửa giảng viên
 		function editInstructor(id) {
+            if (isSubmitting) return;
             currentEditingId = id;
+			currentModalType = 'edit';
 
 			fetch(`/api/instructors/${id}/`)
     			.then(response => {
@@ -2282,7 +2299,9 @@
 
 		// Hàm sửa phân công giảng dạy
 		function editTeachingAssignment(id) {
+            if (isSubmitting) return;
             currentEditingId = id;
+			currentModalType = 'edit';
 
 			fetch(`/api/teaching-assignments/${id}/`)
     			.then(response => {
@@ -3490,44 +3509,67 @@
         }
         
 
-		// Thêm vào cuối file script
-		function resetModalToAddState(modalId, formId, saveButtonId, originalButtonText) {
+		function resetModalToAddState(modalId) {
+			let formId, saveButtonId, originalButtonText, originalTitle;
+    
+			switch(modalId) {
+    			case 'modal-them-lop-hoc':
+        			formId = 'form-them-lop-hoc';
+        			saveButtonId = 'btn-luu-lop-hoc';
+        			originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu lớp học';
+        			originalTitle = 'Thêm lớp học mới';
+        			break;
+    			case 'modal-them-lop-ghep':
+        			formId = 'form-them-lop-ghep';
+        			saveButtonId = 'btn-luu-lop-ghep';
+        			originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu lớp ghép';
+        			originalTitle = 'Thêm lớp học ghép mới';
+        			break;
+    			case 'modal-them-giang-vien':
+        			formId = 'form-them-giang-vien';
+        			saveButtonId = 'btn-luu-giang-vien';
+        			originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu giảng viên';
+        			originalTitle = 'Thêm giảng viên mới';
+        			break;
+    			case 'modal-them-phan-cong':
+        			formId = 'form-them-phan-cong';
+        			saveButtonId = 'btn-luu-phan-cong';
+        			originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu phân công';
+        			originalTitle = 'Thêm phân công giảng dạy mới';
+        			break;
+    			default:
+        			return;
+			}
+    
 			const modal = document.getElementById(modalId);
-			const form = document.getElementById(formId);
 			const saveBtn = document.getElementById(saveButtonId);
     
-			// Reset form
-			if (form) form.reset();
-    
-			// Reset button - QUAN TRỌNG: clone để xóa event listeners cũ
 			if (saveBtn) {
+    			// Clone và thay thế để xóa event listeners cũ
     			const newSaveBtn = saveBtn.cloneNode(true);
-                saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-
-                // Gắn event listener mới với once: true
-                newSaveBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                
-                    if (modalId === 'modal-them-lop-hoc') createLopHoc();
-                    else if (modalId === 'modal-them-lop-ghep') createLopGhep();
-                    else if (modalId === 'modal-them-giang-vien') createGiangVien();
-                    else if (modalId === 'modal-them-phan-cong') createPhanCong();
-                }, { once: true });
-                
-                newSaveBtn.innerHTML = originalButtonText;
+    			saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        
+    			// Gắn event listener mới
+    			newSaveBtn.onclick = function() {
+        			switch(modalId) {
+            			case 'modal-them-lop-hoc': createLopHoc(); break;
+            			case 'modal-them-lop-ghep': createLopGhep(); break;
+            			case 'modal-them-giang-vien': createGiangVien(); break;
+            			case 'modal-them-phan-cong': createPhanCong(); break;
+        			}
+    			};
+        
+    			newSaveBtn.innerHTML = originalButtonText;
 			}
     
 			// Reset tiêu đề
 			const title = modal.querySelector('h3');
 			if (title) {
-    			if (modalId === 'modal-them-lop-hoc') title.textContent = 'Thêm lớp học mới';
-    			else if (modalId === 'modal-them-lop-ghep') title.textContent = 'Thêm lớp học ghép mới';
-    			else if (modalId === 'modal-them-giang-vien') title.textContent = 'Thêm giảng viên mới';
-    			else if (modalId === 'modal-them-phan-cong') title.textContent = 'Thêm phân công giảng dạy mới';
+    			title.textContent = originalTitle;
 			}
+    
+			currentModalType = 'create';
 		}
     </script>
-    
 </body>
 </html>
