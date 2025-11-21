@@ -57,7 +57,7 @@
 
         /* Select2 trong modal */
         .modal .select2-container {
-            z-index: 99992 !important;
+            z-index: 99999 !important;
 			display: block !important;
     		visibility: visible !important;
 			opacity: 1 !important;
@@ -65,7 +65,7 @@
         }
 
         .modal .select2-dropdown {
-            z-index: 99993 !important;
+            z-index: 100000 !important;
             display: block !important;
 			visibility: visible !important;
     		opacity: 1 !important;
@@ -980,6 +980,21 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script>
 
     <script>
+		// Biến toàn cục lưu trữ dữ liệu
+        let allInstructors = [];
+        let allCurricula = [];
+        let allSubjects = [];
+        let allDepartments = [];
+        let allCourses = [];
+        let allClasses = [];
+        let allCombinedClasses = [];
+        let allSubjectGroups = [];
+		// Thêm các biến này cùng với các biến toàn cục khác
+		let currentEditingId = null;
+		let isSubmitting = false;
+		let currentModalType = null; // 'create' or 'edit'
+
+		
 		// Hàm khởi tạo Select2 cho tất cả dropdown
         function initializeSelect2() {
             console.log('Initializing Select2...');
@@ -1270,8 +1285,8 @@
 		}
 
 		function openThemLopGhepModal() {
-			openModal('modal-them-lop-hoc');
-            populateClassModalDropdowns();
+			openModal('modal-them-lop-ghep');
+            populateCombinedClassModalDropdowns();
     
 			// Đặt lại trạng thái thêm mới
             document.querySelector('#modal-them-lop-ghep h3').textContent = 'Thêm lớp học ghép mới';
@@ -1299,7 +1314,7 @@
 
 		function openThemPhanCongModal() {
 			openModal('modal-them-phan-cong');
-            populateClassModalDropdowns();
+            populateTeachingAssignmentModalDropdowns();
     
 			// Đặt lại trạng thái thêm mới
             document.querySelector('#modal-them-phan-cong h3').textContent = 'Thêm phân công mới';
@@ -1327,7 +1342,7 @@
 
 		function openThemGiangVienModal() {
 			openModal('modal-them-giang-vien');
-            populateClassModalDropdowns();
+            populateInstructorModalDropdowns();
     
 			// Đặt lại trạng thái thêm mới
             document.querySelector('#modal-them-giang-vien h3').textContent = 'Thêm giảng viên mới';
@@ -3205,16 +3220,6 @@
                 }
             });
         }
-        
-        // Biến toàn cục lưu trữ dữ liệu
-        let allInstructors = [];
-        let allCurricula = [];
-        let allSubjects = [];
-        let allDepartments = [];
-        let allCourses = [];
-        let allClasses = [];
-        let allCombinedClasses = [];
-        let allSubjectGroups = [];
 
         {% comment %} // Đóng dropdown khi click outside
         $(document).on('click', function(e) {
