@@ -1232,10 +1232,34 @@
             
             // Reset form và trạng thái
             const form = document.querySelector(`#${modalId} form`);
-            if (form) form.reset();
+            if (form) {
+                form.reset();
+                // Reset riêng các trường checkbox
+                const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    if (checkbox.id === 'is_active') {
+                        checkbox.checked = true; // Mặc định active
+                    } else if (checkbox.id === 'is_main_instructor') {
+                        checkbox.checked = true; // Mặc định là GV chính
+                    } else {
+                        checkbox.checked = false;
+                    }
+                });
+            }
             
+            // Reset trạng thái editing
             currentEditingId = null;
             isSubmitting = false;
+            currentModalType = null;
+
+            // Reset các dropdown ẩn
+            const classRegular = document.getElementById('class_regular');
+            const classCombined = document.getElementById('class_combined');
+            if (classRegular) classRegular.classList.add('hidden');
+            if (classCombined) classCombined.classList.add('hidden');
+            
+            // Reset nút về trạng thái thêm mới
+            resetModalToAddState(modalId);
             
             // Khởi tạo lại Select2 sau khi đóng modal
             setTimeout(initializeSelect2, 100);
@@ -1582,7 +1606,7 @@
 		}
 
         function createLopHoc() {
-            if (isSubmitting) return;
+            if (isSubmitting || currentModalType === 'edit') return;
             isSubmitting = true;
 
             const form = document.getElementById('form-them-lop-hoc');
@@ -1666,7 +1690,7 @@
         }
 
         function createLopGhep() {
-            if (isSubmitting) return;
+            if (isSubmitting || currentModalType === 'edit') return;
             isSubmitting = true;
 
             const form = document.getElementById('form-them-lop-ghep');
@@ -1733,7 +1757,7 @@
         }
 
         function createGiangVien() {
-            if (isSubmitting) return;
+            if (isSubmitting || currentModalType === 'edit') return;
             isSubmitting = true;
             
             const form = document.getElementById('form-them-giang-vien');
@@ -1797,7 +1821,7 @@
         }
         
         function createPhanCong() {
-            if (isSubmitting) return;
+            if (isSubmitting || currentModalType === 'edit') return;
             isSubmitting = true;
 
             const form = document.getElementById('form-them-phan-cong');
@@ -1868,7 +1892,10 @@
 
         // Hàm sửa lớp học
 		function editClass(id) {
+            if (isSubmitting) return;
+    
             currentEditingId = id;
+            currentModalType = 'edit';
 
 			fetch(`/api/classes/${id}/`)
     			.then(response => {
@@ -1917,7 +1944,11 @@
         				document.querySelector('#modal-them-lop-hoc h3').textContent = 'Sửa lớp học';
         				const saveBtn = document.getElementById('btn-luu-lop-hoc');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật lớp học';
-        				saveBtn.onclick = function() { updateLopHoc(id); };
+        				saveBtn.onclick = function() { 
+                            if (!isSubmitting) {
+                                updateLopHoc(id); 
+                            }
+                        };
         			} else {
             			alert('Không thể tải dữ liệu lớp học: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -2032,7 +2063,10 @@
 
 		// Hàm sửa lớp ghép
 		function editCombinedClass(id) {
+            if (isSubmitting) return;
+    
             currentEditingId = id;
+            currentModalType = 'edit';
 
 			fetch(`/api/combined-classes/${id}/`)
     			.then(response =>  {
@@ -2076,7 +2110,11 @@
         				document.querySelector('#modal-them-lop-ghep h3').textContent = 'Sửa lớp ghép';
         				const saveBtn = document.getElementById('btn-luu-lop-ghep');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật lớp ghép';
-                        saveBtn.onclick = function() { updateLopGhep(id); };
+                        saveBtn.onclick = function() { 
+                            if (!isSubmitting) {
+                                updateLopGhep(id); 
+                            }
+                        };
         			} else {
             			alert('Không thể tải dữ liệu lớp ghép: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -2164,7 +2202,10 @@
 
 		// Hàm sửa giảng viên
 		function editInstructor(id) {
+            if (isSubmitting) return;
+    
             currentEditingId = id;
+            currentModalType = 'edit';
 
 			fetch(`/api/instructors/${id}/`)
     			.then(response => {
@@ -2200,7 +2241,11 @@
         				document.querySelector('#modal-them-giang-vien h3').textContent = 'Sửa giảng viên';
         				const saveBtn = document.getElementById('btn-luu-giang-vien');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật giảng viên';
-                        saveBtn.onclick = function() { updateInstructor(id); };
+                        saveBtn.onclick = function() { 
+                            if (!isSubmitting) {
+                                updateInstructor(id); 
+                            }
+                        };
         			} else {
             			alert('Không thể tải dữ liệu giảng viên: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -2292,7 +2337,10 @@
 
 		// Hàm sửa phân công giảng dạy
 		function editTeachingAssignment(id) {
+            if (isSubmitting) return;
+    
             currentEditingId = id;
+            currentModalType = 'edit';
 
 			fetch(`/api/teaching-assignments/${id}/`)
     			.then(response => {
@@ -2353,7 +2401,11 @@
 						document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
         				const saveBtn = document.getElementById('btn-luu-phan-cong');
         				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật phân công';
-                        saveBtn.onclick = function() { updateTeachingAssignment(id); };
+                        saveBtn.onclick = function() { 
+                            if (!isSubmitting) {
+                                updateTeachingAssignment(id); 
+                            }
+                        };
         			} else {
             			alert('Không thể tải dữ liệu phân công giảng dạy: ' + (data.message || 'Lỗi không xác định'));
         			}
@@ -3240,6 +3292,9 @@
         let allClasses = [];
         let allCombinedClasses = [];
         let allSubjectGroups = [];
+        let currentEditingId = null;
+        let isSubmitting = false;
+        let currentModalType = null;
 
         {% comment %} // Đóng dropdown khi click outside
         $(document).on('click', function(e) {
@@ -3511,41 +3566,66 @@
         
 
 		// Thêm vào cuối file script
-		function resetModalToAddState(modalId, formId, saveButtonId, originalButtonText) {
-			const modal = document.getElementById(modalId);
-			const form = document.getElementById(formId);
-			const saveBtn = document.getElementById(saveButtonId);
-    
-			// Reset form
-			if (form) form.reset();
-    
-			// Reset button - QUAN TRỌNG: clone để xóa event listeners cũ
-			if (saveBtn) {
-    			const newSaveBtn = saveBtn.cloneNode(true);
-                saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+		function resetModalToAddState(modalId) {
+            let formId, saveButtonId, originalButtonText, originalTitle;
 
-                // Gắn event listener mới với once: true
-                newSaveBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
+			switch(modalId) {
+                case 'modal-them-lop-hoc':
+                    formId = 'form-them-lop-hoc';
+                    saveButtonId = 'btn-luu-lop-hoc';
+                    originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu lớp học';
+                    originalTitle = 'Thêm lớp học mới';
+                    break;
+                case 'modal-them-lop-ghep':
+                    formId = 'form-them-lop-ghep';
+                    saveButtonId = 'btn-luu-lop-ghep';
+                    originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu lớp ghép';
+                    originalTitle = 'Thêm lớp học ghép mới';
+                    break;
+                case 'modal-them-giang-vien':
+                    formId = 'form-them-giang-vien';
+                    saveButtonId = 'btn-luu-giang-vien';
+                    originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu giảng viên';
+                    originalTitle = 'Thêm giảng viên mới';
+                    break;
+                case 'modal-them-phan-cong':
+                    formId = 'form-them-phan-cong';
+                    saveButtonId = 'btn-luu-phan-cong';
+                    originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu phân công';
+                    originalTitle = 'Thêm phân công giảng dạy mới';
+                    break;
+                default:
+                    return;
+            }
+            
+            const modal = document.getElementById(modalId);
+            const saveBtn = document.getElementById(saveButtonId);
+            
+            if (saveBtn) {
+                // Clone và thay thế để xóa event listeners cũ
+                const newSaveBtn = saveBtn.cloneNode(true);
+                saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
                 
-                    if (modalId === 'modal-them-lop-hoc') createLopHoc();
-                    else if (modalId === 'modal-them-lop-ghep') createLopGhep();
-                    else if (modalId === 'modal-them-giang-vien') createGiangVien();
-                    else if (modalId === 'modal-them-phan-cong') createPhanCong();
-                }, { once: true });
+                // Gắn event listener mới
+                newSaveBtn.onclick = function() {
+                    switch(modalId) {
+                        case 'modal-them-lop-hoc': createLopHoc(); break;
+                        case 'modal-them-lop-ghep': createLopGhep(); break;
+                        case 'modal-them-giang-vien': createGiangVien(); break;
+                        case 'modal-them-phan-cong': createPhanCong(); break;
+                    }
+                };
                 
                 newSaveBtn.innerHTML = originalButtonText;
-			}
-    
-			// Reset tiêu đề
-			const title = modal.querySelector('h3');
-			if (title) {
-    			if (modalId === 'modal-them-lop-hoc') title.textContent = 'Thêm lớp học mới';
-    			else if (modalId === 'modal-them-lop-ghep') title.textContent = 'Thêm lớp học ghép mới';
-    			else if (modalId === 'modal-them-giang-vien') title.textContent = 'Thêm giảng viên mới';
-    			else if (modalId === 'modal-them-phan-cong') title.textContent = 'Thêm phân công giảng dạy mới';
-			}
+            }
+            
+            // Reset tiêu đề
+            const title = modal.querySelector('h3');
+            if (title) {
+                title.textContent = originalTitle;
+            }
+            
+            currentModalType = 'create';
 		}
     </script>
     
