@@ -45,7 +45,7 @@
 
 		/* Ensure select2 dropdown appears above modal content */
         .modal .select2-container--open {
-            z-index: 10070 !important;
+            z-index: 1070 !important;
         }
 
         .modal .select2-dropdown {
@@ -215,7 +215,24 @@
 		body.modal-open .container:not(.modal) {
     		filter: none;
 		}
-        */
+
+		/* ===== TABLE SCROLL FIXES ===== */
+		.table-container {
+		    max-height: 500px;
+		    overflow-y: auto;
+		}
+		
+		/* Đảm bảo header cố định khi cuộn */
+		.table-container table {
+		    min-width: 100%;
+		}
+		
+		.table-container thead th {
+		    position: sticky;
+		    top: 0;
+		    background-color: #f9fafb; /* màu nền giống bg-gray-50 */
+		    z-index: 10;
+		}
 
         /* ===== RESPONSIVE FIXES ===== */
         @media (max-width: 768px) {
@@ -236,6 +253,10 @@
                 max-width: 300px !important;
             }
             /* ============================ */
+
+			.table-container {
+		        max-height: 400px;
+		    }
         }
 
         /* ===== ANIMATION (optional) ===== */
@@ -357,7 +378,7 @@
                     </div>
                 </div>
                 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto table-container">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -407,7 +428,7 @@
                     </div>
                 </div>
                 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto table-container">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -470,7 +491,7 @@
                     </div>
                 </div>
                 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto table-container">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -534,7 +555,7 @@
                     </div>
                 </div>
                 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto table-container">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -1045,6 +1066,7 @@
         let currentEditingId = null;
         let isSubmitting = false;
         let currentModalType = null;
+		let currentAction = 'create'; // 'create' hoặc 'edit'
 		
 		// Hàm khởi tạo Select2 cho tất cả dropdown
         function initializeSelect2() {
@@ -1310,6 +1332,12 @@
 	            //document.body.classList.add('modal-open');
 	            document.body.classList.add('overflow-hidden');
 	            //curentModal = modalId;
+
+				// Reset trạng thái
+		        currentAction = 'create';
+		        currentEditingId = null;
+		        isSubmitting = false;
+				
 				// Khởi tạo Select2 sau khi modal hiển thị
 	            setTimeout(() => {
 	                initializeModalSelect2(modalId);
@@ -1398,9 +1426,13 @@
         	const saveBtn = document.getElementById('btn-luu-lop-hoc');
         	if (saveBtn) {
         		saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu lớp học';
-        		saveBtn.onclick = createLopHoc;
+        		saveBtn.onclick = function(e) {
+		            e.preventDefault();
+		            createLopHoc();
+		        };
         	}
 			currentEditingId = null;
+			currentAction = 'create';
 		} 
     		
         function closeThemLopHocModal() {
@@ -1418,9 +1450,13 @@
         	const saveBtn = document.getElementById('btn-luu-lop-ghep');
         	if (saveBtn) {
             	saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu lớp ghép';
-            	saveBtn.onclick = createLopGhep;
+            	saveBtn.onclick = function(e) {
+		            e.preventDefault();
+		            createLopGhep();
+		        };
         	}
 			currentEditingId = null;
+			currentAction = 'create';
 		} 
 
         function closeThemLopGhepModal() {
@@ -1438,9 +1474,13 @@
         	const saveBtn = document.getElementById('btn-luu-phan-cong');
         	if (saveBtn) {
             	saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu phân công';
-            	saveBtn.onclick = createPhanCong;
+            	saveBtn.onclick = function(e) {
+		            e.preventDefault();
+		            createPhanCong();
+		        };
         	}
 			currentEditingId = null;
+			currentAction = 'create';
 		} 
 
         function closeThemPhanCongModal() {
@@ -1458,9 +1498,13 @@
         	const saveBtn = document.getElementById('btn-luu-giang-vien');
         	if (saveBtn) {
             	saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu giảng viên';
-            	saveBtn.onclick = createGiangVien;
+            	saveBtn.onclick = function(e) {
+		            e.preventDefault();
+		            createGiangVien();
+		        };
         	}
 			currentEditingId = null;
+			currentAction = 'create';
 		} 
 		
 		function closeThemGiangVienModal() {
@@ -1800,7 +1844,14 @@
                 is_combined: formData.get('is_combined') === 'on',
                 description: formData.get('description')
             };
-            
+
+			// Validate
+            if (!data.code || !data.name || !data.curriculum_id || !data.course_id) {
+                alert('Vui lòng điền đầy đủ các trường bắt buộc');
+				isSubmitting = false;
+                return;
+            }
+			
             // Xử lý ngày tháng - chỉ thêm nếu có giá trị
             const startDate = formData.get('start_date');
             if (startDate) {
@@ -1820,12 +1871,6 @@
                 }
             }
             
-            // Validate
-            if (!data.code || !data.name || !data.curriculum_id || !data.course_id) {
-                alert('Vui lòng điền đầy đủ các trường bắt buộc');
-                return;
-            }
-
             // Hiển thị loading
             const saveBtn = document.getElementById('btn-luu-lop-hoc');
             const originalText = saveBtn.innerHTML;
@@ -1881,16 +1926,17 @@
                 classes: Array.from(formData.getAll('classes')).map(id => parseInt(id))
             };
 
+			// Validate
+            if (!data.code || !data.name || !data.curriculum_id || data.classes.length === 0) {
+                alert('Vui lòng điền đầy đủ các trường bắt buộc');
+				isSubmitting = false;
+                return;
+            }
+			
             // Xử lý description - chỉ thêm nếu có giá trị
             const description = formData.get('description');
             if (description) {
                 data.description = description;
-            }
-
-            // Validate
-            if (!data.code || !data.name || !data.curriculum_id || data.classes.length === 0) {
-                alert('Vui lòng điền đầy đủ các trường bắt buộc');
-                return;
             }
 
             // Hiển thị loading
@@ -1954,6 +2000,7 @@
             // Validate
             if (!data.code || !data.full_name) {
                 alert('Vui lòng điền đầy đủ các trường bắt buộc');
+				isSubmitting = false;
                 return;
             }
 
@@ -2016,6 +2063,12 @@
                 teaching_hours: parseInt(formData.get('teaching_hours')) || 0
             };
 
+			if (!data.class_obj_id && !data.combined_class_id) {
+                alert('Vui lòng chọn lớp học');
+				isSubmitting = false;
+                return;
+            }
+			
             // Thêm class_obj hoặc combined_class tùy loại
             if (classType === 'regular') {
                 data.class_obj_id = formData.get('class_id');
@@ -2026,11 +2079,6 @@
             // Validate
             if (!data.instructor_id || !data.curriculum_subject_id || !data.academic_year || !data.semester) {
                 alert('Vui lòng điền đầy đủ các trường bắt buộc');
-                return;
-            }
-
-            if (!data.class_obj_id && !data.combined_class_id) {
-                alert('Vui lòng chọn lớp học');
                 return;
             }
 
@@ -3144,7 +3192,10 @@
             document.getElementById('btn-them-lop-hoc').addEventListener('click', openThemLopHocModal);
             document.getElementById('btn-dong-lop-hoc').addEventListener('click', closeThemLopHocModal);
             document.getElementById('btn-huy-lop-hoc').addEventListener('click', closeThemLopHocModal);
-            // document.getElementById('btn-luu-lop-hoc').addEventListener('click', createLopHoc);
+            document.getElementById('btn-luu-lop-hoc').addEventListener('click', function(e) {
+		        e.preventDefault();
+		        createLopHoc();
+		    });
 
             // Xử lý checkbox lớp ghép
             document.getElementById('is_combined').addEventListener('change', function() {
@@ -3171,13 +3222,19 @@
             document.getElementById('btn-them-lop-ghep').addEventListener('click', openThemLopGhepModal);
             document.getElementById('btn-dong-lop-ghep').addEventListener('click', closeThemLopGhepModal);
             document.getElementById('btn-huy-lop-ghep').addEventListener('click', closeThemLopGhepModal);
-            document.getElementById('btn-luu-lop-ghep').addEventListener('click', createLopGhep);
+            document.getElementById('btn-luu-lop-ghep').addEventListener('click', function(e) {
+		        e.preventDefault();
+		        createLopGhep();
+		    });
 
             // Xử lý modal phân công giảng dạy
             document.getElementById('btn-them-phan-cong').addEventListener('click', openThemPhanCongModal);
             document.getElementById('btn-dong-phan-cong').addEventListener('click', closeThemPhanCongModal);
             document.getElementById('btn-huy-phan-cong').addEventListener('click', closeThemPhanCongModal);
-            document.getElementById('btn-luu-phan-cong').addEventListener('click', createPhanCong);
+            document.getElementById('btn-luu-phan-cong').addEventListener('click', function(e) {
+		        e.preventDefault();
+		        createPhanCong();
+		    });
 
             // Xử lý thay đổi loại lớp trong modal phân công giảng dạy
             document.getElementById('class_type').addEventListener('change', function() {
@@ -3279,7 +3336,10 @@
             document.getElementById('btn-them-giang-vien').addEventListener('click', openThemGiangVienModal);
             document.getElementById('btn-dong-giang-vien').addEventListener('click', closeThemGiangVienModal);
             document.getElementById('btn-huy-giang-vien').addEventListener('click', closeThemGiangVienModal);
-            document.getElementById('btn-luu-giang-vien').addEventListener('click', createGiangVien);
+            document.getElementById('btn-luu-giang-vien').addEventListener('click', function(e) {
+		        e.preventDefault();
+		        createGiangVien();
+		    });
 			
             // Ngăn chặn submit form mặc định
             document.querySelectorAll('form').forEach(form => {
