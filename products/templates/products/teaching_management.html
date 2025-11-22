@@ -1009,15 +1009,15 @@
 			// Hủy Select2 cũ nếu tồn tại
 			$modal.find('select.select2-hidden-accessible').select2('destroy');
             // Đóng tất cả dropdown Select2 đang mở trước khi khởi tạo lại
-            $('.select2-container--open').select2('close');
+            // $('.select2-container--open').select2('close');
 
             // Khởi tạo cho các dropdown thông thường
-            $('select:not([multiple]):not(.select2-hidden-accessible)').each(function() {
+            $modal.find('select:not([multiple]):not(.select2-hidden-accessible)').each(function() {
                 try {
-                    const $select = $(this);
-                    const isInModal = $select.closest('.modal').length > 0;
+                    // const $select = $(this);
+                    // const isInModal = $select.closest('.modal').length > 0;
                     
-                    $select.select2({
+                    $(this).select2({
                         language: 'vi',
                         placeholder: "Chọn hoặc nhập để tìm kiếm...",
                         allowClear: true,
@@ -1033,12 +1033,12 @@
             });
 
             // Khởi tạo cho các dropdown multiple
-            $('select[multiple]:not(.select2-hidden-accessible)').each(function() {
+            $modal.find('select[multiple]:not(.select2-hidden-accessible)').each(function() {
                 try {
-                    const $select = $(this);
-                    const isInModal = $select.closest('.modal').length > 0;
+                    // const $select = $(this);
+                    // const isInModal = $select.closest('.modal').length > 0;
                     
-                    $select.select2({
+                    $(this).select2({
                         language: 'vi',
                         placeholder: "Chọn hoặc nhập để tìm kiếm...",
                         allowClear: true,
