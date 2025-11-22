@@ -211,6 +211,15 @@
                 width: 95% !important;
                 max-width: none !important;
             }
+            /* ===== THÊM ================= */
+            .modal .select2-dropdown {
+                position: fixed !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                width: 90% !important;
+                max-width: 300px !important;
+            }
+            /* ============================ */
         }
 
         /* ===== ANIMATION (optional) ===== */
@@ -252,6 +261,10 @@
             
             .select2-dropdown {
                 display: none !important;
+            }
+
+            .select2-container {
+                z-index: auto !important;
             }
         }
     </style>
@@ -1245,14 +1258,25 @@
         // ===== HÀM QUẢN LÝ MODAL =====
         function openModal(modalId) {
             closeAllSelect2Dropdowns();
+            // Đặt trạng thái modal mở
+            setModalOpenState(true);
+
             document.getElementById(modalId).classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
+
+            // Khởi tạo lại Select2 bên trong modal sau một khoảng thời gian ngắn
+            setTimeout(() => {
+                initializeModalSelect2(modalId);
+            }, 50);
         }
 
         function closeModal(modalId) {
             closeAllSelect2Dropdowns();
             document.getElementById(modalId).classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
+
+            // Đặt lại trạng thái modal đóng
+            setModalOpenState(false);
             
             // Reset form và trạng thái
             const form = document.querySelector(`#${modalId} form`);
@@ -1276,14 +1300,14 @@
             isSubmitting = false;
             currentModalType = null;
 
-            // Reset các dropdown ẩn
-            const classRegular = document.getElementById('class_regular');
-            const classCombined = document.getElementById('class_combined');
-            if (classRegular) classRegular.classList.add('hidden');
-            if (classCombined) classCombined.classList.add('hidden');
+            //// Reset các dropdown ẩn
+            //const classRegular = document.getElementById('class_regular');
+            //const classCombined = document.getElementById('class_combined');
+            //if (classRegular) classRegular.classList.add('hidden');
+            //if (classCombined) classCombined.classList.add('hidden');
             
-            // Reset nút về trạng thái thêm mới
-            resetModalToAddState(modalId);
+            //// Reset nút về trạng thái thêm mới
+            //resetModalToAddState(modalId);
             
             // Khởi tạo lại Select2 sau khi đóng modal
             setTimeout(initializeSelect2, 100);
@@ -3165,6 +3189,31 @@
                     }
                 });
             }, 1000);
+
+            // Xử lý click outside để đóng modal
+            document.addEventListener('click', function(e) {
+                const modals = document.querySelectorAll('.modal:not(.hidden)');
+                modals.forEach(modal => {
+                    if (e.target === modal) {
+                        const modalId = modal.id;
+                        switch(modalId) {
+                            case 'modal-them-lop-hoc': closeThemLopHocModal(); break;
+                            case 'modal-them-lop-ghep': closeThemLopGhepModal(); break;
+                            case 'modal-them-giang-vien': closeThemGiangVienModal(); break;
+                            case 'modal-them-phan-cong': closeThemPhanCongModal(); break;
+                            case 'modal-import': closeImportModal(); break;
+                            case 'modal-import-errors': closeImportErrorsModal(); break;
+                        }
+                    }
+                });
+            });
+
+            // Ngăn chặn sự kiện click trong modal lan ra ngoài
+            document.querySelectorAll('.modal > div').forEach(modalContent => {
+                modalContent.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            });
         }
 
         // Hàm cập nhật tiêu đề trang
@@ -3297,14 +3346,32 @@
 
         // Hàm đóng tất cả dropdown Select2 đang mở
         function closeAllSelect2Dropdowns() {
-            $('.select2-container--open').select2('close');
-            // Alternative approach if above doesn't work
+            //$('.select2-container--open').select2('close');
+            //$('select.select2-hidden-accessible').each(function() {
+            //    const $select = $(this);
+            //    if ($select.data('select2')) {
+            //        $select.select2('close');
+            //    }
+            //});
+
+            // Phương pháp an toàn hơn
+            $('.select2-container--open').each(function() {
+                const $select2 = $(this).prev('select.select2-hidden-accessible');
+                if ($select2.length && $select2.data('select2')) {
+                    $select2.select2('close');
+                }
+            });
+            
+            // Alternative method
             $('select.select2-hidden-accessible').each(function() {
                 const $select = $(this);
-                if ($select.data('select2')) {
+                if ($select.data('select2') && $select.data('select2').isOpen()) {
                     $select.select2('close');
                 }
             });
+            
+            // Force close by triggering blur
+            $('.select2-selection').blur();
         }
         
         // Biến toàn cục lưu trữ dữ liệu
@@ -3651,6 +3718,76 @@
             
             currentModalType = 'create';
 		}
+
+        function setModalOpenState(isOpen) {
+            if (isOpen) {
+                document.body.classList.add('modal-open');
+                // Force hide all outside select2
+                $('select.select2-hidden-accessible').not('.modal select').each(function() {
+                    const $container = $(this).next('.select2-container');
+                    $container.css({
+                        'z-index': '-1',
+                        'opacity': '0',
+                        'visibility': 'hidden'
+                    });
+                });
+            } else {
+                document.body.classList.remove('modal-open');
+                // Restore outside select2
+                setTimeout(() => {
+                    $('select.select2-hidden-accessible').not('.modal select').each(function() {
+                        const $container = $(this).next('.select2-container');
+                        $container.css({
+                            'z-index': '',
+                            'opacity': '',
+                            'visibility': ''
+                        });
+                    });
+                }, 100);
+            }
+        }
+
+        // Hàm khởi tạo Select2 cho modal cụ thể
+        function initializeModalSelect2(modalId) {
+            const $modal = $(`#${modalId}`);
+            
+            // Hủy Select2 cũ nếu tồn tại
+            $modal.find('select.select2-hidden-accessible').select2('destroy');
+            
+            // Khởi tạo Select2 mới cho modal
+            $modal.find('select:not([multiple]):not(.select2-hidden-accessible)').each(function() {
+                try {
+                    $(this).select2({
+                        language: 'vi',
+                        placeholder: "Chọn hoặc nhập để tìm kiếm...",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $modal,
+                        dropdownAutoWidth: true,
+                        minimumResultsForSearch: 0
+                    });
+                } catch (e) {
+                    console.error('Error initializing Select2 in modal:', e);
+                }
+            });
+
+            // Khởi tạo cho multiple select
+            $modal.find('select[multiple]:not(.select2-hidden-accessible)').each(function() {
+                try {
+                    $(this).select2({
+                        language: 'vi',
+                        placeholder: "Chọn hoặc nhập để tìm kiếm...",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $modal,
+                        dropdownAutoWidth: true,
+                        closeOnSelect: false
+                    });
+                } catch (e) {
+                    console.error('Error initializing multiple Select2 in modal:', e);
+                }
+            });
+        }
     </script>
     
 </body>
