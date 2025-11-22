@@ -1300,18 +1300,18 @@
             const modal = document.getElementById(modalId);
             modal.classList.remove('hidden');
             document.body.classList.add('modal-open');
-            //document.body.classList.add('overflow-hidden');
-            currentOpenModal = modalId;
+            // document.body.classList.add('overflow-hidden');
+            curentModal = modalId;
 
-            initializeModalSelect2(modalId);
+            //initializeModalSelect2(modalId);
                 
                 // Ẩn tất cả Select2 bên ngoài modal
             //    hideOutsideSelect2();
 
-                // Khởi tạo Select2 sau khi modal hiển thị
-            //    setTimeout(() => {
-            //        initializeModalSelect2(modalId);
-            //    }, 200);
+            // Khởi tạo Select2 sau khi modal hiển thị
+            setTimeout(() => {
+                initializeModalSelect2(modalId);
+            }, 300);
             //} else {
             //    console.error('Modal not found:', modalId);
             //}
