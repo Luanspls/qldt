@@ -1009,21 +1009,21 @@
 			// Hủy Select2 cũ nếu tồn tại
 			$modal.find('select.select2-hidden-accessible').select2('destroy');
             // Đóng tất cả dropdown Select2 đang mở trước khi khởi tạo lại
-            // $('.select2-container--open').select2('close');
+            $('.select2-container--open').select2('close');
 
             // Khởi tạo cho các dropdown thông thường
-            $modal.find('select:not([multiple]):not(.select2-hidden-accessible)').each(function() {
+            $('select:not([multiple]):not(.select2-hidden-accessible)').each(function() {
                 try {
-                    // const $select = $(this);
-                    // const isInModal = $select.closest('.modal').length > 0;
+                    const $select = $(this);
+                    const isInModal = $select.closest('.modal').length > 0;
                     
-                    $(this).select2({
+                    $select.select2({
                         language: 'vi',
                         placeholder: "Chọn hoặc nhập để tìm kiếm...",
                         allowClear: true,
                         width: '100%',
-                        // dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
-						dropdownParent: $modal,
+                        dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
+						// dropdownParent: $modal,
                         dropdownAutoWidth: true,
                         minimumResultsForSearch: 0
                     });
@@ -1033,18 +1033,18 @@
             });
 
             // Khởi tạo cho các dropdown multiple
-            $modal.find('select[multiple]:not(.select2-hidden-accessible)').each(function() {
+            $('select[multiple]:not(.select2-hidden-accessible)').each(function() {
                 try {
-                    // const $select = $(this);
-                    // const isInModal = $select.closest('.modal').length > 0;
+                    const $select = $(this);
+                    const isInModal = $select.closest('.modal').length > 0;
                     
-                    $(this).select2({
+                    $select.select2({
                         language: 'vi',
                         placeholder: "Chọn hoặc nhập để tìm kiếm...",
                         allowClear: true,
                         width: '100%',
-                        // dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
-						dropdownParent: $modal,
+                        dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
+						// dropdownParent: $modal,
                         dropdownAutoWidth: true,
                         closeOnSelect: false
                     });
