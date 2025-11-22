@@ -17,7 +17,7 @@
 
         /* ===== MODAL STYLES ===== */
         .modal {
-            position: fixed !important;
+            /* position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
@@ -25,9 +25,9 @@
             background-color: rgba(0, 0, 0, 0.5) !important;
             display: flex !important;
             align-items: center !important;
-            justify-content: center !important;
-            z-index: 1050 !important;
-            padding: 20px;
+            justify-content: center !important;*/
+            z-index: 99990 !important;
+            /* padding: 20px;*/
         }
 
         .modal.hidden {
@@ -35,20 +35,20 @@
         }
 
         .modal > div {
-            position: relative !important;
+            /* position: relative !important;
             background: white !important;
             border-radius: 8px !important;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
             width: 100% !important;
             max-width: 800px !important;
             max-height: 90vh !important;
-            overflow-y: auto !important;
-            z-index: 1051 !important;
+            overflow-y: auto !important;*/
+            z-index: 99991 !important;
         }
 
         /* ===== SELECT2 STYLES - QUAN TRỌNG: ĐƠN GIẢN HÓA ===== */
         .select2-container {
-            z-index: 1;
+            z-index: 1000;
         }
 
         .select2-dropdown {
@@ -57,31 +57,26 @@
 
         /* Select2 trong modal */
         .modal .select2-container {
-            z-index: 1060 !important;
-			/*display: block !important;*/
+            z-index: 99992 !important;
+			display: block !important;
     		visibility: visible !important;
 			opacity: 1 !important;
     		pointer-events: auto !important;
         }
 
         .modal .select2-dropdown {
-            z-index: 1061 !important;
+            z-index: 99993 !important;
             display: block !important;
 			visibility: visible !important;
     		opacity: 1 !important;
     		pointer-events: auto !important;
         }
 
-		/* Đảm bảo select2 dropdown xuất hiện phía trên nội dung của modal */
-		.modal .select2-container--open .select2-dropdown {
-    		display: 1062 !important;
-		}
-		
-		/* Đảm bảo backdrop của modal ở dưới modal nhưng nằm trên nhũng cái khác*/
+		/* Đảm bảo backdrop của modal không bị ảnh hưởng */
 		.modal-backdrop {
-    		z-index: 1049 !important;
+    		z-index: 99989 !important;
 		}
-		
+
 		/* Ẩn tất cả dropdown ngoại trừ trong modal đang active */
 		body.modal-open .select2-container--open:not(.modal .select2-container--open) {
     		display: none !important;
@@ -158,19 +153,19 @@
         /* Reset các style có thể ảnh hưởng đến việc hiển thị */
         body.modal-open .select2-dropdown:not(.modal .select2-dropdown) {
             display: none !important;
-            /*visibility: hidden !important;
+            visibility: hidden !important;
             opacity: 0 !important;
-            pointer-events: none !important;*/
-			z-index: -1 !important;
+            pointer-events: none !important;
+			z-index: 1 !important;
         }
 
 		/* Select2 bên ngoài modal khi modal mở */
 		body.modal-open .select2-container:not(.modal .select2-container) {
-    		/*display: none !important;*/
+    		display: none !important;
     		visibility: hidden !important;
 			opacity: 0 !important;
     		pointer-events: none !important;
-			z-index: -1 !important;
+			z-index: 1 !important;
 		}
 
 		/* Hiệu ứng làm mờ cho nền khi modal mở */
@@ -192,15 +187,6 @@
                 width: 95% !important;
                 max-width: none !important;
             }
-
-			/* Ensure select2 dropdowns are visible on mobile */
-			.modal .select2-dropdown {
-    			position: fixed !important;
-    			left: 50% !important;
-    			transform: translateX(-50%) !important;
-    			width: 90% !important;
-    			max-width: 300px !important;
-			}
         }
 
         /* ===== ANIMATION (optional) ===== */
@@ -994,29 +980,10 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script>
 
     <script>
-		// Biến toàn cục lưu trữ dữ liệu
-        let allInstructors = [];
-        let allCurricula = [];
-        let allSubjects = [];
-        let allDepartments = [];
-        let allCourses = [];
-        let allClasses = [];
-        let allCombinedClasses = [];
-        let allSubjectGroups = [];
-		// Thêm các biến này cùng với các biến toàn cục khác
-		let currentEditingId = null;
-		let isSubmitting = false;
-		let currentModalType = null; // 'create' or 'edit'
-
-		
 		// Hàm khởi tạo Select2 cho tất cả dropdown
         function initializeSelect2() {
             console.log('Initializing Select2...');
-
-			const $modal = $(`#${modalId}`);
-    
-			// Hủy Select2 cũ nếu tồn tại
-			$modal.find('select.select2-hidden-accessible').select2('destroy');
+            
             // Đóng tất cả dropdown Select2 đang mở trước khi khởi tạo lại
             $('.select2-container--open').select2('close');
 
@@ -1032,7 +999,6 @@
                         allowClear: true,
                         width: '100%',
                         dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
-						// dropdownParent: $modal,
                         dropdownAutoWidth: true,
                         minimumResultsForSearch: 0
                     });
@@ -1053,7 +1019,6 @@
                         allowClear: true,
                         width: '100%',
                         dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
-						// dropdownParent: $modal,
                         dropdownAutoWidth: true,
                         closeOnSelect: false
                     });
@@ -1256,86 +1221,26 @@
         // ===== HÀM QUẢN LÝ MODAL =====
         function openModal(modalId) {
             closeAllSelect2Dropdowns();
-			// Đặt trạng thái modal mở
-			setModalOpenState(true);
             document.getElementById(modalId).classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
-
-			// Khởi tạo lại Select2 bên trong modal sau một khoảng thời gian ngắn
-			setTimeout(() => {
-    			initializeModalSelect2(modalId);
-			}, 50);
         }
 
         function closeModal(modalId) {
             closeAllSelect2Dropdowns();
             document.getElementById(modalId).classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
-
-			// Đặt lại trạng thái modal đóng
-			setModalOpenState(false);
             
             // Reset form và trạng thái
             const form = document.querySelector(`#${modalId} form`);
-            if (form) {
-				form.reset();
-				// Reset các checkbox về trạng thái mặc định
-    			const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-    			checkboxes.forEach(checkbox => {
-        			if (checkbox.id === 'is_active') checkbox.checked = true;
-        			else if (checkbox.id === 'is_main_instructor') checkbox.checked = true;
-        			else checkbox.checked = false;
-				});
-			}
+            if (form) form.reset();
             
-			// Reset trạng thái editing
-			currentEditingId = null;
-			isSubmitting = false;
-			currentModalType = null;
-
-			// // Reset các dropdown ẩn
-			//const classRegular = document.getElementById('class_regular');
-			//const classCombined = document.getElementById('class_combined');
-			//if (classRegular) classRegular.classList.add('hidden');
-			//if (classCombined) classCombined.classList.add('hidden');
-    
-			// // Reset nút về trạng thái thêm mới
-			//resetModalToAddState(modalId);
+            currentEditingId = null;
+            isSubmitting = false;
             
             // Khởi tạo lại Select2 sau khi đóng modal
-            setTimeout(initializeSelect2, 200);
+            setTimeout(initializeSelect2, 100);
         }
 
-		function setModalOpenState(isOpen) {
-			if (isOpen) {
-    			document.body.classList.add('modal-open');
-    			// Force hide all outside select2
-    			$('select.select2-hidden-accessible').not('.modal select').each(function() {
-        			const $container = $(this).next('.select2-container');
-        			$container.css({
-            			'z-index': '-1',
-            			'opacity': '0',
-            			'visibility': 'hidden'
-        			});
-    			});
-			} else {
-    			document.body.classList.remove('modal-open');
-    			// Restore outside select2
-    			setTimeout(() => {
-        			$('select.select2-hidden-accessible').not('.modal select').each(function() {
-            			const $container = $(this).next('.select2-container');
-            			$container.css({
-                			'z-index': '',
-                			'opacity': '',
-                			'visibility': ''
-            			});
-        			});
-    			}, 100);
-			}
-		}
-
-
-		closeAllSelect2Dropdowns
         function openThemLopHocModal() {
             openModal('modal-them-lop-hoc');
             populateClassModalDropdowns();
@@ -1365,8 +1270,8 @@
 		}
 
 		function openThemLopGhepModal() {
-			openModal('modal-them-lop-ghep');
-            populateCombinedClassModalDropdowns();
+			openModal('modal-them-lop-hoc');
+            populateClassModalDropdowns();
     
 			// Đặt lại trạng thái thêm mới
             document.querySelector('#modal-them-lop-ghep h3').textContent = 'Thêm lớp học ghép mới';
@@ -1394,7 +1299,7 @@
 
 		function openThemPhanCongModal() {
 			openModal('modal-them-phan-cong');
-            populateTeachingAssignmentModalDropdowns();
+            populateClassModalDropdowns();
     
 			// Đặt lại trạng thái thêm mới
             document.querySelector('#modal-them-phan-cong h3').textContent = 'Thêm phân công mới';
@@ -1422,7 +1327,7 @@
 
 		function openThemGiangVienModal() {
 			openModal('modal-them-giang-vien');
-            populateInstructorModalDropdowns();
+            populateClassModalDropdowns();
     
 			// Đặt lại trạng thái thêm mới
             document.querySelector('#modal-them-giang-vien h3').textContent = 'Thêm giảng viên mới';
@@ -1652,8 +1557,8 @@
 		}
 
         function createLopHoc() {
-            if (isSubmitting || currentModalType === 'edit') return;
-			isSubmitting = true;
+            if (isSubmitting) return;
+            isSubmitting = true;
 
             const form = document.getElementById('form-them-lop-hoc');
             const formData = new FormData(form);
@@ -1736,8 +1641,8 @@
         }
 
         function createLopGhep() {
-            if (isSubmitting || currentModalType === 'edit') return;
-			isSubmitting = true;
+            if (isSubmitting) return;
+            isSubmitting = true;
 
             const form = document.getElementById('form-them-lop-ghep');
             const formData = new FormData(form);
@@ -1803,8 +1708,8 @@
         }
 
         function createGiangVien() {
-            if (isSubmitting || currentModalType === 'edit') return;
-			isSubmitting = true;
+            if (isSubmitting) return;
+            isSubmitting = true;
             
             const form = document.getElementById('form-them-giang-vien');
             const formData = new FormData(form);
@@ -1867,8 +1772,8 @@
         }
         
         function createPhanCong() {
-            if (isSubmitting || currentModalType === 'edit') return;
-			isSubmitting = true;
+            if (isSubmitting) return;
+            isSubmitting = true;
 
             const form = document.getElementById('form-them-phan-cong');
             const formData = new FormData(form);
@@ -1938,9 +1843,7 @@
 
         // Hàm sửa lớp học
 		function editClass(id) {
-			if (isSubmitting) return;
             currentEditingId = id;
-			currentModalType = 'edit';
 
 			fetch(`/api/classes/${id}/`)
     			.then(response => {
@@ -2104,9 +2007,7 @@
 
 		// Hàm sửa lớp ghép
 		function editCombinedClass(id) {
-            if (isSubmitting) return;
             currentEditingId = id;
-			currentModalType = 'edit';
 
 			fetch(`/api/combined-classes/${id}/`)
     			.then(response =>  {
@@ -2238,9 +2139,7 @@
 
 		// Hàm sửa giảng viên
 		function editInstructor(id) {
-            if (isSubmitting) return;
             currentEditingId = id;
-			currentModalType = 'edit';
 
 			fetch(`/api/instructors/${id}/`)
     			.then(response => {
@@ -2368,9 +2267,7 @@
 
 		// Hàm sửa phân công giảng dạy
 		function editTeachingAssignment(id) {
-            if (isSubmitting) return;
             currentEditingId = id;
-			currentModalType = 'edit';
 
 			fetch(`/api/teaching-assignments/${id}/`)
     			.then(response => {
@@ -3167,31 +3064,6 @@
                     }
                 });
             }, 1000);
-
-			 // Xử lý click outside để đóng modal
-			document.addEventListener('click', function(e) {
-    			const modals = document.querySelectorAll('.modal:not(.hidden)');
-    			modals.forEach(modal => {
-        			if (e.target === modal) {
-            			const modalId = modal.id;
-            			switch(modalId) {
-                			case 'modal-them-lop-hoc': closeThemLopHocModal(); break;
-                			case 'modal-them-lop-ghep': closeThemLopGhepModal(); break;
-                			case 'modal-them-giang-vien': closeThemGiangVienModal(); break;
-                			case 'modal-them-phan-cong': closeThemPhanCongModal(); break;
-                			case 'modal-import': closeImportModal(); break;
-                			case 'modal-import-errors': closeImportErrorsModal(); break;
-            			}
-        			}
-    			});
-			});
-
-			// Ngăn chặn sự kiện click trong modal lan ra ngoài
-			document.querySelectorAll('.modal > div').forEach(modalContent => {
-    			modalContent.addEventListener('click', function(e) {
-        			e.stopPropagation();
-    			});
-			});
         }
 
         // Hàm cập nhật tiêu đề trang
@@ -3324,25 +3196,25 @@
 
         // Hàm đóng tất cả dropdown Select2 đang mở
         function closeAllSelect2Dropdowns() {
-            // Đóng tất cả dropdown Select2 đang mở
-			$('.select2-container--open').each(function() {
-    			const $select2 = $(this).prev('select.select2-hidden-accessible');
-    			if ($select2.length && $select2.data('select2')) {
-        			$select2.select2('close');
-    			}
-			});
-    
-			// Alternative method
-			$('select.select2-hidden-accessible').each(function() {
-    			const $select = $(this);
-    			if ($select.data('select2') && $select.data('select2').isOpen()) {
-        			$select.select2('close');
-    			}
-			});
-    
-			// Force close by triggering blur
-			$('.select2-selection').blur();
+            $('.select2-container--open').select2('close');
+            // Alternative approach if above doesn't work
+            $('select.select2-hidden-accessible').each(function() {
+                const $select = $(this);
+                if ($select.data('select2')) {
+                    $select.select2('close');
+                }
+            });
         }
+        
+        // Biến toàn cục lưu trữ dữ liệu
+        let allInstructors = [];
+        let allCurricula = [];
+        let allSubjects = [];
+        let allDepartments = [];
+        let allCourses = [];
+        let allClasses = [];
+        let allCombinedClasses = [];
+        let allSubjectGroups = [];
 
         {% comment %} // Đóng dropdown khi click outside
         $(document).on('click', function(e) {
@@ -3613,67 +3485,44 @@
         }
         
 
-		function resetModalToAddState(modalId) {
-			let formId, saveButtonId, originalButtonText, originalTitle;
-    
-			switch(modalId) {
-    			case 'modal-them-lop-hoc':
-        			formId = 'form-them-lop-hoc';
-        			saveButtonId = 'btn-luu-lop-hoc';
-        			originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu lớp học';
-        			originalTitle = 'Thêm lớp học mới';
-        			break;
-    			case 'modal-them-lop-ghep':
-        			formId = 'form-them-lop-ghep';
-        			saveButtonId = 'btn-luu-lop-ghep';
-        			originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu lớp ghép';
-        			originalTitle = 'Thêm lớp học ghép mới';
-        			break;
-    			case 'modal-them-giang-vien':
-        			formId = 'form-them-giang-vien';
-        			saveButtonId = 'btn-luu-giang-vien';
-        			originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu giảng viên';
-        			originalTitle = 'Thêm giảng viên mới';
-        			break;
-    			case 'modal-them-phan-cong':
-        			formId = 'form-them-phan-cong';
-        			saveButtonId = 'btn-luu-phan-cong';
-        			originalButtonText = '<i class="fas fa-save mr-2"></i>Lưu phân công';
-        			originalTitle = 'Thêm phân công giảng dạy mới';
-        			break;
-    			default:
-        			return;
-			}
-    
+		// Thêm vào cuối file script
+		function resetModalToAddState(modalId, formId, saveButtonId, originalButtonText) {
 			const modal = document.getElementById(modalId);
+			const form = document.getElementById(formId);
 			const saveBtn = document.getElementById(saveButtonId);
     
+			// Reset form
+			if (form) form.reset();
+    
+			// Reset button - QUAN TRỌNG: clone để xóa event listeners cũ
 			if (saveBtn) {
-    			// Clone và thay thế để xóa event listeners cũ
     			const newSaveBtn = saveBtn.cloneNode(true);
-    			saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-        
-    			// Gắn event listener mới
-    			newSaveBtn.onclick = function() {
-        			switch(modalId) {
-            			case 'modal-them-lop-hoc': createLopHoc(); break;
-            			case 'modal-them-lop-ghep': createLopGhep(); break;
-            			case 'modal-them-giang-vien': createGiangVien(); break;
-            			case 'modal-them-phan-cong': createPhanCong(); break;
-        			}
-    			};
-        
-    			newSaveBtn.innerHTML = originalButtonText;
+                saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+                // Gắn event listener mới với once: true
+                newSaveBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                
+                    if (modalId === 'modal-them-lop-hoc') createLopHoc();
+                    else if (modalId === 'modal-them-lop-ghep') createLopGhep();
+                    else if (modalId === 'modal-them-giang-vien') createGiangVien();
+                    else if (modalId === 'modal-them-phan-cong') createPhanCong();
+                }, { once: true });
+                
+                newSaveBtn.innerHTML = originalButtonText;
 			}
     
 			// Reset tiêu đề
 			const title = modal.querySelector('h3');
 			if (title) {
-    			title.textContent = originalTitle;
+    			if (modalId === 'modal-them-lop-hoc') title.textContent = 'Thêm lớp học mới';
+    			else if (modalId === 'modal-them-lop-ghep') title.textContent = 'Thêm lớp học ghép mới';
+    			else if (modalId === 'modal-them-giang-vien') title.textContent = 'Thêm giảng viên mới';
+    			else if (modalId === 'modal-them-phan-cong') title.textContent = 'Thêm phân công giảng dạy mới';
 			}
-    
-			currentModalType = 'create';
 		}
     </script>
+    
 </body>
 </html>
