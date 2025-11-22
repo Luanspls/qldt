@@ -1320,44 +1320,45 @@
         function closeModal(modalId) {
             // closeAllSelect2Dropdowns();
             const modal = document.getElementById(modalId);
-            //if (modal) {
+            if (modal) {
                 // Đóng tất cả dropdown Select2 trước
             //    forceCloseAllSelect2();
                 // Ẩn modal
-            modal.classList.add('hidden');
-            document.body.classList.remove('modal-open');
-            //document.body.classList.remove('overflow-hidden');
-            currentModal = null;
-
+        		modal.classList.add('hidden');
+        		//document.body.classList.remove('modal-open');
+        		document.body.classList.remove('overflow-hidden');
+        		currentModal = null;
+			 
                 // Hiển thị lại Select2 bên ngoài
-            //    setTimeout(() => {
-            //        showOutsideSelect2();
-            //    }, 100);
+        		//    setTimeout(() => {
+        		//        showOutsideSelect2();
+        		//    }, 100);
 
-            //    currentOpenModal = null;
+        		//    currentOpenModal = null;
 
                 // Reset form và state
-            //    resetModalState(modalId);
-            //}
-            // Đặt lại trạng thái modal đóng
-            //setModalOpenState(false);
+        		//    resetModalState(modalId);
+        		//}
+        		// Đặt lại trạng thái modal đóng
+        		//setModalOpenState(false);
             
-            // Reset form và trạng thái
-            //const form = document.querySelector(`#${modalId} form`);
-            const form = modal.querySelector('form');
-            if (form) {
-                form.reset();
-            //    // Reset riêng các trường checkbox
-            //    const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-            //    checkboxes.forEach(checkbox => {
-            //        if (checkbox.id === 'is_active') {
-            //            checkbox.checked = true; // Mặc định active
-            //        } else if (checkbox.id === 'is_main_instructor') {
-            //            checkbox.checked = true; // Mặc định là GV chính
-            //        } else {
-            //            checkbox.checked = false;
-            //        }
-            //    });
+        		// Reset form và trạng thái
+        		//const form = document.querySelector(`#${modalId} form`);
+        		const form = modal.querySelector('form');
+        		if (form) {
+            		form.reset();
+				} 
+        		//    // Reset riêng các trường checkbox
+        		//    const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+        		//    checkboxes.forEach(checkbox => {
+        		//        if (checkbox.id === 'is_active') {
+        		//            checkbox.checked = true; // Mặc định active
+        		//        } else if (checkbox.id === 'is_main_instructor') {
+        		//            checkbox.checked = true; // Mặc định là GV chính
+        		//        } else {
+        		//            checkbox.checked = false;
+        		//        }
+        		//    });
             }
             
             // Reset trạng thái editing
@@ -1380,32 +1381,34 @@
 
         function openThemLopHocModal() {
             openModal('modal-them-lop-hoc');
-            // Điền dữ liệu dropdown
-            populateClassModalDropdowns();
+            setTimeout(() => {
+        		// Điền dữ liệu dropdown
+        		populateClassModalDropdowns();
+        		// Đặt lại trạng thái thêm mới
+        		document.querySelector('#modal-them-lop-hoc h3').textContent = 'Thêm lớp học mới';
+        		const saveBtn = document.getElementById('btn-luu-lop-hoc');
+        		if (saveBtn) {
+        		    saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu lớp học';
+        		    saveBtn.onclick = createLopHoc;
+        		}
+			}, 100);
+		} 
+    		//currentEditingId = null;
             
-            // Đặt lại trạng thái thêm mới
-            document.querySelector('#modal-them-lop-hoc h3').textContent = 'Thêm lớp học mới';
-            const saveBtn = document.getElementById('btn-luu-lop-hoc');
-            if (saveBtn) {
-                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu lớp học';
-                saveBtn.onclick = createLopHoc;
-            }
-
-                //currentEditingId = null;
-            
-                // Khởi tạo Select2 cho modal
-                //setTimeout(() => {
-                //    $('#modal-them-lop-hoc select').select2({
-                //        language: 'vi',
-                //        placeholder: "Chọn hoặc nhập để tìm kiếm...",
-                //        allowClear: true,
-                //        width: '100%',
-                //        dropdownParent: $('#modal-them-lop-hoc'),
-                //        dropdownAutoWidth: true,
-                //        minimumResultsForSearch: 0
-                //    });
-                //}, 100);
-        }
+            // Khởi tạo Select2 cho modal
+            //setTimeout(() => {
+				
+            //    $('#modal-them-lop-hoc select').select2({
+            //        language: 'vi',
+            //        placeholder: "Chọn hoặc nhập để tìm kiếm...",
+            //        allowClear: true,
+            //        width: '100%',
+            //        dropdownParent: $('#modal-them-lop-hoc'),
+            //        dropdownAutoWidth: true,
+            //        minimumResultsForSearch: 0
+            //    });
+            //}, 100);
+        
 
         function closeThemLopHocModal() {
             closeModal('modal-them-lop-hoc');
@@ -1413,16 +1416,19 @@
 
 		function openThemLopGhepModal() {
 			openModal('modal-them-lop-ghep');
-            // Điền dữ liệu dropdown
-            populateCombinedClassModalDropdowns();
+            setTimeout(() => {
+				// Điền dữ liệu dropdown
+        		populateCombinedClassModalDropdowns();
 
-            // Đặt lại trạng thái thêm mới
-            document.querySelector('#modal-them-lop-ghep h3').textContent = 'Thêm lớp học ghép mới';
-            const saveBtn = document.getElementById('btn-luu-lop-ghep');
-            if (saveBtn) {
-                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu lớp ghép';
-                saveBtn.onclick = createLopGhep;
-            }
+        		// Đặt lại trạng thái thêm mới
+        		document.querySelector('#modal-them-lop-ghep h3').textContent = 'Thêm lớp học ghép mới';
+        		const saveBtn = document.getElementById('btn-luu-lop-ghep');
+        		if (saveBtn) {
+            		saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu lớp ghép';
+            		saveBtn.onclick = createLopGhep;
+        		}
+			}, 100);
+		} 
             //currentEditingId = null;
             
             // Khởi tạo Select2 cho modal
@@ -1437,7 +1443,7 @@
             //        minimumResultsForSearch: 0
             //    });
             //}, 100);
-		}
+		
 
         function closeThemLopGhepModal() {
             closeModal('modal-them-lop-ghep');
@@ -1445,16 +1451,19 @@
 
 		function openThemPhanCongModal() {
 			openModal('modal-them-phan-cong');
-            // Điền dữ liệu dropdown
-            populateTeachingAssignmentModalDropdowns();
+            setTimeout(() => {
+				// Điền dữ liệu dropdown
+        		populateTeachingAssignmentModalDropdowns();
 
-            // Đặt lại trạng thái thêm mới
-            document.querySelector('#modal-them-phan-cong h3').textContent = 'Thêm phân công mới';
-            const saveBtn = document.getElementById('btn-luu-phan-cong');
-            if (saveBtn) {
-                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu phân công';
-                saveBtn.onclick = createPhanCong;
-            }
+        		// Đặt lại trạng thái thêm mới
+        		document.querySelector('#modal-them-phan-cong h3').textContent = 'Thêm phân công mới';
+        		const saveBtn = document.getElementById('btn-luu-phan-cong');
+        		if (saveBtn) {
+            		saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu phân công';
+            		saveBtn.onclick = createPhanCong;
+        		}
+			}, 100);
+		} 
             //currentEditingId = null;
 
             // Khởi tạo Select2 cho modal
@@ -1469,7 +1478,7 @@
             //        minimumResultsForSearch: 0
             //    });
             //}, 100);
-		}
+		
 
         function closeThemPhanCongModal() {
             closeModal('modal-them-phan-cong');
@@ -1477,16 +1486,20 @@
 
 		function openThemGiangVienModal() {
 			openModal('modal-them-giang-vien');
-            // Điền dữ liệu dropdown
-            populateInstructorModalDropdowns();
+            setTimeout(() => {
+				// Điền dữ liệu dropdown
+        		populateInstructorModalDropdowns();
 
-            // Đặt lại trạng thái thêm mới
-            document.querySelector('#modal-them-giang-vien h3').textContent = 'Thêm giảng viên mới';
-            const saveBtn = document.getElementById('btn-luu-giang-vien');
-            if (saveBtn) {
-                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu giảng viên';
-                saveBtn.onclick = createGiangVien;
-            }
+        		// Đặt lại trạng thái thêm mới
+        		document.querySelector('#modal-them-giang-vien h3').textContent = 'Thêm giảng viên mới';
+        		const saveBtn = document.getElementById('btn-luu-giang-vien');
+        		if (saveBtn) {
+            		saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu giảng viên';
+            		saveBtn.onclick = createGiangVien;
+        		}
+			}, 100);
+		} 
+			
             //currentEditingId = null;
             
             // Khởi tạo Select2 cho modal
@@ -1501,7 +1514,7 @@
             //        minimumResultsForSearch: 0
             //    });
             //}, 100);
-		}
+		
 		
 		function closeThemGiangVienModal() {
             closeModal('modal-them-giang-vien');
@@ -3921,38 +3934,35 @@
             //}
             const modal = document.getElementById(modalId);
             if (!modal) return;
+
+			const selects = modal.querySelectorAll('select:not(.select2-hidden-accessible)');
             
             // Hủy Select2 cũ nếu tồn tại
             //$modal.find('select.select2-hidden-accessible').select2('destroy');
             
-            //const modalElement = document.getElementById(modalId);
-            //if (!modalElement) {
-            //    console.error('Modal not found:', modalId);
-            //    return;
-            //}
-
-            // Đợi một chút để modal hoàn toàn hiển thị
-            setTimeout(() => {
-                $(`#${modalId} select:not(.select2-hidden-accessible)`).each(function() {
-                    const $select = $(this);
-                    // Cấu hình cơ bản
-                    const options = {
-                        language: 'vi',
-                        placeholder: "Chọn...",
-                        width: '100%',
-                        dropdownParent: $(`#${modalId}`),
-                        minimumResultsForSearch: 10
-                    };
-                    
-                    // Thêm tùy chọn cho multiple select
-                    if ($select.attr('multiple')) {
-                        options.closeOnSelect = false;
-                    }
-                    
-                    $select.select2(options);
-                });
-            }, 100);
-        }
+            selects.forEach((select, index) => {
+    			console.log(`🔄 Initializing select ${index + 1}:`, select.name || select.id);
+        
+    			const $select = $(select);
+    			const isMultiple = select.multiple;
+        
+    			try {
+        			$select.select2({
+            			language: 'vi',
+            			placeholder: isMultiple ? "Chọn một hoặc nhiều..." : "Chọn...",
+            			allowClear: true,
+            			width: '100%',
+            			dropdownParent: $(`#${modalId}`),
+            			minimumResultsForSearch: isMultiple ? 0 : 10,
+            			closeOnSelect: !isMultiple
+        			});
+            
+        			console.log(`✅ Successfully initialized:`, select.name || select.id);
+    			} catch (error) {
+        			console.error(`❌ Failed to initialize ${select.name || select.id}:`, error);
+    			}
+			});
+		}
 
         // Hàm đóng tất cả Select2 dropdown một cách mạnh mẽ
         function forceCloseAllSelect2() {
