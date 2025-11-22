@@ -1131,16 +1131,6 @@
                 loadSelect2Data('/api/subject-groups/', 'filter-instructor-subject-group', 'name', ['code', 'name'])
             ];
             
-            // Khởi tạo Select2 sau khi tất cả dữ liệu đã tải
-            //Promise.all(loadPromises).then(() => {
-            //    console.log('All data loaded, initializing Select2...');
-            //    setTimeout(initializeSelect2, 500);
-            //}).catch(error => {
-            //    console.error('Error loading initial data:', error);
-            //    // Vẫn thử khởi tạo Select2 ngay cả khi có lỗi
-            //    setTimeout(initializeSelect2, 500);
-            //});
-
              // Tạo promises cho tất cả API calls
             const promises = [
                 // Tải danh sách chương trình
@@ -1155,10 +1145,6 @@
                             allCurricula = data;
                             console.log('Loaded curricula:', data.length);
                             resolve();
-                            // Cập nhật các dropdown cần thiết
-                            //populateSelect2Dropdown('filter-class-curriculum', data, 'name', ['code', 'name', 'academic_year']);
-                            //populateSelect2Dropdown('filter-combined-curriculum', data, 'name', ['code', 'name', 'academic_year']);
-                            //populateSelect2Dropdown('filter-curriculum', data, 'name', ['code', 'name', 'academic_year']);
                         })
                         .catch(error => {
                             console.error('Error loading curricula:', error);
@@ -1177,7 +1163,6 @@
                             allCourses = data;
                             console.log('Loaded courses:', data.length);
                             resolve();
-                            //populateSelect2Dropdown('filter-class-course', data, 'name', ['code', 'name']);
                         })
                         .catch(error => {
                             console.error('Error loading courses:', error);
@@ -1196,8 +1181,6 @@
                             allDepartments = data;
                             console.log('Loaded Departments:', data.length);
                             resolve();
-                            //populateSelect2Dropdown('filter-instructor-department', data, 'name', ['code', 'name']);
-                            //populateSelect2Dropdown('department_id', data, 'name', ['code', 'name']);
                         })
                         .catch(error => {
                             console.error('Error loading Departments:', error);
@@ -1216,7 +1199,6 @@
                             allSubjectGroups = data;
                             console.log('Loaded SubjectGroups:', data.length);
                             resolve();
-                            //populateSelect2Dropdown('filter-instructor-subject-group', data, 'name', ['code', 'name']);
                         })
                         .catch(error => {
                             console.error('Error loading SubjectGroups:', error);
@@ -1235,7 +1217,6 @@
                             allSubjects = data;
                             console.log('Loaded Subjects:', data.length);
                             resolve();
-                            //populateSelect2Dropdown('curriculum_subject_id', data, 'name', ['code', 'name']);
                         })
                         .catch(error => {
                             console.error('Error loading Subjects:', error);
@@ -1254,8 +1235,6 @@
                             allInstructors = data;
                             console.log('Loaded Instructors:', data.length);
                             resolve();
-                            //populateSelect2Dropdown('filter-instructor', data, 'full_name', ['code', 'full_name']);
-                            //populateSelect2Dropdown('instructor_id', data, 'full_name', ['code', 'full_name']);
                         })
                         .catch(error => {
                             console.error('Error loading Instructors:', error);
@@ -1274,8 +1253,6 @@
                             allClasses = data;
                             console.log('Loaded classes:', data.length);
                             resolve();
-                            //populateSelect2Dropdown('classes', data, 'name', ['code', 'name']);
-                            //populateSelect2Dropdown('class_regular', data, 'name', ['code', 'name']);
                         })
                         .catch(error => {
                             console.error('Error loading classes:', error);
@@ -1294,7 +1271,6 @@
                             allCombinedClasses = data;
                             console.log('Loaded CombinedClasses:', data.length);
                             resolve();
-                            //populateSelect2Dropdown('class_combined', data, 'name', ['code', 'name']);
                         })
                         .catch(error => {
                             console.error('Error loading CombinedClasses:', error);
@@ -1310,20 +1286,9 @@
         // ===== HÀM QUẢN LÝ MODAL =====
         function openModal(modalId) {
             console.log('Opening modal:', modalId);
-
-            // Đóng modal trước đó nếu có
-            //if (currentModal) {
-            //    closeModal(currentModal);
-            //}
-            
-            // Đóng tất cả dropdown Select2
-            //forceCloseAllSelect2();
             
             // Đóng tất cả dropdown Select2 đang mở
             closeAllSelect2Dropdowns();
-            
-            // Đặt trạng thái modal mở
-            //setModalOpenState(true);
 
             // Hiển thị modal
             const modal = document.getElementById(modalId);
@@ -1345,73 +1310,22 @@
 			} else {
                 console.error('Modal not found:', modalId);
             }
-
-            //initializeModalSelect2(modalId);
-                
-            // Ẩn tất cả Select2 bên ngoài modal
-            //    hideOutsideSelect2();
         }
 
         function closeModal(modalId) {
-            // closeAllSelect2Dropdowns();
             const modal = document.getElementById(modalId);
             if (modal) {
-                // Đóng tất cả dropdown Select2 trước
-            //    forceCloseAllSelect2();
             	// Ẩn modal
         		modal.classList.add('hidden');
         		document.body.classList.remove('modal-open');
-        		//document.body.classList.remove('overflow-hidden');
+        		document.body.classList.remove('overflow-hidden');
         		currentModal = null;
 			 
-                // Hiển thị lại Select2 bên ngoài
-        		//    setTimeout(() => {
-        		//        showOutsideSelect2();
-        		//    }, 100);
-
-        		//    currentOpenModal = null;
-
-                // Reset form và state
-        		//    resetModalState(modalId);
-        		//}
-        		// Đặt lại trạng thái modal đóng
-        		//setModalOpenState(false);
-            
-        		// Reset form và trạng thái
-        		//const form = document.querySelector(`#${modalId} form`);
         		const form = modal.querySelector('form');
         		if (form) {
             		form.reset();
 				} 
-        		//    // Reset riêng các trường checkbox
-        		//    const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-        		//    checkboxes.forEach(checkbox => {
-        		//        if (checkbox.id === 'is_active') {
-        		//            checkbox.checked = true; // Mặc định active
-        		//        } else if (checkbox.id === 'is_main_instructor') {
-        		//            checkbox.checked = true; // Mặc định là GV chính
-        		//        } else {
-        		//            checkbox.checked = false;
-        		//        }
-        		//    });
             }
-            
-            // Reset trạng thái editing
-            //currentEditingId = null;
-            //isSubmitting = false;
-            //currentModalType = null;
-
-            //// Reset các dropdown ẩn
-            ////const classRegular = document.getElementById('class_regular');
-            ////const classCombined = document.getElementById('class_combined');
-            ////if (classRegular) classRegular.classList.add('hidden');
-            ////if (classCombined) classCombined.classList.add('hidden');
-            
-            //// Reset nút về trạng thái thêm mới
-            ////resetModalToAddState(modalId);
-            
-            //// Khởi tạo lại Select2 sau khi đóng modal
-            //setTimeout(initializeSelect2, 100);
         }
 
         function openThemLopHocModal() {
@@ -1551,40 +1465,6 @@
             const curriculumSelect = document.querySelector('#modal-them-lop-ghep select[name="curriculum_id"]');
             const classesSelect = document.querySelector('#modal-them-lop-ghep select[name="classes"]');
 
-			// Điền chương trình với tìm kiếm
-			//const curriculumSelect = $('select[name="curriculum_id"]');
-			//curriculumSelect.empty().append('<option value="">-- Chọn chương trình --</option>');
-
-            //if (allCurricula && allCurricula.length > 0) {
-            //    allCurricula.forEach(curriculum => {
-            //        const option = new Option(
-            //            `${curriculum.name} (${curriculum.academic_year})`,
-            //            curriculum.id,
-            //            false,
-            //            false
-            //        );
-            //        $(option).data('search-text', `${curriculum.code} ${curriculum.name} ${curriculum.academic_year}`);
-            //        curriculumSelect.append(option);
-            //    });
-            //}
-
-			// Điền lớp học với tìm kiếm
-			//const classesSelect = $('select[name="classes"]');
-			//classesSelect.empty().append('<option value="">-- Chọn các lớp --</option>');
-			
-            //if (allClasses && allClasses.length > 0) {
-            //    allClasses.forEach(classItem => {
-            //        const option = new Option(
-            //            `${classItem.code} - ${classItem.name}`,
-            //            classItem.id,
-            //            false,
-            //            false
-            //        );
-            //        $(option).data('search-text', `${classItem.code} ${classItem.name}`);
-            //        classesSelect.append(option);
-            //    });
-            //}
-
             if (curriculumSelect && allCurricula) {
                 curriculumSelect.innerHTML = '<option value="">-- Chọn chương trình --</option>';
                 if (allCurricula && allCurricula.length > 0) {
@@ -1616,23 +1496,6 @@
             const classRegularSelect = document.querySelector('#modal-them-phan-cong select[name="class_regular"]');
             const classCombinedSelect = document.querySelector('#modal-them-phan-cong select[name="class_combined"]');
 
-			// Điền giảng viên với tìm kiếm
-			//const instructorSelect = $('select[name="instructor_id"]');
-			//instructorSelect.empty().append('<option value="">-- Chọn giảng viên --</option>');
-			
-            //if (allInstructors && allInstructors.length > 0) {
-            //    allInstructors.forEach(instructor => {
-            //        const option = new Option(
-            //            `${instructor.full_name} (${instructor.code})`,
-            //            instructor.id,
-            //            false,
-            //            false
-            //        );
-            //        $(option).data('search-text', `${instructor.code} ${instructor.full_name}`);
-            //        instructorSelect.append(option);
-            //    });
-            //}
-
             if (instructorSelect && allInstructors) {
                 instructorSelect.innerHTML = '<option value="">-- Chọn chương trình --</option>';
                 if (allInstructors && allInstructors.length > 0) {
@@ -1646,8 +1509,6 @@
             }
 
 			// Điền môn học với tìm kiếm
-			//const subjectSelect = $('select[name="curriculum_subject_id"]');
-			//subjectSelect.empty().append('<option value="">-- Chọn môn học --</option>');
             if (subjectSelect && allSubjects) {
                 subjectSelect.innerHTML = '<option value="">-- Chọn môn học --</option>';
                 fetch('/api/curriculum-subjects/')
@@ -1675,22 +1536,6 @@
             }
 
 			// Điền lớp học thường với tìm kiếm
-			//const classRegularSelect = $('#class_regular');
-			//classRegularSelect.empty().append('<option value="">-- Chọn lớp --</option>');
-			
-            //if (allClasses && allClasses.length > 0) {
-            //    allClasses.forEach(classItem => {
-            //        const option = new Option(
-            //            `${classItem.code} - ${classItem.name}`,
-            //            classItem.id,
-            //            false,
-            //            false
-            //        );
-            //        $(option).data('search-text', `${classItem.code} ${classItem.name}`);
-            //        classRegularSelect.append(option);
-            //    });
-            //}
-
             if (classRegularSelect && allClasses) {
                 classRegularSelect.innerHTML = '<option value="">-- Chọn lớp --</option>';
                 if (allClasses && allClasses.length > 0) {
@@ -1704,22 +1549,6 @@
             }
 
 			// Điền lớp học ghép với tìm kiếm
-			//const classCombinedSelect = $('#class_combined');
-			//classCombinedSelect.empty().append('<option value="">-- Chọn lớp ghép --</option>');
-			
-            //if (allCombinedClasses && allCombinedClasses.length > 0) {
-            //    allCombinedClasses.forEach(combinedClass => {
-            //        const option = new Option(
-            //            `${combinedClass.code} - ${combinedClass.name}`,
-            //            combinedClass.id,
-            //            false,
-            //            false
-            //        );
-            //        $(option).data('search-text', `${combinedClass.code} ${combinedClass.name}`);
-            //        classCombinedSelect.append(option);
-            //    });
-            //}
-
             if (classCombinedSelect && allCombinedClasses) {
                 classCombinedSelect.innerHTML = '<option value="">-- Chọn lớp ghép --</option>';
                 if (allCombinedClasses && allCombinedClasses.length > 0) {
@@ -1731,31 +1560,6 @@
                     });
                 }
             }
-
-			// Khởi tạo lại Select2
-			//instructorSelect.select2({
-    		//	language: 'vi',
-    		//	placeholder: "Chọn giảng viên...",
-    		//	allowClear: true,
-    		//	width: '100%',
-    		//	minimumResultsForSearch: 0
-			//});
-    
-			//classRegularSelect.select2({
-    		//	language: 'vi',
-    		//	placeholder: "Chọn lớp...",
-    		//	allowClear: true,
-    		//	width: '100%',
-    		//	minimumResultsForSearch: 0
-			//});
-    
-			//classCombinedSelect.select2({
-    		//	language: 'vi',
-    		//	placeholder: "Chọn lớp ghép...",
-    		//	allowClear: true,
-    		//	width: '100%',
-    		//	minimumResultsForSearch: 0
-			//});
 		}
 
 		function populateInstructorModalDropdowns() {
@@ -1763,17 +1567,6 @@
             const subjectGroupSelect = document.querySelector('#modal-them-giang-vien select[name="subject_group_id"]');
 
 			// Điền khoa với tìm kiếm
-			//const departmentSelect = $('select[name="department_id"]');
-			//departmentSelect.empty().append('<option value="">-- Chọn khoa --</option>');
-			
-            //if (allDepartments || allDepartments.length > 0) {
-            //    allDepartments.forEach(department => {
-            //        const option = new Option(department.name, department.id, false, false);
-            //        $(option).data('search-text', `${department.code} ${department.name}`);
-            //        departmentSelect.append(option);
-            //    });
-            //}
-
             if (departmentSelect && allDepartments) {
                 departmentSelect.innerHTML = '<option value="">-- Chọn khoa --</option>';
                 if (allDepartments && allDepartments.length > 0) {
@@ -1787,17 +1580,6 @@
             }
 
 			// Điền tổ bộ môn với tìm kiếm
-			//const subjectGroupSelect = $('select[name="subject_group_id"]');
-			//subjectGroupSelect.empty().append('<option value="">-- Chọn tổ bộ môn --</option>');
-			
-            //if(!allSubjectGroups || allSubjectGroups.length > 0) {
-            //    allSubjectGroups.forEach(subjectGroup => {
-            //        const option = new Option(subjectGroup.name, subjectGroup.id, false, false);
-            //        $(option).data('search-text', `${subjectGroup.code} ${subjectGroup.name}`);
-            //        subjectGroupSelect.append(option);
-            //    });
-            //}
-
             if (subjectGroupSelect && allSubjectGroups) {
                 subjectGroupSelect.innerHTML = '<option value="">-- Chọn tổ bộ môn --</option>';
                 if (allSubjectGroups && allSubjectGroups.length > 0) {
@@ -1810,22 +1592,6 @@
                 }
             }
 
-			// Khởi tạo lại Select2
-			//departmentSelect.select2({
-    		//	language: 'vi',
-    		//	placeholder: "Chọn khoa...",
-    		//	allowClear: true,
-    		//	width: '100%',
-    		//	minimumResultsForSearch: 0
-			//});
-    
-			//subjectGroupSelect.select2({
-    		//	language: 'vi',
-    		//	placeholder: "Chọn tổ bộ môn...",
-    		//	allowClear: true,
-    		//	width: '100%',
-    		//	minimumResultsForSearch: 0
-			//});
 		}
 
         function createLopHoc() {
@@ -2448,8 +2214,6 @@
         				document.querySelector('#form-them-giang-vien input[name="full_name"]').value = instructorData.full_name;
         				document.querySelector('#form-them-giang-vien input[name="email"]').value = instructorData.email || '';
         				document.querySelector('#form-them-giang-vien input[name="phone"]').value = instructorData.phone || '';
-        				// document.querySelector('#form-them-giang-vien select[name="department_id"]').value = instructorData.department_id;
-        				// document.querySelector('#form-them-giang-vien select[name="subject_group_id"]').value = instructorData.subject_group_id;
         				document.querySelector('#form-them-giang-vien input[name="is_active"]').checked = instructorData.is_active;
             
         				openThemGiangVienModal();
@@ -2579,8 +2343,6 @@
     			.then(data => {
 					if (data.status === 'success' && data.data) {
             			const assignmentData = data.data;
-        				// document.querySelector('#form-them-phan-cong select[name="instructor_id"]').value = assignmentData.instructor_id;
-        				// document.querySelector('#form-them-phan-cong select[name="curriculum_subject_id"]').value = assignmentData.curriculum_subject_id;
         				document.querySelector('#form-them-phan-cong input[name="academic_year"]').value = assignmentData.academic_year;
         				document.querySelector('#form-them-phan-cong select[name="semester"]').value = assignmentData.semester;
         				document.querySelector('#form-them-phan-cong input[name="is_main_instructor"]').checked = assignmentData.is_main_instructor;
@@ -3148,9 +2910,6 @@
 
         // Thiết lập event listeners
         function setupEventListeners() {
-            // QUAN TRỌNG: XÓA TẤT CẢ EVENT LISTENERS CŨ TRƯỚC KHI GẮN MỚI
-            //removeAllEventListeners();
-
             // Xử lý tab navigation
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabPanels = document.querySelectorAll('.tab-panel');
@@ -3184,9 +2943,6 @@
                     loadTabData(targetTab);
                 });
             });
-
-			// Khởi tạo Select2 khi trang tải xong
-			// setTimeout(initializeSelect2, 1000);
             
             // Xử lý modal lớp học
             document.getElementById('btn-them-lop-hoc').addEventListener('click', openThemLopHocModal);
@@ -3429,7 +3185,6 @@
             }
         }
 
-
 		// Hàm tải dữ liệu từ API và điền vào dropdown với Select2
 		function populateSelect2Dropdown(elementId, data, displayField, searchFields = []) {
             const dropdown = $(`#${elementId}`);
@@ -3526,7 +3281,6 @@
 
         // Hàm đóng tất cả dropdown Select2 đang mở
         function closeAllSelect2Dropdowns() {
-            //$('.select2-container--open').select2('close');
             $('select.select2-hidden-accessible').each(function() {
                 const $select = $(this);
                 if ($select.data('select2')) {
@@ -3540,24 +3294,6 @@
 			// Force close by triggering blur
     		$('.select2-selection').trigger('blur');
 		}
-            // Phương pháp an toàn hơn
-            //$('.select2-container--open').each(function() {
-            //    const $select2 = $(this).prev('select.select2-hidden-accessible');
-            //    if ($select2.length && $select2.data('select2')) {
-            //        $select2.select2('close');
-            //    }
-            //});
-            
-            // Alternative method
-            //$('select.select2-hidden-accessible').each(function() {
-            //    const $select = $(this);
-            //    if ($select.data('select2') && $select.data('select2').isOpen()) {
-            //        $select.select2('close');
-            //    }
-            //});
-            
-            // Force close by triggering blur
-            //$('.select2-selection').blur();
         
 		function disableOutsideSelect2() {
 			// Đóng tất cả dropdown đang mở
@@ -3909,15 +3645,7 @@
 
 			// Hủy Select2 cũ nếu tồn tại
             //$modal.find('select.select2-hidden-accessible').select2('destroy');
-			
-            //if (!$modal.length) {
-            //    console.error('Modal not found:', modalId);
-            //    return;
-            //}
-            
-			//const modal = document.getElementById(modalId);
-            //if (!modal) return;
-
+			            
 			const modalElement = document.getElementById(modalId);
 			if (!modalElement) {
 		        console.error('Modal not found:', modalId);
@@ -3927,7 +3655,6 @@
 			const $modal = $(`#${modalId}`);
             // Đợi một chút để modal hoàn toàn hiển thị
             setTimeout(() => {
-                //$modal.find('select:not([multiple]):not(.select2-hidden-accessible)').each(function() {
 				$modal.find('select:not(.select2-hidden-accessible)').each(function() {
             		const $select = $(this);
 					// Hủy Select2 cũ nếu tồn tại
@@ -3945,33 +3672,7 @@
 		                minimumResultsForSearch: isMultiple ? 0 : 10,
 		                closeOnSelect: isMultiple ? false : true
 		            });
-                    //if (!$select.hasClass('select2-hidden-accessible')) {
-		            //    $select.select2({
-		            //        language: 'vi',
-		            //        placeholder: "Chọn hoặc nhập để tìm kiếm...",
-		            //        allowClear: true,
-		            //        width: '100%',
-		            //        dropdownParent: $modal,
-		            //        minimumResultsForSearch: 10
-		            //    });
-		            //}
                 });
-				// Khởi tạo multiple select
-		        //$modal.find('select[multiple]:not(.select2-hidden-accessible)').each(function() {
-		        //    const $select = $(this);
-		        //    console.log('Initializing multiple select:', this.id);
-		            
-		        //    if (!$select.hasClass('select2-hidden-accessible')) {
-		        //        $select.select2({
-		        //            language: 'vi',
-		        //            placeholder: "Chọn hoặc nhập để tìm kiếm...",
-		        //            allowClear: true,
-		        //            width: '100%',
-		        //            dropdownParent: $modal,
-		        //            closeOnSelect: false
-		        //        });
-		        //    }
-		        //});
             }, 100);
 		}
 
