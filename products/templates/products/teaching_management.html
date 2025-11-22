@@ -26,8 +26,8 @@
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            z-index: 1050 !important; /*99990 !important;*/
-            padding: 20px;
+            z-index: 10000 !important; /*99990 !important;*/
+            /* padding: 20px; */
         }
 
         .modal.hidden {
@@ -43,7 +43,7 @@
             max-width: 800px !important;
             max-height: 90vh !important;
             overflow-y: auto !important;
-            z-index: 99998 !important; /*99991 !important;*/
+            z-index: 10001 !important; /*99991 !important;*/
         }
 
         /* ===== THÊM =================== */
@@ -57,11 +57,11 @@
 
         /* ===== SELECT2 STYLES - QUAN TRỌNG: ĐƠN GIẢN HÓA ===== */
         .select2-container {
-            z-index: 1000; /*1000;*/
+            z-index: 1; /*1000;*/
         }
 
         .select2-dropdown {
-            z-index: 1001; /*!important;*/
+            z-index: 2; /*!important;*/
         }
 
         /* ======= THÊM =================== */
@@ -79,29 +79,33 @@
         }
         /* ================================ */
 
-        /* Select2 trong modal */
+        /* ===== SELECT2 IN MODAL - SUPER HIGH Z-INDEX ===== */
         .modal .select2-container {
-            z-index: 1060 !important; /* 99999 !important; */
-			/* display: block !important; */
+            z-index: 10050 !important; /* 99999 !important; */
+			/*
+            display: block !important;
     		visibility: visible !important;
 			opacity: 1 !important;
     		pointer-events: auto !important;
+            */
             position: relative;
         }
 
         .modal .select2-dropdown {
-            z-index: 1061 !important; /* 100000 !important; */
+            z-index: 10060 !important; /* 100000 !important; */
+            /*
             display: block !important;
 			visibility: visible !important;
     		opacity: 1 !important;
     		pointer-events: auto !important;
+            */
             position: absolute;
         }
 
         /* ====== THÊM ================== */
         /* Ensure select2 dropdown appears above modal content */
         .modal .select2-container--open .select2-dropdown {
-            z-index: 1062 !important;
+            z-index: 10070 !important;
         }
         /* ============================== */
 
@@ -184,23 +188,24 @@
             pointer-events: auto !important;
         }
 
+        /* ===== HIDE OUTSIDE SELECT2 WHEN MODAL IS OPEN ===== */
+		/* Select2 bên ngoài modal khi modal mở */
+		body.modal-open .select2-container:not(.modal .select2-container) {
+    		/* display: none !important; */
+    		visibility: hidden !important;
+			opacity: 0 !important;
+    		pointer-events: none !important;
+			z-index: -1 !important;
+		}
+
         /* Reset các style có thể ảnh hưởng đến việc hiển thị */
         body.modal-open .select2-dropdown:not(.modal .select2-dropdown) {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
-            pointer-events: none !important;
+            /* pointer-events: none !important; */
 			z-index: 1 !important;
         }
-
-		/* Select2 bên ngoài modal khi modal mở */
-		body.modal-open .select2-container:not(.modal .select2-container) {
-    		display: none !important;
-    		visibility: hidden !important;
-			opacity: 0 !important;
-    		pointer-events: none !important;
-			z-index: auto !important;
-		}
 
 		/* Hiệu ứng làm mờ cho nền khi modal mở */
 		body.modal-open .container {
