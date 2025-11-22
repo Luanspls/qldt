@@ -1318,7 +1318,7 @@
 
             initializeModalSelect2(modalId);
                 
-                // Ẩn tất cả Select2 bên ngoài modal
+            // Ẩn tất cả Select2 bên ngoài modal
             //    hideOutsideSelect2();
 
             // Khởi tạo Select2 sau khi modal hiển thị
@@ -1333,10 +1333,10 @@
         function closeModal(modalId) {
             // closeAllSelect2Dropdowns();
             const modal = document.getElementById(modalId);
-            //if (modal) {
+            if (modal) {
                 // Đóng tất cả dropdown Select2 trước
             //    forceCloseAllSelect2();
-                // Ẩn modal
+            	// Ẩn modal
         		modal.classList.add('hidden');
         		document.body.classList.remove('modal-open');
         		//document.body.classList.remove('overflow-hidden');
