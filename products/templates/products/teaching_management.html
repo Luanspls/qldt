@@ -28,10 +28,49 @@
             align-items: center !important;
             justify-content: center !important;
             */
-            z-index: 10000 !important; /*99990 !important;*/
+            z-index: 1050 !important; /*99990 !important;*/
             /* padding: 20px; */
         }
 
+		.modal .select2-container {
+            z-index: 1060 !important; /* 99999 !important; */
+			/*
+            display: block !important;
+    		visibility: visible !important;
+			opacity: 1 !important;
+    		pointer-events: auto !important;
+            position: relative;
+            */
+        }
+
+		/* Ensure select2 dropdown appears above modal content */
+        .modal .select2-container--open {
+            z-index: 10070 !important;
+        }
+
+        .modal .select2-dropdown {
+		    z-index: 1080 !important;
+		    position: absolute !important;
+		}
+
+		/* Đảm bảo dropdown không bị ẩn bởi modal */
+		.select2-container--open .select2-dropdown--below {
+		    z-index: 1080 !important;
+		    position: absolute !important;
+		}
+
+		/* Đảm bảo backdrop của modal không bị ảnh hưởng */
+		.modal-backdrop {
+    		z-index: 1040 !important; /* 99989 !important; */
+		}
+
+		/* Hiển thị tất cả Select2 trong modal */
+        .modal select {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+		
         .modal.hidden {
             display: none !important;
         }
@@ -50,47 +89,14 @@
             position: relative; /* !important; */
         }
 
-        /* ===== SELECT2 IN MODAL - SUPER HIGH Z-INDEX ===== */
-        .modal .select2-container {
-            z-index: 10050 !important; /* 99999 !important; */
-			/*
-            display: block !important;
-    		visibility: visible !important;
-			opacity: 1 !important;
-    		pointer-events: auto !important;
-            position: relative;
-            */
-        }
-
-        .modal .select2-dropdown {
-            z-index: 10060 !important; /* 100000 !important; */
-            /*
-            display: block !important;
-			visibility: visible !important;
-    		opacity: 1 !important;
-    		pointer-events: auto !important;
-            position: absolute;
-            */
-        }
-
-        /* ===== THÊM =================== */
-        /* Hiển thị tất cả Select2 trong modal */
-        .modal select {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
-        /* ================================ */
-
         /* ===== SELECT2 STYLES - QUAN TRỌNG: ĐƠN GIẢN HÓA ===== */
-        .select2-container {
+		/*.select2-container {
             z-index: 1; /*1000;*/
-        }
-
-        .select2-dropdown {
+        }*/
+        /*.select2-dropdown {
             z-index: 2; /*!important;*/
-        }
-
+        }*/
+		
         /* ======= THÊM =================== */
         /* CRITICAL FIX: When modal is open, hide ALL outside select2 */
         body.modal-open .select2-container:not(.modal .select2-container) {
@@ -106,19 +112,7 @@
         }
         /* ================================ */
 
-        
-
-        /* ====== THÊM ================== */
-        /* Ensure select2 dropdown appears above modal content */
-        .modal .select2-container--open .select2-dropdown {
-            z-index: 10070 !important;
-        }
-        /* ============================== */
-
-		/* Đảm bảo backdrop của modal không bị ảnh hưởng */
-		.modal-backdrop {
-    		z-index: 10080 !important; /* 99989 !important; */
-		}
+		
 
 		/* Ẩn tất cả dropdown ngoại trừ trong modal đang active */
 		body.modal-open .select2-container--open:not(.modal .select2-container--open) {
@@ -3473,32 +3467,37 @@
         // Hàm đóng tất cả dropdown Select2 đang mở
         function closeAllSelect2Dropdowns() {
             //$('.select2-container--open').select2('close');
+            $('select.select2-hidden-accessible').each(function() {
+                const $select = $(this);
+                if ($select.data('select2')) {
+                    try {
+						$select.select2('close');
+					} catch (e) {
+		                // Bỏ qua lỗi nếu có
+		            }
+                }
+            });
+			// Force close by triggering blur
+    		$('.select2-selection').trigger('blur');
+		}
+            // Phương pháp an toàn hơn
+            //$('.select2-container--open').each(function() {
+            //    const $select2 = $(this).prev('select.select2-hidden-accessible');
+            //    if ($select2.length && $select2.data('select2')) {
+            //        $select2.select2('close');
+            //    }
+            //});
+            
+            // Alternative method
             //$('select.select2-hidden-accessible').each(function() {
             //    const $select = $(this);
-            //    if ($select.data('select2')) {
+            //    if ($select.data('select2') && $select.data('select2').isOpen()) {
             //        $select.select2('close');
             //    }
             //});
-
-            // Phương pháp an toàn hơn
-            $('.select2-container--open').each(function() {
-                const $select2 = $(this).prev('select.select2-hidden-accessible');
-                if ($select2.length && $select2.data('select2')) {
-                    $select2.select2('close');
-                }
-            });
-            
-            // Alternative method
-            $('select.select2-hidden-accessible').each(function() {
-                const $select = $(this);
-                if ($select.data('select2') && $select.data('select2').isOpen()) {
-                    $select.select2('close');
-                }
-            });
             
             // Force close by triggering blur
-            $('.select2-selection').blur();
-        }
+            //$('.select2-selection').blur();
         
 		function disableOutsideSelect2() {
 			// Đóng tất cả dropdown đang mở
@@ -3865,38 +3864,54 @@
 		        return;
 		    }
 
+			const $modal = $(`#${modalId}`);
             // Đợi một chút để modal hoàn toàn hiển thị
             setTimeout(() => {
-				const $modal = $(`#${modalId}`);
-                $modal.find('select:not([multiple]):not(.select2-hidden-accessible)').each(function() {
+                //$modal.find('select:not([multiple]):not(.select2-hidden-accessible)').each(function() {
+				$modal.find('select:not(.select2-hidden-accessible)').each(function() {
             		const $select = $(this);
-                    if (!$select.hasClass('select2-hidden-accessible')) {
-		                $select.select2({
-		                    language: 'vi',
-		                    placeholder: "Chọn hoặc nhập để tìm kiếm...",
-		                    allowClear: true,
-		                    width: '100%',
-		                    dropdownParent: $modal,
-		                    minimumResultsForSearch: 10
-		                });
+					// Hủy Select2 cũ nếu tồn tại
+		            if ($select.hasClass('select2-hidden-accessible')) {
+		                $select.select2('destroy');
 		            }
+					const isMultiple = $select.prop('multiple');
+					$select.select2({
+		                language: 'vi',
+		                placeholder: "Chọn hoặc nhập để tìm kiếm...",
+		                allowClear: true,
+		                width: '100%',
+		                dropdownParent: $modal,
+		                dropdownAutoWidth: true,
+		                minimumResultsForSearch: isMultiple ? 0 : 10,
+		                closeOnSelect: isMultiple ? false : true
+		            });
+                    //if (!$select.hasClass('select2-hidden-accessible')) {
+		            //    $select.select2({
+		            //        language: 'vi',
+		            //        placeholder: "Chọn hoặc nhập để tìm kiếm...",
+		            //        allowClear: true,
+		            //        width: '100%',
+		            //        dropdownParent: $modal,
+		            //        minimumResultsForSearch: 10
+		            //    });
+		            //}
                 });
 				// Khởi tạo multiple select
-		        $modal.find('select[multiple]:not(.select2-hidden-accessible)').each(function() {
-		            const $select = $(this);
-		            console.log('Initializing multiple select:', this.id);
+		        //$modal.find('select[multiple]:not(.select2-hidden-accessible)').each(function() {
+		        //    const $select = $(this);
+		        //    console.log('Initializing multiple select:', this.id);
 		            
-		            if (!$select.hasClass('select2-hidden-accessible')) {
-		                $select.select2({
-		                    language: 'vi',
-		                    placeholder: "Chọn hoặc nhập để tìm kiếm...",
-		                    allowClear: true,
-		                    width: '100%',
-		                    dropdownParent: $modal,
-		                    closeOnSelect: false
-		                });
-		            }
-		        });
+		        //    if (!$select.hasClass('select2-hidden-accessible')) {
+		        //        $select.select2({
+		        //            language: 'vi',
+		        //            placeholder: "Chọn hoặc nhập để tìm kiếm...",
+		        //            allowClear: true,
+		        //            width: '100%',
+		        //            dropdownParent: $modal,
+		        //            closeOnSelect: false
+		        //        });
+		        //    }
+		        //});
             }, 100);
 		}
 
