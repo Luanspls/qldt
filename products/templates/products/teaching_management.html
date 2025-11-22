@@ -1567,7 +1567,7 @@
 			const departmentSelect = $('select[name="department_id"]');
 			departmentSelect.empty().append('<option value="">-- Chọn khoa --</option>');
 			
-            if(!allDepartments || allDepartments.length === 0) {
+            if(!allDepartments || allDepartments.length > 0) {
                 allDepartments.forEach(department => {
                     const option = new Option(department.name, department.id, false, false);
                     $(option).data('search-text', `${department.code} ${department.name}`);
@@ -1579,7 +1579,7 @@
 			const subjectGroupSelect = $('select[name="subject_group_id"]');
 			subjectGroupSelect.empty().append('<option value="">-- Chọn tổ bộ môn --</option>');
 			
-            if(!allSubjectGroups || allSubjectGroups.length === 0) {
+            if(!allSubjectGroups || allSubjectGroups.length > 0) {
                 allSubjectGroups.forEach(subjectGroup => {
                     const option = new Option(subjectGroup.name, subjectGroup.id, false, false);
                     $(option).data('search-text', `${subjectGroup.code} ${subjectGroup.name}`);
