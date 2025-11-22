@@ -57,7 +57,7 @@
 
         /* Select2 trong modal */
         .modal .select2-container {
-            z-index: 99992 !important;
+            z-index: 99999 !important;
 			display: block !important;
     		visibility: visible !important;
 			opacity: 1 !important;
@@ -65,7 +65,7 @@
         }
 
         .modal .select2-dropdown {
-            z-index: 99993 !important;
+            z-index: 100000 !important;
             display: block !important;
 			visibility: visible !important;
     		opacity: 1 !important;
@@ -165,7 +165,7 @@
     		visibility: hidden !important;
 			opacity: 0 !important;
     		pointer-events: none !important;
-			z-index: 1 !important;
+			z-index: auto !important;
 		}
 
 		/* Hiệu ứng làm mờ cho nền khi modal mở */
@@ -1270,8 +1270,8 @@
 		}
 
 		function openThemLopGhepModal() {
-			openModal('modal-them-lop-hoc');
-            populateClassModalDropdowns();
+			openModal('modal-them-lop-ghep');
+            populateCombinedClassModalDropdowns();
     
 			// Đặt lại trạng thái thêm mới
             document.querySelector('#modal-them-lop-ghep h3').textContent = 'Thêm lớp học ghép mới';
@@ -1299,7 +1299,7 @@
 
 		function openThemPhanCongModal() {
 			openModal('modal-them-phan-cong');
-            populateClassModalDropdowns();
+            populateTeachingAssignmentModalDropdowns();
     
 			// Đặt lại trạng thái thêm mới
             document.querySelector('#modal-them-phan-cong h3').textContent = 'Thêm phân công mới';
@@ -1327,7 +1327,7 @@
 
 		function openThemGiangVienModal() {
 			openModal('modal-them-giang-vien');
-            populateClassModalDropdowns();
+            populateInstructorModalDropdowns();
     
 			// Đặt lại trạng thái thêm mới
             document.querySelector('#modal-them-giang-vien h3').textContent = 'Thêm giảng viên mới';
@@ -1397,46 +1397,55 @@
 			// Điền chương trình với tìm kiếm
 			const curriculumSelect = $('select[name="curriculum_id"]');
 			curriculumSelect.empty().append('<option value="">-- Chọn chương trình --</option>');
-			allCurricula.forEach(curriculum => {
-    			const option = new Option(
-        			`${curriculum.name} (${curriculum.academic_year})`,
-        			curriculum.id,
-        			false,
-        			false
-    			);
-    			$(option).data('search-text', `${curriculum.code} ${curriculum.name} ${curriculum.academic_year}`);
-    			curriculumSelect.append(option);
-			});
+			
+            if (allCurricula && allCurricula.length > 0) {
+                allCurricula.forEach(curriculum => {
+                    const option = new Option(
+                        `${curriculum.name} (${curriculum.academic_year})`,
+                        curriculum.id,
+                        false,
+                        false
+                    );
+                    $(option).data('search-text', `${curriculum.code} ${curriculum.name} ${curriculum.academic_year}`);
+                    curriculumSelect.append(option);
+                });
+            }
 
 			// Điền lớp học với tìm kiếm
 			const classesSelect = $('select[name="classes"]');
 			classesSelect.empty().append('<option value="">-- Chọn các lớp --</option>');
-			allClasses.forEach(classItem => {
-    			const option = new Option(
-        			`${classItem.code} - ${classItem.name}`,
-        			classItem.id,
-        			false,
-        			false
-    			);
-    			$(option).data('search-text', `${classItem.code} ${classItem.name}`);
-    			classesSelect.append(option);
-			});
+			
+            if (allClasses && allClasses.length > 0) {
+                allClasses.forEach(classItem => {
+                    const option = new Option(
+                        `${classItem.code} - ${classItem.name}`,
+                        classItem.id,
+                        false,
+                        false
+                    );
+                    $(option).data('search-text', `${classItem.code} ${classItem.name}`);
+                    classesSelect.append(option);
+                });
+            }
 		}
 
 		function populateTeachingAssignmentModalDropdowns() {
 			// Điền giảng viên với tìm kiếm
 			const instructorSelect = $('select[name="instructor_id"]');
 			instructorSelect.empty().append('<option value="">-- Chọn giảng viên --</option>');
-			allInstructors.forEach(instructor => {
-    			const option = new Option(
-        			`${instructor.full_name} (${instructor.code})`,
-        			instructor.id,
-        			false,
-        			false
-    			);
-    			$(option).data('search-text', `${instructor.code} ${instructor.full_name}`);
-    			instructorSelect.append(option);
-			});
+			
+            if (allInstructors && allInstructors.length > 0) {
+                allInstructors.forEach(instructor => {
+                    const option = new Option(
+                        `${instructor.full_name} (${instructor.code})`,
+                        instructor.id,
+                        false,
+                        false
+                    );
+                    $(option).data('search-text', `${instructor.code} ${instructor.full_name}`);
+                    instructorSelect.append(option);
+                });
+            }
 
 			// Điền môn học với tìm kiếm
 			const subjectSelect = $('select[name="curriculum_subject_id"]');
@@ -1445,17 +1454,18 @@
 			fetch('/api/curriculum-subjects/')
     			.then(response => response.json())
     			.then(data => {
-        			data.forEach(subject => {
-            			const option = new Option(
-                			`${subject.subject_code} - ${subject.subject_name}`,
-                			subject.id,
-                			false,
-                			false
-            			);
-            			$(option).data('search-text', `${subject.subject_code} ${subject.subject_name}`);
-            			subjectSelect.append(option);
-        			});
-            
+                    if (data && data.length > 0) {
+                        data.forEach(subject => {
+                            const option = new Option(
+                                `${subject.subject_code} - ${subject.subject_name}`,
+                                subject.id,
+                                false,
+                                false
+                            );
+                            $(option).data('search-text', `${subject.subject_code} ${subject.subject_name}`);
+                            subjectSelect.append(option);
+                        });
+                    }
         			subjectSelect.select2({
             			language: 'vi',
             			placeholder: "Chọn môn học...",
@@ -1463,35 +1473,44 @@
             			width: '100%',
             			minimumResultsForSearch: 0
         			});
-    			});
+    			})
+                .catch(error => {
+                    console.error('Error loading curriculum subjects:', error);
+                });
 
 			// Điền lớp học thường với tìm kiếm
 			const classRegularSelect = $('#class_regular');
 			classRegularSelect.empty().append('<option value="">-- Chọn lớp --</option>');
-			allClasses.forEach(classItem => {
-    			const option = new Option(
-        			`${classItem.code} - ${classItem.name}`,
-        			classItem.id,
-        			false,
-        			false
-    			);
-    			$(option).data('search-text', `${classItem.code} ${classItem.name}`);
-    			classRegularSelect.append(option);
-			});
+			
+            if (allClasses && allClasses.length > 0) {
+                allClasses.forEach(classItem => {
+                    const option = new Option(
+                        `${classItem.code} - ${classItem.name}`,
+                        classItem.id,
+                        false,
+                        false
+                    );
+                    $(option).data('search-text', `${classItem.code} ${classItem.name}`);
+                    classRegularSelect.append(option);
+                });
+            }
 
 			// Điền lớp học ghép với tìm kiếm
 			const classCombinedSelect = $('#class_combined');
 			classCombinedSelect.empty().append('<option value="">-- Chọn lớp ghép --</option>');
-			allCombinedClasses.forEach(combinedClass => {
-    			const option = new Option(
-        			`${combinedClass.code} - ${combinedClass.name}`,
-        			combinedClass.id,
-        			false,
-        			false
-    			);
-    			$(option).data('search-text', `${combinedClass.code} ${combinedClass.name}`);
-    			classCombinedSelect.append(option);
-			});
+			
+            if (allCombinedClasses && allCombinedClasses.length > 0) {
+                allCombinedClasses.forEach(combinedClass => {
+                    const option = new Option(
+                        `${combinedClass.code} - ${combinedClass.name}`,
+                        combinedClass.id,
+                        false,
+                        false
+                    );
+                    $(option).data('search-text', `${combinedClass.code} ${combinedClass.name}`);
+                    classCombinedSelect.append(option);
+                });
+            }
 
 			// Khởi tạo lại Select2
 			instructorSelect.select2({
@@ -1523,20 +1542,26 @@
 			// Điền khoa với tìm kiếm
 			const departmentSelect = $('select[name="department_id"]');
 			departmentSelect.empty().append('<option value="">-- Chọn khoa --</option>');
-			allDepartments.forEach(department => {
-    			const option = new Option(department.name, department.id, false, false);
-    			$(option).data('search-text', `${department.code} ${department.name}`);
-    			departmentSelect.append(option);
-			});
+			
+            if(!allDepartments || allDepartments.length === 0) {
+                allDepartments.forEach(department => {
+                    const option = new Option(department.name, department.id, false, false);
+                    $(option).data('search-text', `${department.code} ${department.name}`);
+                    departmentSelect.append(option);
+                });
+            }
 
 			// Điền tổ bộ môn với tìm kiếm
 			const subjectGroupSelect = $('select[name="subject_group_id"]');
-				subjectGroupSelect.empty().append('<option value="">-- Chọn tổ bộ môn --</option>');
-			allSubjectGroups.forEach(subjectGroup => {
-    			const option = new Option(subjectGroup.name, subjectGroup.id, false, false);
-    			$(option).data('search-text', `${subjectGroup.code} ${subjectGroup.name}`);
-    			subjectGroupSelect.append(option);
-			});
+			subjectGroupSelect.empty().append('<option value="">-- Chọn tổ bộ môn --</option>');
+			
+            if(!allSubjectGroups || allSubjectGroups.length === 0) {
+                allSubjectGroups.forEach(subjectGroup => {
+                    const option = new Option(subjectGroup.name, subjectGroup.id, false, false);
+                    $(option).data('search-text', `${subjectGroup.code} ${subjectGroup.name}`);
+                    subjectGroupSelect.append(option);
+                });
+            }
 
 			// Khởi tạo lại Select2
 			departmentSelect.select2({
