@@ -300,7 +300,7 @@ class TrainProgramManagerView(View):
                     'curriculum_id': cs.curriculum.id if cs.curriculum else None,
                     'curriculum_code': cs.curriculum.code if cs.curriculum else '',
                     'curriculum_academic_year': cs.curriculum.academic_year if cs.curriculum else '',
-                    'course_id': cs.course.id if cs.course else None,
+                    'course_id': cs.course.id if cs.course else '',
                     'course_code': cs.course.code if cs.course else '',
                     'course_name': cs.course.name if cs.course else '',
                     'loai_mon': cs.subject_type.name if cs.subject_type else '',

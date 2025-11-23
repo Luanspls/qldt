@@ -233,7 +233,7 @@
                         <select id="import-course" name="course_id" 
                                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
                                 required>
-                            <option value="">-- Chọn chương trình --</option>
+                            <option value="">-- Chọn khóa học --</option>
                             {% for course in courses %}
                             <option value="{{ course.id }}">{{ course.name }} ({{ course.code }})</option>
                             {% endfor %}
