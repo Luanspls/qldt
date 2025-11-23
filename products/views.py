@@ -521,7 +521,7 @@ class ImportExcelView(View):
         """Xử lý dữ liệu từ Excel và lưu vào database"""
         try:
             curriculum = Curriculum.objects.get(id=curriculum_id)
-            course = Course.objects.filter(curriculum__id=curriculum_id)
+            course = Course.objects.get(id=course_id)
             created_count = 0
             updated_count = 0
             processed_data = []
@@ -653,12 +653,12 @@ class ImportExcelView(View):
                     while Subject.objects.filter(code=unique_code).exists():
                         # Kiểm tra xem có phải là cùng một môn học không (dựa trên tên và các thuộc tính)
                         existing_subject = Subject.objects.get(code=unique_code)
-                        print(f"Kiểm tra course ID: {existing_subject.course.id} với {course.id}")
+                        
                         if (existing_subject.name == ten_mon_hoc and
                             existing_subject.curriculum.id == curriculum.id and
-                            existing_subject.course.id == course.id):
-                            # float(existing_subject.credits) == so_tin_chi and
-                            # int(existing_subject.semester) == default_semester):
+                            existing_subject.course.id == course.id and
+                            float(existing_subject.credits) == so_tin_chi and
+                            int(existing_subject.semester) == default_semester):
                             # Nếu giống hệt, sử dụng môn học hiện có
                             break
                         else:
@@ -673,7 +673,7 @@ class ImportExcelView(View):
                         
                     subject, created = Subject.objects.update_or_create(
                         curriculum = curriculum,
-                        course = course,
+                        
                         code = unique_code,
                         defaults={
                             'name': ten_mon_hoc,
@@ -689,24 +689,10 @@ class ImportExcelView(View):
                             'is_elective': is_elective,
                             'order_number': order_number,
                             'original_code': original_code,
+                            'course_id': course.id
                         }
                     )
-                    
-                    # # Tạo hoặc cập nhật CurriculumSubject
-                    # curriculum_subject, cs_created = CurriculumSubject.objects.update_or_create(
-                    #     curriculum=curriculum,
-                    #     subject=base_subject,
-                    #     defaults={
-                    #         'credits': so_tin_chi,
-                    #         'total_hours': tong_so_gio,
-                    #         'theory_hours': ly_thuyet,
-                    #         'practice_hours': thuc_hanh,
-                    #         'exam_hours': kiem_tra_thi,
-                    #         'order_number': order_number,
-                    #         'semester': default_semester
-                    #     }
-                    # )
-                    
+                                        
                     if created:
                         created_count += 1
                     else:
