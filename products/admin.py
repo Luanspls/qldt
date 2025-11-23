@@ -50,8 +50,9 @@ class CurriculumAdmin(admin.ModelAdmin):
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
     list_display = [
-        'code', 'name', 'subject_type', 'credits', 'semester',
-        'total_hours', 'is_elective', 'curriculum_count', 'created_at'
+        'code', 'name', 'subject_type', 'credits', 'semester', 
+        'total_hours', 'theory_hours', 'practice_hours', 'exam_hours',
+        'subject_group', 'department', 'is_elective', 'description', 'created_at'
     ]
     search_fields = ['code', 'name']
     list_filter = ['subject_type', 'is_elective', 'department']
