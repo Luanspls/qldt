@@ -194,35 +194,34 @@ class TrainProgramManagerView(View):
                             'status': 'success', 
                             'message': f'Đã cập nhật {field} thành công'
                         })
+                    elif field == 'course':
+                        # Cập nhật khóa học cho curriculum_subject
+                        curriculum_subject = Subject.objects.get(id=id)
+                        try:
+                            if value and value.strip():
+                                course, created = Course.objects.get_or_create(
+                                    name=value.strip(),
+                                    defaults={'code': value.strip()[:10].upper().replace(' ', '')}
+                                )
+                                curriculum_subject.course = course
+                                curriculum_subject.save()
+                            else:
+                                curriculum_subject.course = None
+                                curriculum_subject.save()
+                            return JsonResponse({
+                                'status': 'success', 
+                                'message': 'Đã cập nhật khóa học thành công'
+                            })
+                        except Course.DoesNotExist:
+                            return JsonResponse({
+                                'status': 'error', 
+                                'message': f'Khóa học không tồn tại với tên: {value}'
+                            })
                     else:
                         return JsonResponse({
                             'status': 'error', 
                             'message': f'Trường {field} không tồn tại'
-                        })
-                elif field == 'course':
-                    # Cập nhật khóa học cho curriculum_subject
-                    curriculum_subject = Subject.objects.get(id=id)
-                    try:
-                        if value and value.strip():
-                            course, created = Course.objects.get_or_create(
-                                name=value.strip(),
-                                defaults={'code': value.strip()[:10].upper().replace(' ', '')}
-                            )
-                            curriculum_subject.course = course
-                            curriculum_subject.save()
-                        else:
-                            curriculum_subject.course = None
-                            curriculum_subject.save()
-                        return JsonResponse({
-                            'status': 'success', 
-                            'message': 'Đã cập nhật khóa học thành công'
-                        })
-                    except Course.DoesNotExist:
-                        return JsonResponse({
-                            'status': 'error', 
-                            'message': 'Khóa học không tồn tại'
-                        })
-                        
+                        })                        
                 else:
                     # Cập nhật thông tin chung của curriculum
                     curriculum_id = data.get('curriculum_id')
@@ -253,7 +252,7 @@ class TrainProgramManagerView(View):
                 print(f"Error in PUT: {str(e)}")  # Debug log
                 return JsonResponse({
                     'status': 'error', 
-                    'message': f'Lỗi khi cập nhật: {str(e)} - {course.name, course.id if course else "No Course"}'
+                    'message': f'Lỗi khi cập nhật: {str(e)}'
                 })
         
         return JsonResponse({
