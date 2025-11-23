@@ -54,7 +54,6 @@ class TrainProgramManagerView(View):
                 'subject_types': list(subject_types),
                 'majors': list(majors),
                 'mon_hoc_data': mon_hoc_data
-                # 'mon_hoc_data': json.dumps(mon_hoc_data, default=str)  # Serialize với default=str
             }
             
             return render(request, self.template_name, context)
@@ -278,12 +277,12 @@ class TrainProgramManagerView(View):
         """Lấy dữ liệu môn học từ database"""
         try:           
             if curriculum_id:
-                curriculum_subjects = Subject.objects.select_related('subject_type', 'department', 'subject_group', 'curriculum'
+                curriculum_subjects = Subject.objects.select_related('subject_type', 'department', 'subject_group', 'curriculum', 'course'
                 ).filter(curriculum=curriculum_id)
             else:
                 # Lấy tất cả CurriculumSubject
                 curriculum_subjects = Subject.objects.select_related(
-                    'subject_type', 'department', 'subject_group', 'curriculum'
+                    'subject_type', 'department', 'subject_group', 'curriculum', 'course'
                 ).all()
                 
             curriculum_subjects = curriculum_subjects.order_by('order_number')
@@ -301,6 +300,9 @@ class TrainProgramManagerView(View):
                     'curriculum_id': cs.curriculum.id if cs.curriculum else None,
                     'curriculum_code': cs.curriculum.code if cs.curriculum else '',
                     'curriculum_academic_year': cs.curriculum.academic_year if cs.curriculum else '',
+                    'course_id': cs.course.id if cs.course else None,
+                    'course_code': cs.course.code if cs.course else '',
+                    'course_name': cs.course.name if cs.course else '',
                     'loai_mon': cs.subject_type.name if cs.subject_type else '',
                     'so_tin_chi': float(cs.credits),
                     'tong_so_gio': cs.total_hours,
@@ -464,6 +466,7 @@ class ImportExcelView(View):
             if request.FILES.get('excel_file'):
                 excel_file = request.FILES['excel_file']
                 curriculum_id = request.POST.get('curriculum_id')
+                course_id = request.POST.get('course_id')
                 sheet_name = request.POST.get('sheet_name', '')  # Lấy tên sheet từ request
                 
                 if not curriculum_id:
@@ -494,7 +497,7 @@ class ImportExcelView(View):
                     return JsonResponse({'status': 'error', 'message': f'Không thể đọc file Excel: {str(e)}'})
                 
                 # Xử lý dữ liệu và lưu vào database - TRUYỀN excel_file VÀO
-                result = self.process_excel_data(df, curriculum_id, request.user, excel_file, sheet_name)
+                result = self.process_excel_data(df, curriculum_id, course_id, request.user, excel_file, sheet_name)
                 
                 if result['status'] == 'success':
                     return JsonResponse({
@@ -514,10 +517,11 @@ class ImportExcelView(View):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'Lỗi khi xử lý file: {str(e)}'})
     
-    def process_excel_data(self, df, curriculum_id, user, excel_file, sheet_name):  # THÊM excel_file, sheet_name VÀO THAM SỐ
+    def process_excel_data(self, df, curriculum_id, course_id, user, excel_file, sheet_name):  # THÊM excel_file, sheet_name VÀO THAM SỐ
         """Xử lý dữ liệu từ Excel và lưu vào database"""
         try:
             curriculum = Curriculum.objects.get(id=curriculum_id)
+            course = Course.objects.get(id=course_id)
             created_count = 0
             updated_count = 0
             processed_data = []
@@ -651,8 +655,9 @@ class ImportExcelView(View):
                         existing_subject = Subject.objects.get(code=unique_code)
                         if (existing_subject.name == ten_mon_hoc and
                             existing_subject.curriculum.id == curriculum.id and
-                            float(existing_subject.credits) == so_tin_chi and
-                            int(existing_subject.semester) == default_semester):
+                            existing_subject.course.id == course.id):
+                            # float(existing_subject.credits) == so_tin_chi and
+                            # int(existing_subject.semester) == default_semester):
                             # Nếu giống hệt, sử dụng môn học hiện có
                             break
                         else:
@@ -667,6 +672,7 @@ class ImportExcelView(View):
                         
                     subject, created = Subject.objects.update_or_create(
                         curriculum = curriculum,
+                        course = course,
                         code = unique_code,
                         defaults={
                             'name': ten_mon_hoc,

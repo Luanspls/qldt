@@ -229,6 +229,17 @@
                         </select>
                     </div>
                     <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Khóa học *</label>
+                        <select id="import-course" name="course_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                required>
+                            <option value="">-- Chọn chương trình --</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}">{{ course.name }} ({{ course.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">File Excel *</label>
                         <input type="file" id="excel-file" name="excel_file" accept=".xlsx, .xls" 
                             class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 

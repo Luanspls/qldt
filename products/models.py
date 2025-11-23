@@ -137,7 +137,50 @@ class Curriculum(models.Model):
         """Validation logic"""
         if self.total_hours < (self.theory_hours + self.practice_hours):
             raise ValidationError("Tổng số giờ không được nhỏ hơn tổng giờ lý thuyết và thực hành")
+
+class Course(models.Model):
+    STATUS_CHOICES = [
+        ('planned', 'Đã lập kế hoạch'),
+        ('enrolling', 'Đang tuyển sinh'),
+        ('ongoing', 'Đang đào tạo'),
+        ('completed', 'Đã hoàn thành'),
+        ('cancelled', 'Đã hủy'),
+    ]
     
+    curriculum = models.ForeignKey(
+        Curriculum, 
+        on_delete=models.CASCADE, 
+        related_name='courses',
+        verbose_name="Chương trình đào tạo",
+        db_column="curriculum_id"
+    )
+    code = models.CharField(max_length=50, unique=True, verbose_name="Mã khóa học")
+    name = models.CharField(max_length=255, verbose_name="Tên khóa học")
+    start_year = models.IntegerField(verbose_name="Năm bắt đầu")
+    end_year = models.IntegerField(verbose_name="Năm kết thúc")
+    status = models.CharField(
+        max_length=20, 
+        choices=STATUS_CHOICES, 
+        default='planned',
+        verbose_name="Trạng thái"
+    )
+    total_students = models.IntegerField(default=0, verbose_name="Tổng số sinh viên")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'courses'
+        verbose_name = 'Khóa học'
+        verbose_name_plural = 'Các khóa học'
+        ordering = ['-start_year']
+
+    def __str__(self):
+        return f"{self.code} - {self.name} ({self.start_year}-{self.end_year})"
+
+    @property
+    def academic_year(self):
+        return f"{self.start_year}-{self.end_year}"
+
 class SubjectType(models.Model):
     code = models.CharField(max_length=20, unique=True, verbose_name="Mã loại môn học")
     name = models.CharField(max_length=100, verbose_name="Tên loại môn học")
@@ -161,6 +204,14 @@ class Subject(models.Model):
         on_delete=models.CASCADE,
         verbose_name="Chương trình đào tạo",
         blank=True
+    )
+    
+    course = models.ForeignKey(
+        Course, 
+        on_delete=models.CASCADE,
+        verbose_name="Khóa học",
+        blank=True,
+        null=True,
     )
 
     subject_type = models.ForeignKey(
@@ -394,50 +445,6 @@ class Instructor(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.full_name}"
-
-
-class Course(models.Model):
-    STATUS_CHOICES = [
-        ('planned', 'Đã lập kế hoạch'),
-        ('enrolling', 'Đang tuyển sinh'),
-        ('ongoing', 'Đang đào tạo'),
-        ('completed', 'Đã hoàn thành'),
-        ('cancelled', 'Đã hủy'),
-    ]
-    
-    curriculum = models.ForeignKey(
-        Curriculum, 
-        on_delete=models.CASCADE, 
-        related_name='courses',
-        verbose_name="Chương trình đào tạo",
-        db_column="curriculum_id"
-    )
-    code = models.CharField(max_length=50, unique=True, verbose_name="Mã khóa học")
-    name = models.CharField(max_length=255, verbose_name="Tên khóa học")
-    start_year = models.IntegerField(verbose_name="Năm bắt đầu")
-    end_year = models.IntegerField(verbose_name="Năm kết thúc")
-    status = models.CharField(
-        max_length=20, 
-        choices=STATUS_CHOICES, 
-        default='planned',
-        verbose_name="Trạng thái"
-    )
-    total_students = models.IntegerField(default=0, verbose_name="Tổng số sinh viên")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'courses'
-        verbose_name = 'Khóa học'
-        verbose_name_plural = 'Các khóa học'
-        ordering = ['-start_year']
-
-    def __str__(self):
-        return f"{self.code} - {self.name} ({self.start_year}-{self.end_year})"
-
-    @property
-    def academic_year(self):
-        return f"{self.start_year}-{self.end_year}"
 
 class Class(models.Model):
     """Lớp học - mỗi lớp học có thể học nhiều môn học"""

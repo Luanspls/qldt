@@ -62,18 +62,6 @@ class SubjectAdmin(admin.ModelAdmin):
         return obj.curriculum.count()
     curriculum_count.short_description = 'Số chương trình'
 
-# # @admin.register(CurriculumSubject)
-# class CurriculumSubjectAdmin(admin.ModelAdmin):
-#     list_display = [
-#         'curriculum', 'subject', 'credits', 'total_hours', 
-#         'semester', 'order_number', 'created_at'
-#     ]
-#     list_filter = ['curriculum', 'semester', 'created_at']
-#     search_fields = ['curriculum__code', 'curriculum__name', 'subject__code', 'subject__name']
-#     readonly_fields = ['created_at', 'updated_at']
-#     list_editable = ['credits', 'total_hours', 'semester', 'order_number']
-#     inlines = [SemesterAllocationInline]
-
 @admin.register(SemesterAllocation)
 class SemesterAllocationAdmin(admin.ModelAdmin):
     list_display = ['base_subject', 'semester', 'credits', 'created_at']
