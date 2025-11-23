@@ -619,7 +619,7 @@
             .then(data => {
                 if (data.status !== 'success') {
                     console.error('Update error:', data.message);
-                    alert('Có lỗi khi cập nhật: ' + data.message);
+                    alert(data.message);
                     // Reload data to reset values
                     loadFilteredData();
                 } else {

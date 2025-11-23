@@ -253,7 +253,7 @@ class TrainProgramManagerView(View):
                 print(f"Error in PUT: {str(e)}")  # Debug log
                 return JsonResponse({
                     'status': 'error', 
-                    'message': f'Lỗi khi cập nhật: {str(e)}'
+                    'message': f'Lỗi khi cập nhật: {str(e)} - {course.name, course.id if course else "No Course"}'
                 })
         
         return JsonResponse({
