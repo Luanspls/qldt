@@ -203,9 +203,16 @@ class TrainProgramManagerView(View):
                     # Cập nhật khóa học cho curriculum_subject
                     curriculum_subject = Subject.objects.get(id=id)
                     try:
-                        course = Course.objects.filter(name=value)
-                        curriculum_subject.course = course
-                        curriculum_subject.save()
+                        if value and value.strip():
+                            course, created = Course.objects.get_or_create(
+                                name=value.strip(),
+                                defaults={'code': value.strip()[:10].upper().replace(' ', '')}
+                            )
+                            curriculum_subject.course = course
+                            curriculum_subject.save()
+                        else:
+                            curriculum_subject.course = None
+                            curriculum_subject.save()
                         return JsonResponse({
                             'status': 'success', 
                             'message': 'Đã cập nhật khóa học thành công'
