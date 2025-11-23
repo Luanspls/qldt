@@ -199,6 +199,22 @@ class TrainProgramManagerView(View):
                             'status': 'error', 
                             'message': f'Trường {field} không tồn tại'
                         })
+                elif field == 'course':
+                    # Cập nhật khóa học cho curriculum_subject
+                    curriculum_subject = Subject.objects.get(id=id)
+                    try:
+                        course = Course.objects.get(name=value)
+                        curriculum_subject.course = course
+                        curriculum_subject.save()
+                        return JsonResponse({
+                            'status': 'success', 
+                            'message': 'Đã cập nhật khóa học thành công'
+                        })
+                    except Course.DoesNotExist:
+                        return JsonResponse({
+                            'status': 'error', 
+                            'message': 'Khóa học không tồn tại'
+                        })
                         
                 else:
                     # Cập nhật thông tin chung của curriculum
@@ -673,7 +689,7 @@ class ImportExcelView(View):
                         
                     subject, created = Subject.objects.update_or_create(
                         curriculum = curriculum,
-                        
+                        course = course,
                         code = unique_code,
                         defaults={
                             'name': ten_mon_hoc,
@@ -689,7 +705,7 @@ class ImportExcelView(View):
                             'is_elective': is_elective,
                             'order_number': order_number,
                             'original_code': original_code,
-                            'course_id': course.id
+                            
                         }
                     )
                                         
