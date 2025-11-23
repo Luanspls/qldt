@@ -404,6 +404,7 @@
             populateDropdown('chuong-trinh-dao-tao', allCurricula, 'name');
             populateDropdown('khoa-hoc', allCourses, 'name');
             populateDropdown('import-curriculum', allCurricula, 'name');
+            populateDropdown('import-course', allCourses, 'name');
         }
         
         function populateDropdown(elementId, data, displayField) {
@@ -937,6 +938,7 @@
             const form = document.getElementById('form-import');
             const formData = new FormData(form);
             const curriculumId = document.getElementById('import-curriculum').value;
+            const courseId = document.getElementById('import-course').value;
             const fileInput = document.getElementById('excel-file');
             const sheetSelect = document.getElementById('sheet-select');
             
@@ -1019,6 +1021,20 @@
                     allCurricula = data;
                     populateDropdown('chuong-trinh-dao-tao', allCurricula, 'name');
                     populateDropdown('import-curriculum', allCurricula, 'name');
+                })
+                .catch(error => {
+                    console.error('Error loading curricula:', error);
+                });
+        }
+
+        // Load lại danh sách courses
+        function loadCourses() {
+            fetch('/api/courses/')
+                .then(response => response.json())
+                .then(data => {
+                    allCourses = data;
+                    populateDropdown('khoa-hoc', allCourses, 'name');
+                    populateDropdown('import-course', allCourses, 'name');
                 })
                 .catch(error => {
                     console.error('Error loading curricula:', error);
@@ -1200,6 +1216,7 @@
             }
             
             const selectedCurriculumId = document.getElementById('chuong-trinh-dao-tao').value;
+            const selectedCourseId = document.getElementById('khoa-hoc').value;
             
             // Nếu đã chọn chương trình từ dropdown, set giá trị mặc định
             if (selectedCurriculumId) {
@@ -1208,6 +1225,14 @@
                     curriculumSelect.value = selectedCurriculumId;
                     // Cập nhật thông tin ngành đào tạo
                     updateMajorInfo(selectedCurriculumId);
+                }
+            }
+
+            // Nếu đã chọn khóa học từ dropdown, set giá trị mặc định
+            if (selectedCourseId) {
+                const courseSelect = document.getElementById('them-mon-hoc-course');
+                if (courseSelect) {
+                    courseSelect.value = selectedCourseId;
                 }
             }
             
@@ -1866,6 +1891,17 @@
                                 <option value="">-- Chọn chương trình --</option>
                                 {% for curriculum in curricula %}
                                 <option value="{{ curriculum.id }}">{{ curriculum.name }} ({{ curriculum.academic_year }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Khóa học *</label>
+                            <select id="them-mon-hoc-course" name="course_id" 
+                                    class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    required>
+                                <option value="">-- Chọn khóa học --</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.name }} ({{ course.code }})</option>
                                 {% endfor %}
                             </select>
                         </div>
