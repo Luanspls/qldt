@@ -653,7 +653,7 @@ class ImportExcelView(View):
                     while Subject.objects.filter(code=unique_code).exists():
                         # Kiểm tra xem có phải là cùng một môn học không (dựa trên tên và các thuộc tính)
                         existing_subject = Subject.objects.get(code=unique_code)
-                        print(f"Kiểm tra khóa học của môn học tồn tại: {existing_subject.course.id} với {course.id}")
+                        print(f"Kiểm tra course ID: {existing_subject.course.id} với {course.id}")
                         if (existing_subject.name == ten_mon_hoc and
                             existing_subject.curriculum.id == curriculum.id and
                             existing_subject.course.id == course.id):
@@ -661,7 +661,6 @@ class ImportExcelView(View):
                             # int(existing_subject.semester) == default_semester):
                             # Nếu giống hệt, sử dụng môn học hiện có
                             break
-                        
                         else:
                             # Nếu khác, tạo mã mới
                             unique_code = f"{proposed_code}_{counter}"
