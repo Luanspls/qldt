@@ -203,7 +203,7 @@ class TrainProgramManagerView(View):
                     # Cập nhật khóa học cho curriculum_subject
                     curriculum_subject = Subject.objects.get(id=id)
                     try:
-                        course = Course.objects.get(name=value)
+                        course = Course.objects.filter(name=value)
                         curriculum_subject.course = course
                         curriculum_subject.save()
                         return JsonResponse({
