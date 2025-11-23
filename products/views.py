@@ -672,7 +672,6 @@ class ImportExcelView(View):
                         
                     subject, created = Subject.objects.update_or_create(
                         curriculum = curriculum,
-                        course = course,
                         code = unique_code,
                         defaults={
                             'name': ten_mon_hoc,
@@ -687,7 +686,8 @@ class ImportExcelView(View):
                             'subject_group': subject_group,
                             'is_elective': is_elective,
                             'order_number': order_number,
-                            'original_code': original_code
+                            'original_code': original_code,
+                            'course': course
                         }
                     )
                     
