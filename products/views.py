@@ -521,7 +521,7 @@ class ImportExcelView(View):
         """Xử lý dữ liệu từ Excel và lưu vào database"""
         try:
             curriculum = Curriculum.objects.get(id=curriculum_id)
-            course = Course.objects.get(id=course_id) if course_id else Course.objects.filter(curriculum__id=curriculum_id)
+            course = Course.objects.filter(curriculum__id=curriculum_id)
             created_count = 0
             updated_count = 0
             processed_data = []
@@ -642,7 +642,7 @@ class ImportExcelView(View):
                         order_number = index + 1
                     
                     # Tạo mã duy nhất cho môn học
-                    curriculum_prefix = curriculum.code.replace(' ', '_').upper()[:10]
+                    curriculum_prefix = curriculum.code.replace(' ', '_').upper()[:15]
                     base_code = original_code
                     
                     # Kiểm tra xem mã đã tồn tại chưa
@@ -653,6 +653,7 @@ class ImportExcelView(View):
                     while Subject.objects.filter(code=unique_code).exists():
                         # Kiểm tra xem có phải là cùng một môn học không (dựa trên tên và các thuộc tính)
                         existing_subject = Subject.objects.get(code=unique_code)
+                        print(f"Kiểm tra khóa học của môn học tồn tại: {existing_subject.course.id} với {course.id}")
                         if (existing_subject.name == ten_mon_hoc and
                             existing_subject.curriculum.id == curriculum.id and
                             existing_subject.course.id == course.id):
@@ -660,6 +661,7 @@ class ImportExcelView(View):
                             # int(existing_subject.semester) == default_semester):
                             # Nếu giống hệt, sử dụng môn học hiện có
                             break
+                        
                         else:
                             # Nếu khác, tạo mã mới
                             unique_code = f"{proposed_code}_{counter}"
@@ -672,6 +674,7 @@ class ImportExcelView(View):
                         
                     subject, created = Subject.objects.update_or_create(
                         curriculum = curriculum,
+                        course = course,
                         code = unique_code,
                         defaults={
                             'name': ten_mon_hoc,
@@ -687,7 +690,6 @@ class ImportExcelView(View):
                             'is_elective': is_elective,
                             'order_number': order_number,
                             'original_code': original_code,
-                            'course': course
                         }
                     )
                     
