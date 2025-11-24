@@ -597,7 +597,7 @@
             // Khởi tạo autocomplete sau khi render
             setTimeout(() => {
                 initializeInstructorAutocomplete();
-            }, 100);
+            }, 200);
             
             // Cập nhật thống kê
             updateStatistics();
@@ -1438,35 +1438,50 @@
                 clearTimeout(instructorSearchTimeout);
             }
             
+            // Clear suggestions nếu query quá ngắn
+            if (query.length < 2) {
+                clearInstructorSuggestions(targetInput);
+                return;
+            }
+            
             instructorSearchTimeout = setTimeout(() => {
-                if (query.length < 2) {
-                    clearInstructorSuggestions(targetInput);
-                    return;
-                }
-                
                 fetch(`/api/search-instructors/?q=${encodeURIComponent(query)}`)
                     .then(response => {
+                        console.log('API response status:', response.status); // Debug
                         if (!response.ok) {
                             throw new Error('Network response was not ok');
                         }
                         return response.json();
                     })
                     .then(instructors => {
+                        console.log('API returned instructors:', instructors); // Debug
                         showInstructorSuggestions(instructors, targetInput);
                     })
                     .catch(error => {
                         console.error('Error searching instructors:', error);
                         clearInstructorSuggestions(targetInput);
                     });
-            }, 300); // Debounce 300ms
+            }, 300);
         }
 
         // Hàm hiển thị suggestions
         function showInstructorSuggestions(instructors, targetInput) {
+            console.log('Showing suggestions for input:', targetInput); // Debug
+            console.log('Instructors to show:', instructors); // Debug
+            
+            // Tìm datalist liên kết với input
             const datalist = targetInput.nextElementSibling;
-            if (!datalist || datalist.tagName !== 'DATALIST') return;
+            if (!datalist || datalist.tagName !== 'DATALIST') {
+                console.error('Datalist not found for input:', targetInput);
+                return;
+            }
             
             datalist.innerHTML = '';
+            
+            if (instructors.length === 0) {
+                console.log('No instructors found'); // Debug
+                return;
+            }
             
             instructors.forEach(instructor => {
                 const option = document.createElement('option');
@@ -1475,6 +1490,8 @@
                 option.setAttribute('data-instructor-id', instructor.id);
                 datalist.appendChild(option);
             });
+            
+            console.log('Added', instructors.length, 'suggestions'); // Debug
         }
 
         // Hàm xóa suggestions
@@ -1492,33 +1509,39 @@
         }
 
         // Hàm khởi tạo autocomplete cho tất cả input giảng viên
-        function initializeInstructorAutocomplete() {
+        function initializeInstructorAutocomplete() {            
             document.querySelectorAll('.instructor-autocomplete').forEach(input => {
-                // Xóa event listeners cũ để tránh duplicate
-                const newInput = input.cloneNode(true);
-                input.parentNode.replaceChild(newInput, input);
+                // Kiểm tra xem input đã có event listeners chưa
+                if (input.hasAttribute('data-autocomplete-initialized')) {
+                    return; // Đã khởi tạo rồi, bỏ qua
+                }
+                                
+                // Đánh dấu đã khởi tạo
+                input.setAttribute('data-autocomplete-initialized', 'true');
                 
-                // Thêm event listeners mới
-                newInput.addEventListener('input', function(e) {
-                    if (!this.readOnly) {
+                // Thêm event listeners
+                input.addEventListener('input', function(e) {
+                    if (!this.readOnly && !this.disabled) {
+                        console.log('Input event:', this.value); // Debug
                         searchInstructors(this.value, this);
                     }
                 });
                 
-                newInput.addEventListener('focus', function(e) {
-                    if (!this.readOnly && this.value.length >= 2) {
+                input.addEventListener('focus', function(e) {
+                    if (!this.readOnly && !this.disabled && this.value.length >= 2) {
+                        console.log('Focus event, searching:', this.value); // Debug
                         searchInstructors(this.value, this);
                     }
                 });
                 
-                newInput.addEventListener('blur', function(e) {
+                input.addEventListener('blur', function(e) {
                     // Delay clearing để cho phép click vào suggestions
                     setTimeout(() => {
                         clearInstructorSuggestions(this);
                     }, 200);
                 });
                 
-                newInput.addEventListener('change', function(e) {
+                input.addEventListener('change', function(e) {
                     handleInstructorSelection(this);
                 });
             });
@@ -1632,26 +1655,31 @@
                         button.classList.add('text-green-600');
                         button.title = 'Lưu thay đổi';
                         
-                        const editables = row.querySelectorAll('input, select');
-                        editables.forEach(editable => {
-                            editable.classList.add('border', 'border-blue-400', 'bg-white');
+                        const inputs = row.querySelectorAll('input, select');
+                        inputs.forEach(input => {
+                            input.classList.add('border', 'border-blue-400', 'bg-white');
                             
-                            if (editable.tagName === 'SELECT') {
-                                editable.disabled = false;
+                            if (input.tagName === 'SELECT') {
+                                input.disabled = false;
                             } else {
-                                editable.removeAttribute('readonly');
+                                input.removeAttribute('readonly');
                                 
-                                // Khởi tạo autocomplete cho input giảng viên
-                                if (editable.classList.contains('instructor-autocomplete')) {
+                                // Khởi tạo autocomplete cho input giảng viên - SỬA LẠI
+                                if (input.classList.contains('instructor-autocomplete')) {
+                                    console.log('Found instructor input, initializing autocomplete'); // Debug
+                                    // Xóa flag cũ và khởi tạo lại
+                                    input.removeAttribute('data-autocomplete-initialized');
                                     setTimeout(() => {
                                         initializeInstructorAutocomplete();
+                                        // Focus vào input để kích hoạt autocomplete
+                                        input.focus();
                                     }, 100);
                                 }
                             }
                             
                             // Thêm sự kiện Enter để lưu nhanh (chỉ cho input)
-                            if (editable.tagName === 'INPUT') {
-                                editable.addEventListener('keydown', function(e) {
+                            if (input.tagName === 'INPUT') {
+                                input.addEventListener('keydown', function(e) {
                                     if (e.key === 'Enter') {
                                         button.click();
                                     }

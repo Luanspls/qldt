@@ -1282,11 +1282,13 @@ def api_combined_classes(request):
 def api_search_instructors(request):
     """API tìm kiếm giảng viên theo tên"""
     query = request.GET.get('q', '')
-    if query:
+    
+    if query and len(query) >= 2:
         instructors = Instructor.objects.filter(
             full_name__icontains=query
         ).values('id', 'full_name', 'code')[:10]
         return JsonResponse(list(instructors), safe=False)
+    
     return JsonResponse([], safe=False)
 
 @csrf_exempt
