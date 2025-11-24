@@ -199,10 +199,13 @@ class TrainProgramManagerView(View):
                         curriculum_subject = Subject.objects.get(id=id)
                         try:
                             if value and value.strip():
-                                course, created = Course.objects.get_or_create(
-                                    name=value.strip(),
-                                    defaults={'code': value.strip()[:10].upper().replace(' ', '')}
-                                )
+                                try:
+                                    course_id = int(value)
+                                    course = Course.objects.get(id=course_id)
+                                except (ValueError, Course.DoesNotExist):
+                                    # Nếu không phải ID hợp lệ, tìm theo code
+                                    course = Course.objects.get(code=value.strip())
+                                
                                 curriculum_subject.course = course
                                 curriculum_subject.save()
                             else:
@@ -215,13 +218,57 @@ class TrainProgramManagerView(View):
                         except Course.DoesNotExist:
                             return JsonResponse({
                                 'status': 'error', 
-                                'message': f'Khóa học không tồn tại với tên: {value}'
+                                'message': f'Khóa học không tồn tại với id: {value}'
                             })
-                    else:
+                elif field == 'instructor':
+                    try:
+                        # Tìm hoặc tạo instructor mới
+                        if value and value.strip():
+                            # Tách danh sách giảng viên (nếu có nhiều)
+                            instructor_names = [name.strip() for name in value.split(',') if name.strip()]
+                            
+                            # Xóa các phân công giảng dạy cũ
+                            TeachingAssignment.objects.filter(
+                                curriculum_subject=curriculum_subject
+                            ).delete()
+                            
+                            # Tạo phân công giảng dạy mới
+                            for instructor_name in instructor_names:
+                                try:
+                                    # Tìm instructor theo tên
+                                    instructor = Instructor.objects.get(full_name=instructor_name)
+                                    
+                                    # Tạo phân công giảng dạy
+                                    TeachingAssignment.objects.create(
+                                        instructor=instructor,
+                                        curriculum_subject=curriculum_subject,
+                                        academic_year=curriculum_subject.curriculum.academic_year if curriculum_subject.curriculum else '',
+                                        semester=curriculum_subject.semester or 1,
+                                        is_main_instructor=True
+                                    )
+                                except Instructor.DoesNotExist:
+                                    # Bỏ qua nếu không tìm thấy giảng viên
+                                    continue
+                            
+                            return JsonResponse({
+                                'status': 'success', 
+                                'message': 'Đã cập nhật phân công giảng dạy'
+                            })
+                        else:
+                            # Xóa tất cả phân công giảng dạy nếu giá trị rỗng
+                            TeachingAssignment.objects.filter(
+                                curriculum_subject=curriculum_subject
+                            ).delete()
+                            return JsonResponse({
+                                'status': 'success', 
+                                'message': 'Đã xóa phân công giảng dạy'
+                            })
+                            
+                    except Exception as e:
                         return JsonResponse({
                             'status': 'error', 
-                            'message': f'Trường {field} không tồn tại'
-                        })                        
+                            'message': f'Lỗi khi cập nhật giảng viên: {str(e)}'
+                        })                   
                 else:
                     # Cập nhật thông tin chung của curriculum
                     curriculum_id = data.get('curriculum_id')
@@ -351,8 +398,16 @@ class TrainProgramManagerView(View):
     
     def get_instructors_for_subject(self, curriculum_subject):
         """Lấy danh sách giảng viên cho môn học"""
-        # Triển khai logic lấy giảng viên từ TeachingAssignment
-        return ""
+        try:
+            teaching_assignments = TeachingAssignment.objects.filter(
+                curriculum_subject=curriculum_subject
+            ).select_related('instructor')
+            
+            instructors = [assignment.instructor.full_name for assignment in teaching_assignments]
+            return ", ".join(instructors) if instructors else ""
+        except Exception as e:
+            print(f"Error getting instructors: {str(e)}")
+            return ""
     
     def get_sample_data(self):
         """Dữ liệu mẫu khi không kết nối được database"""
@@ -1223,6 +1278,17 @@ def api_combined_classes(request):
         })
     
     return JsonResponse(combined_class_data, safe=False)
+
+@csrf_exempt
+def api_search_instructors(request):
+    """API tìm kiếm giảng viên theo tên"""
+    query = request.GET.get('q', '')
+    if query:
+        instructors = Instructor.objects.filter(
+            full_name__icontains=query
+        ).values('id', 'full_name', 'code')[:10]
+        return JsonResponse(list(instructors), safe=False)
+    return JsonResponse([], safe=False)
 
 @csrf_exempt
 def api_teaching_assignments(request):

@@ -532,13 +532,20 @@
                         <input type="text" value="${monHoc.giang_vien || ''}" 
                             class="editable w-full bg-transparent border-none text-sm" 
                             data-field="instructor" data-id="${monHoc.id}" readonly
-                            data-original-value="${monHoc.giang_vien || ''}">
+                            data-original-value="${monHoc.giang_vien || ''}"
+                            placeholder="Nhập tên giảng viên, phân cách bằng dấu phẩy">
                     </td>
                     <td class="px-2 py-2 col-course">
-                        <input type="text" value="${monHoc.course_name || ''}" 
-                            class="editable w-full bg-transparent border-none text-sm" 
-                            data-field="course" data-id="${monHoc.id}" readonly
-                            data-original-value="${monHoc.course_name || ''}">
+                        <select class="editable w-full bg-transparent border-none text-sm" 
+                                data-field="course" data-id="${monHoc.id}" readonly
+                                data-original-value="${monHoc.course_id || ''}">
+                            <option value="">-- Chọn khóa học --</option>
+                            ${allCourses.map(course => `
+                                <option value="${course.id}" ${course.id == monHoc.course_id ? 'selected' : ''}>
+                                    ${course.name} (${course.code})
+                                </option>
+                            `).join('')}
+                        </select>
                     </td>
                     <td class="px-2 py-2 text-center col-thaotac">
                         <button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" data-id="${monHoc.id}" title="Sửa">
@@ -1461,23 +1468,32 @@
                     const inputs = row.querySelectorAll('input');
                     const id = button.getAttribute('data-id');
                     
+                    
                     // Chuyển đổi giữa chế độ chỉnh sửa và xem
                     if (button.innerHTML.includes('fa-edit')) {
+                        const editables = row.querySelectorAll('input, select');
                         button.innerHTML = '<i class="fas fa-check"></i>';
                         button.classList.remove('text-blue-600');
                         button.classList.add('text-green-600');
                         button.title = 'Lưu thay đổi';
                         
-                        inputs.forEach(input => {
-                            input.classList.add('border', 'border-blue-400', 'bg-white');
-                            input.removeAttribute('readonly');
+                        editables.forEach(editable => {
+                            editable.classList.add('border', 'border-blue-400', 'bg-white');
                             
-                            // Thêm sự kiện Enter để lưu nhanh
-                            input.addEventListener('keydown', function(e) {
-                                if (e.key === 'Enter') {
-                                    button.click(); // Kích hoạt nút lưu
-                                }
-                            });
+                            if (editable.tagName === 'SELECT') {
+                                editable.disabled = false;
+                            } else {
+                                editable.removeAttribute('readonly');
+                            }
+                            
+                            // Thêm sự kiện Enter để lưu nhanh (chỉ cho input)
+                            if (editable.tagName === 'INPUT') {
+                                editable.addEventListener('keydown', function(e) {
+                                    if (e.key === 'Enter') {
+                                        button.click(); // Kích hoạt nút lưu
+                                    }
+                                });
+                            }
                         });
                     } else {
                         button.innerHTML = '<i class="fas fa-edit"></i>';
@@ -1487,14 +1503,19 @@
                         
                         let hasChanges = false;
                         
-                        inputs.forEach(input => {
-                            input.classList.remove('border', 'border-blue-400', 'bg-white');
-                            input.setAttribute('readonly', true);
+                        editables.forEach(editable => {
+                            editable.classList.remove('border', 'border-blue-400', 'bg-white');
+                            
+                            if (editable.tagName === 'SELECT') {
+                                editable.disabled = true;
+                            } else {
+                                editable.setAttribute('readonly', true);
+                            }
                             
                             // Gửi yêu cầu cập nhật đến server
-                            const field = input.getAttribute('data-field');
-                            const value = input.value;
-                            const originalValue = input.getAttribute('data-original-value');
+                            const field = editable.getAttribute('data-field');
+                            const value = editable.value;
+                            const originalValue = editable.getAttribute('data-original-value');
                             
                             // Kiểm tra xem giá trị có thay đổi không
                             if (value !== originalValue) {
@@ -1513,7 +1534,7 @@
                             }
                             
                             // Cập nhật giá trị gốc mới
-                            input.setAttribute('data-original-value', value);
+                            editable.setAttribute('data-original-value', value);
                         });
                         
                         if (hasChanges) {
