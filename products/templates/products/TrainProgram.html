@@ -572,7 +572,7 @@
                     </td>
                     <td class="px-2 py-2 col-course">
                         <select class="editable w-full bg-transparent border-none text-sm" 
-                                data-field="course" data-id="${monHoc.id}" disabled
+                                data-field="course" data-id="${monHoc.id}" readonly
                                 data-original-value="${monHoc.course_id || ''}">
                             <option value="">-- Chọn khóa học --</option>
                             ${allCourses.map(course => `
@@ -1632,18 +1632,17 @@
                         button.classList.add('text-green-600');
                         button.title = 'Lưu thay đổi';
                         
-                        const inputs = row.querySelectorAll('input, select');
-                        inputs.forEach(input => {
-                            input.classList.add('border', 'border-blue-400', 'bg-white');
+                        const editables = row.querySelectorAll('input, select');
+                        editables.forEach(editable => {
+                            editable.classList.add('border', 'border-blue-400', 'bg-white');
                             
-                            if (input.tagName === 'SELECT') {
-                                input.disabled = false;
+                            if (editable.tagName === 'SELECT') {
+                                editable.disabled = false;
                             } else {
-                                input.removeAttribute('readonly');
+                                editable.removeAttribute('readonly');
                                 
                                 // Khởi tạo autocomplete cho input giảng viên
-                                if (input.classList.contains('instructor-autocomplete')) {
-                                    // Đảm bảo autocomplete được khởi tạo
+                                if (editable.classList.contains('instructor-autocomplete')) {
                                     setTimeout(() => {
                                         initializeInstructorAutocomplete();
                                     }, 100);
@@ -1651,10 +1650,10 @@
                             }
                             
                             // Thêm sự kiện Enter để lưu nhanh (chỉ cho input)
-                            if (input.tagName === 'INPUT') {
-                                input.addEventListener('keydown', function(e) {
+                            if (editable.tagName === 'INPUT') {
+                                editable.addEventListener('keydown', function(e) {
                                     if (e.key === 'Enter') {
-                                        button.click(); // Kích hoạt nút lưu
+                                        button.click();
                                     }
                                 });
                             }
@@ -1666,6 +1665,7 @@
                         button.title = 'Sửa';
                         
                         let hasChanges = false;
+                        const editables = row.querySelectorAll('input, select');
                         
                         editables.forEach(editable => {
                             editable.classList.remove('border', 'border-blue-400', 'bg-white');
