@@ -199,10 +199,15 @@ class TrainProgramManagerView(View):
                         curriculum_subject = Subject.objects.get(id=id)
                         try:
                             if value and value.strip():
-                                course = Course.objects.get(id=int(value)) 
-                                    # defaults={'code': value.strip()[:10].upper().replace(' ', '')}
-                                curriculum_subject.course = course
-                                curriculum_subject.save()
+                                try:
+            						course_id = int(value)
+            						course = Course.objects.get(id=course_id)
+        						except (ValueError, Course.DoesNotExist):
+            						# Nếu không phải ID hợp lệ, tìm theo code
+            						course = Course.objects.get(code=value.strip())
+            
+        							curriculum_subject.course = course
+        							curriculum_subject.save()
                             else:
                                 curriculum_subject.course = None
                                 curriculum_subject.save()
