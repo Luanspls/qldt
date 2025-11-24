@@ -199,10 +199,8 @@ class TrainProgramManagerView(View):
                         curriculum_subject = Subject.objects.get(id=id)
                         try:
                             if value and value.strip():
-                                course, created = Course.objects.get_or_create(
-                                    name=value.strip(),
-                                    defaults={'code': value.strip()[:10].upper().replace(' ', '')}
-                                )
+                                course = Course.objects.get(id=int(value)) 
+                                    # defaults={'code': value.strip()[:10].upper().replace(' ', '')}
                                 curriculum_subject.course = course
                                 curriculum_subject.save()
                             else:
@@ -215,7 +213,7 @@ class TrainProgramManagerView(View):
                         except Course.DoesNotExist:
                             return JsonResponse({
                                 'status': 'error', 
-                                'message': f'Khóa học không tồn tại với tên: {value}'
+                                'message': f'Khóa học không tồn tại với id: {value}'
                             })
                     else:
                         return JsonResponse({
