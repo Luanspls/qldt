@@ -208,10 +208,10 @@ class Subject(models.Model):
     
     course = models.ForeignKey(
         Course, 
-        on_delete=models.CASCADE,
-        verbose_name="Khóa học",
+        on_delete=models.SET_NULL, 
+        null=True, 
         blank=True,
-        null=True,
+        verbose_name="Khóa học"
     )
 
     subject_type = models.ForeignKey(

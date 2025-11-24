@@ -572,7 +572,7 @@
                     </td>
                     <td class="px-2 py-2 col-course">
                         <select class="editable w-full bg-transparent border-none text-sm" 
-                                data-field="course" data-id="${monHoc.id}" readonly
+                                data-field="course" data-id="${monHoc.id}" disabled
                                 data-original-value="${monHoc.course_id || ''}">
                             <option value="">-- Chọn khóa học --</option>
                             ${allCourses.map(course => `
@@ -692,7 +692,7 @@
             }
             return getCookie('csrftoken');
         }
-        
+
         // Hàm cập nhật giá trị gốc sau khi thành công
         function updateOriginalValue(id, field, value) {
             const input = document.querySelector(`[data-id="${id}"][data-field="${field}"]`);
