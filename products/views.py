@@ -101,206 +101,210 @@ class TrainProgramManagerView(View):
     
     def put(self, request, id=None):
         """Cập nhật chương trình đào tạo"""
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            try:
-                data = json.loads(request.body)
-                
-                if id:
-                    # Cập nhật môn học cụ thể
-                    curriculum_subject = Subject.objects.get(id=id)
-                    field = data.get('field')
-                    value = data.get('value')
-                                        
-                    # Xử lý các trường học kỳ (HK1-HK6)
-                    if field and field.startswith('hk'):
-                        semester = int(field.replace('hk', ''))
-                        
-                        # Xử lý giá trị học kỳ
-                        if value == '' or value is None:
-                            # Xóa phân bố học kỳ nếu tồn tại
-                            SemesterAllocation.objects.filter(
-                                base_subject=curriculum_subject, 
-                                semester=semester
-                            ).delete()
-                        else:
-                            # Cập nhật hoặc tạo mới phân bố học kỳ
-                            try:
-                                credits_value = float(value)
-                                SemesterAllocation.objects.update_or_create(
-                                    base_subject=curriculum_subject,
-                                    semester=semester,
-                                    defaults={'credits': credits_value}
-                                )
-                            except (ValueError, TypeError):
-                                return JsonResponse({
-                                    'status': 'error', 
-                                    'message': f'Giá trị tín chỉ không hợp lệ: {value}'
-                                })
-                        
-                        return JsonResponse({
-                            'status': 'success', 
-                            'message': f'Đã cập nhật phân bố học kỳ HK{semester}'
-                        })
-                    
-                    # Xử lý trường department (quan hệ)
-                    elif field == 'department':
-                        # Tìm hoặc tạo department mới
-                        if value and value.strip():
-                            department, created = Department.objects.get_or_create(
-                                name=value.strip(),
-                                defaults={'code': value.strip()[:10].upper().replace(' ', '')}
-                            )
-                            curriculum_subject.department = department
-                            curriculum_subject.save()
-                        else:
-                            curriculum_subject.department = None
-                            curriculum_subject.save()
-                        return JsonResponse({
-                            'status': 'success', 
-                            'message': 'Đã cập nhật đơn vị quản lý'
-                        })
-                    
-                    # Bỏ qua trường instructor vì không tồn tại trong model
-                    elif field == 'instructor':
-                        return JsonResponse({
-                            'status': 'success', 
-                            'message': 'Trường giảng viên được bỏ qua (chưa được triển khai)'
-                        })
-                    
-                    # Xử lý các trường khác của Subject
-                    elif hasattr(curriculum_subject, field):
-                        # Xử lý kiểu dữ liệu
-                        if field in ['credits']:
-                            try:
-                                value = float(value) if value else 0
-                            except (ValueError, TypeError):
-                                return JsonResponse({
-                                    'status': 'error', 
-                                    'message': f'Giá trị {field} không hợp lệ: {value}'
-                                })
-                        elif field in ['total_hours', 'theory_hours', 'practice_hours', 'exam_hours', 'order_number', 'semester']:
-                            try:
-                                value = int(value) if value else 0
-                            except (ValueError, TypeError):
-                                return JsonResponse({
-                                    'status': 'error', 
-                                    'message': f'Giá trị {field} không hợp lệ: {value}'
-                                })
-                        
-                        setattr(curriculum_subject, field, value)
-                        curriculum_subject.save()
-                        
-                        return JsonResponse({
-                            'status': 'success', 
-                            'message': f'Đã cập nhật {field} thành công'
-                        })
-                    elif field == 'course':
-                        # Cập nhật khóa học cho curriculum_subject
-                        curriculum_subject = Subject.objects.get(id=id)
-                        try:
-                            if value and value.strip():
-                                try:
-                                    course_id = int(value)
-                                    course = Course.objects.get(id=course_id)
-                                except (ValueError, Course.DoesNotExist):
-                                    # Nếu không phải ID hợp lệ, tìm theo code
-                                    course = Course.objects.get(code=value.strip())
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Invalid request'
+            }, status=400)
+        try:
+            data = json.loads(request.body)
             
-                                curriculum_subject.course = course
-                                curriculum_subject.save()
-                            else:
-                                curriculum_subject.course = None
-                                curriculum_subject.save()
-                            return JsonResponse({
-                                'status': 'success', 
-                                'message': 'Đã cập nhật khóa học thành công'
-                            })
-                        except Course.DoesNotExist:
+            if id:
+                # Cập nhật môn học cụ thể
+                curriculum_subject = Subject.objects.get(id=id)
+                field = data.get('field')
+                value = data.get('value')
+                                    
+                # Xử lý các trường học kỳ (HK1-HK6)
+                if field and field.startswith('hk'):
+                    semester = int(field.replace('hk', ''))
+                    
+                    # Xử lý giá trị học kỳ
+                    if value == '' or value is None:
+                        # Xóa phân bố học kỳ nếu tồn tại
+                        SemesterAllocation.objects.filter(
+                            base_subject=curriculum_subject, 
+                            semester=semester
+                        ).delete()
+                    else:
+                        # Cập nhật hoặc tạo mới phân bố học kỳ
+                        try:
+                            credits_value = float(value)
+                            SemesterAllocation.objects.update_or_create(
+                                base_subject=curriculum_subject,
+                                semester=semester,
+                                defaults={'credits': credits_value}
+                            )
+                        except (ValueError, TypeError):
                             return JsonResponse({
                                 'status': 'error', 
-                                'message': f'Khóa học không tồn tại với id: {value}'
+                                'message': f'Giá trị tín chỉ không hợp lệ: {value}'
                             })
-                elif field == 'instructor':
-                    try:
-                        # Tìm hoặc tạo instructor mới
-                        if value and value.strip():
-                            # Tách danh sách giảng viên (nếu có nhiều)
-                            instructor_names = [name.strip() for name in value.split(',') if name.strip()]
-                            
-                            # Xóa các phân công giảng dạy cũ
-                            TeachingAssignment.objects.filter(
-                                curriculum_subject=curriculum_subject
-                            ).delete()
-                            
-                            # Tạo phân công giảng dạy mới
-                            for instructor_name in instructor_names:
-                                try:
-                                    # Tìm instructor theo tên
-                                    instructor = Instructor.objects.get(full_name=instructor_name)
-                                    
-                                    # Tạo phân công giảng dạy
-                                    TeachingAssignment.objects.create(
-                                        instructor=instructor,
-                                        curriculum_subject=curriculum_subject,
-                                        academic_year=curriculum_subject.curriculum.academic_year if curriculum_subject.curriculum else '',
-                                        semester=curriculum_subject.semester or 1,
-                                        is_main_instructor=True
-                                    )
-                                except Instructor.DoesNotExist:
-                                    # Bỏ qua nếu không tìm thấy giảng viên
-                                    continue
-                            
-                            return JsonResponse({
-                                'status': 'success', 
-                                'message': 'Đã cập nhật phân công giảng dạy'
-                            })
-                        else:
-                            # Xóa tất cả phân công giảng dạy nếu giá trị rỗng
-                            TeachingAssignment.objects.filter(
-                                curriculum_subject=curriculum_subject
-                            ).delete()
-                            return JsonResponse({
-                                'status': 'success', 
-                                'message': 'Đã xóa phân công giảng dạy'
-                            })
-                            
-                    except Exception as e:
-                        return JsonResponse({
-                            'status': 'error', 
-                            'message': f'Lỗi khi cập nhật giảng viên: {str(e)}'
-                        })                   
-                else:
-                    # Cập nhật thông tin chung của curriculum
-                    curriculum_id = data.get('curriculum_id')
-                    if curriculum_id:
-                        curriculum = Curriculum.objects.get(id=curriculum_id)
-                        curriculum.name = data.get('name', curriculum.name)
-                        curriculum.academic_year = data.get('academic_year', curriculum.academic_year)
-                        curriculum.description = data.get('description', curriculum.description)
-                        curriculum.total_credits = data.get('total_credits', curriculum.total_credits)
-                        curriculum.save()
-                        
+                    
                     return JsonResponse({
                         'status': 'success', 
-                        'message': 'Đã cập nhật chương trình thành công'
+                        'message': f'Đã cập nhật phân bố học kỳ HK{semester}'
                     })
+                
+                # Xử lý trường department (quan hệ)
+                elif field == 'department':
+                    # Tìm hoặc tạo department mới
+                    if value and value.strip():
+                        department, created = Department.objects.get_or_create(
+                            name=value.strip(),
+                            defaults={'code': value.strip()[:10].upper().replace(' ', '')}
+                        )
+                        curriculum_subject.department = department
+                        curriculum_subject.save()
+                    else:
+                        curriculum_subject.department = None
+                        curriculum_subject.save()
+                    return JsonResponse({
+                        'status': 'success', 
+                        'message': 'Đã cập nhật đơn vị quản lý'
+                    })
+                
+                # Bỏ qua trường instructor vì không tồn tại trong model
+                elif field == 'instructor':
+                    return JsonResponse({
+                        'status': 'success', 
+                        'message': 'Trường giảng viên được bỏ qua (chưa được triển khai)'
+                    })
+                
+                # Xử lý các trường khác của Subject
+                elif hasattr(curriculum_subject, field):
+                    # Xử lý kiểu dữ liệu
+                    if field in ['credits']:
+                        try:
+                            value = float(value) if value else 0
+                        except (ValueError, TypeError):
+                            return JsonResponse({
+                                'status': 'error', 
+                                'message': f'Giá trị {field} không hợp lệ: {value}'
+                            })
+                    elif field in ['total_hours', 'theory_hours', 'practice_hours', 'exam_hours', 'order_number', 'semester']:
+                        try:
+                            value = int(value) if value else 0
+                        except (ValueError, TypeError):
+                            return JsonResponse({
+                                'status': 'error', 
+                                'message': f'Giá trị {field} không hợp lệ: {value}'
+                            })
                     
-            except Subject.DoesNotExist:
+                    setattr(curriculum_subject, field, value)
+                    curriculum_subject.save()
+                    
+                    return JsonResponse({
+                        'status': 'success', 
+                        'message': f'Đã cập nhật {field} thành công'
+                    })
+                elif field == 'course':
+                    # Cập nhật khóa học cho curriculum_subject
+                    curriculum_subject = Subject.objects.get(id=id)
+                    try:
+                        if value and value.strip():
+                            try:
+                                course_id = int(value)
+                                course = Course.objects.get(id=course_id)
+                            except (ValueError, Course.DoesNotExist):
+                                # Nếu không phải ID hợp lệ, tìm theo code
+                                course = Course.objects.get(code=value.strip())
+        
+                            curriculum_subject.course = course
+                            curriculum_subject.save()
+                        else:
+                            curriculum_subject.course = None
+                            curriculum_subject.save()
+                        return JsonResponse({
+                            'status': 'success', 
+                            'message': 'Đã cập nhật khóa học thành công'
+                        })
+                    except Course.DoesNotExist:
+                        return JsonResponse({
+                            'status': 'error', 
+                            'message': f'Khóa học không tồn tại với id: {value}'
+                        })
+            elif field == 'instructor':
+                try:
+                    # Tìm hoặc tạo instructor mới
+                    if value and value.strip():
+                        # Tách danh sách giảng viên (nếu có nhiều)
+                        instructor_names = [name.strip() for name in value.split(',') if name.strip()]
+                        
+                        # Xóa các phân công giảng dạy cũ
+                        TeachingAssignment.objects.filter(
+                            curriculum_subject=curriculum_subject
+                        ).delete()
+                        
+                        # Tạo phân công giảng dạy mới
+                        for instructor_name in instructor_names:
+                            try:
+                                # Tìm instructor theo tên
+                                instructor = Instructor.objects.get(full_name=instructor_name)
+                                
+                                # Tạo phân công giảng dạy
+                                TeachingAssignment.objects.create(
+                                    instructor=instructor,
+                                    curriculum_subject=curriculum_subject,
+                                    academic_year=curriculum_subject.curriculum.academic_year if curriculum_subject.curriculum else '',
+                                    semester=curriculum_subject.semester or 1,
+                                    is_main_instructor=True
+                                )
+                            except Instructor.DoesNotExist:
+                                # Bỏ qua nếu không tìm thấy giảng viên
+                                continue
+                        
+                        return JsonResponse({
+                            'status': 'success', 
+                            'message': 'Đã cập nhật phân công giảng dạy'
+                        })
+                    else:
+                        # Xóa tất cả phân công giảng dạy nếu giá trị rỗng
+                        TeachingAssignment.objects.filter(
+                            curriculum_subject=curriculum_subject
+                        ).delete()
+                        return JsonResponse({
+                            'status': 'success', 
+                            'message': 'Đã xóa phân công giảng dạy'
+                        })
+                        
+                except Exception as e:
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': f'Lỗi khi cập nhật giảng viên: {str(e)}'
+                    })                   
+            else:
+                # Cập nhật thông tin chung của curriculum
+                curriculum_id = data.get('curriculum_id')
+                if curriculum_id:
+                    curriculum = Curriculum.objects.get(id=curriculum_id)
+                    curriculum.name = data.get('name', curriculum.name)
+                    curriculum.academic_year = data.get('academic_year', curriculum.academic_year)
+                    curriculum.description = data.get('description', curriculum.description)
+                    curriculum.total_credits = data.get('total_credits', curriculum.total_credits)
+                    curriculum.save()
+                    
                 return JsonResponse({
-                    'status': 'error', 
-                    'message': 'Môn học không tồn tại'
+                    'status': 'success', 
+                    'message': 'Đã cập nhật chương trình thành công'
                 })
-            except Curriculum.DoesNotExist:
-                return JsonResponse({
-                    'status': 'error', 
-                    'message': 'Chương trình đào tạo không tồn tại'
-                })
-            except Exception as e:
-                print(f"Error in PUT: {str(e)}")  # Debug log
-                return JsonResponse({
-                    'status': 'error', 
-                    'message': f'Lỗi khi cập nhật: {str(e)}'
-                })
+                
+        except Subject.DoesNotExist:
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Môn học không tồn tại'
+            })
+        except Curriculum.DoesNotExist:
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Chương trình đào tạo không tồn tại'
+            })
+        except Exception as e:
+            print(f"Error in PUT: {str(e)}")  # Debug log
+            return JsonResponse({
+                'status': 'error', 
+                'message': f'Lỗi khi cập nhật: {str(e)}'
+            })
         
         return JsonResponse({
             'status': 'error', 

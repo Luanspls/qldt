@@ -167,6 +167,7 @@
     </style>
 </head>
 <body class="bg-gray-100">
+    {% csrf_token %}
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold text-center mb-8 text-blue-800">QUẢN LÝ CHƯƠNG TRÌNH ĐÀO TẠO</h1>
         
@@ -636,8 +637,10 @@
 
 		// Cập nhật môn học
         function updateMonHoc(id, field, value) {
-            // Bỏ qua nếu giá trị không thay đổi hoặc là trường instructor
-            if (field === 'instructor') {
+            const csrfToken = getCSRFToken();
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                alert('Lỗi bảo mật: Không tìm thấy CSRF token');
                 return;
             }
             
@@ -651,14 +654,16 @@
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-CSRFToken': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify(data)
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    return response.text().then(text => {
+                        throw new Error(`HTTP ${response.status}: ${text}`);
+                    });
                 }
                 return response.json();
             })
@@ -670,6 +675,7 @@
                     loadFilteredData();
                 } else {
                     console.log('Update success:', data.message);
+                    updateOriginalValue(id, field, value);
                 }
             })
             .catch(error => {
@@ -679,6 +685,14 @@
             });
         }
 
+        // Hàm cập nhật giá trị gốc sau khi thành công
+        function updateOriginalValue(id, field, value) {
+            const input = document.querySelector(`[data-id="${id}"][data-field="${field}"]`);
+            if (input) {
+                input.setAttribute('data-original-value', value);
+            }
+        }
+        
         // Cập nhật phân bố học kỳ
         function updateSemesterAllocation(curriculumSubjectId, semester, credits) {
             const data = {
