@@ -205,7 +205,7 @@ class TrainProgramManagerView(View):
                                 except (ValueError, Course.DoesNotExist):
                                     # Nếu không phải ID hợp lệ, tìm theo code
                                     course = Course.objects.get(code=value.strip())
-                                
+            
                                 curriculum_subject.course = course
                                 curriculum_subject.save()
                             else:
