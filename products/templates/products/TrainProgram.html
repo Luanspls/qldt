@@ -685,6 +685,14 @@
             });
         }
 
+        function getCSRFToken() {
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag) {
+                return metaTag.getAttribute('content');
+            }
+            return getCookie('csrftoken');
+        }
+        
         // Hàm cập nhật giá trị gốc sau khi thành công
         function updateOriginalValue(id, field, value) {
             const input = document.querySelector(`[data-id="${id}"][data-field="${field}"]`);
@@ -692,7 +700,7 @@
                 input.setAttribute('data-original-value', value);
             }
         }
-        
+
         // Cập nhật phân bố học kỳ
         function updateSemesterAllocation(curriculumSubjectId, semester, credits) {
             const data = {
