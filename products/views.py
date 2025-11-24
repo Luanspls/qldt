@@ -206,8 +206,8 @@ class TrainProgramManagerView(View):
             						# Nếu không phải ID hợp lệ, tìm theo code
             						course = Course.objects.get(code=value.strip())
             
-        							curriculum_subject.course = course
-        							curriculum_subject.save()
+        						curriculum_subject.course = course
+        						curriculum_subject.save()
                             else:
                                 curriculum_subject.course = None
                                 curriculum_subject.save()
