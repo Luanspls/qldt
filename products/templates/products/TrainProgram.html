@@ -134,6 +134,36 @@
             cursor: pointer !important;
             pointer-events: auto !important;
         }
+
+        /* Style cho autocomplete */
+        .instructor-autocomplete {
+            position: relative;
+        }
+
+        .autocomplete-suggestions {
+            position: absolute;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .autocomplete-suggestion {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .autocomplete-suggestion:hover {
+            background-color: #f3f4f6;
+        }
+
+        .autocomplete-suggestion:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -530,10 +560,14 @@
                     </td>
                     <td class="px-2 py-2 col-giangvien">
                         <input type="text" value="${monHoc.giang_vien || ''}" 
-                            class="editable w-full bg-transparent border-none text-sm" 
+                            class="editable instructor-autocomplete w-full bg-transparent border-none text-sm" 
                             data-field="instructor" data-id="${monHoc.id}" readonly
                             data-original-value="${monHoc.giang_vien || ''}"
-                            placeholder="Nhập tên giảng viên, phân cách bằng dấu phẩy">
+                            placeholder="Nhập tên giảng viên..."
+                            list="instructor-suggestions-${monHoc.id}">
+                        <datalist id="instructor-suggestions-${monHoc.id}">
+                            <!-- Suggestions will be populated dynamically -->
+                        </datalist>
                     </td>
                     <td class="px-2 py-2 col-course">
                         <select class="editable w-full bg-transparent border-none text-sm" 
@@ -558,6 +592,11 @@
                 `;
                 tableBody.appendChild(row);
             });
+            
+            // Khởi tạo autocomplete sau khi render
+            setTimeout(() => {
+                initializeInstructorAutocomplete();
+            }, 100);
             
             // Cập nhật thống kê
             updateStatistics();
@@ -1368,6 +1407,101 @@
             document.querySelector('input[name="name"]').value = '';
         }
 
+        // Biến lưu trữ timeout cho debounce
+        let instructorSearchTimeout = null;
+
+        // Hàm tìm kiếm giảng viên với debounce
+        function searchInstructors(query, targetInput) {
+            if (instructorSearchTimeout) {
+                clearTimeout(instructorSearchTimeout);
+            }
+            
+            instructorSearchTimeout = setTimeout(() => {
+                if (query.length < 2) {
+                    clearInstructorSuggestions(targetInput);
+                    return;
+                }
+                
+                fetch(`/api/search-instructors/?q=${encodeURIComponent(query)}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(instructors => {
+                        showInstructorSuggestions(instructors, targetInput);
+                    })
+                    .catch(error => {
+                        console.error('Error searching instructors:', error);
+                        clearInstructorSuggestions(targetInput);
+                    });
+            }, 300); // Debounce 300ms
+        }
+
+        // Hàm hiển thị suggestions
+        function showInstructorSuggestions(instructors, targetInput) {
+            const datalist = targetInput.nextElementSibling;
+            if (!datalist || datalist.tagName !== 'DATALIST') return;
+            
+            datalist.innerHTML = '';
+            
+            instructors.forEach(instructor => {
+                const option = document.createElement('option');
+                option.value = instructor.full_name;
+                option.textContent = `${instructor.full_name} (${instructor.code})`;
+                option.setAttribute('data-instructor-id', instructor.id);
+                datalist.appendChild(option);
+            });
+        }
+
+        // Hàm xóa suggestions
+        function clearInstructorSuggestions(targetInput) {
+            const datalist = targetInput.nextElementSibling;
+            if (datalist && datalist.tagName === 'DATALIST') {
+                datalist.innerHTML = '';
+            }
+        }
+
+        // Hàm xử lý khi chọn một suggestion
+        function handleInstructorSelection(input) {
+            // Có thể thêm logic xử lý khi chọn suggestion ở đây
+            console.log('Instructor selected:', input.value);
+        }
+
+        // Hàm khởi tạo autocomplete cho tất cả input giảng viên
+        function initializeInstructorAutocomplete() {
+            document.querySelectorAll('.instructor-autocomplete').forEach(input => {
+                // Xóa event listeners cũ để tránh duplicate
+                const newInput = input.cloneNode(true);
+                input.parentNode.replaceChild(newInput, input);
+                
+                // Thêm event listeners mới
+                newInput.addEventListener('input', function(e) {
+                    if (!this.readOnly) {
+                        searchInstructors(this.value, this);
+                    }
+                });
+                
+                newInput.addEventListener('focus', function(e) {
+                    if (!this.readOnly && this.value.length >= 2) {
+                        searchInstructors(this.value, this);
+                    }
+                });
+                
+                newInput.addEventListener('blur', function(e) {
+                    // Delay clearing để cho phép click vào suggestions
+                    setTimeout(() => {
+                        clearInstructorSuggestions(this);
+                    }, 200);
+                });
+                
+                newInput.addEventListener('change', function(e) {
+                    handleInstructorSelection(this);
+                });
+            });
+        }
+
         // Hàm lấy CSRF token
         function getCookie(name) {
             let cookieValue = null;
@@ -1467,28 +1601,36 @@
                     const row = button.closest('tr');
                     const inputs = row.querySelectorAll('input');
                     const id = button.getAttribute('data-id');
-                    
+                    const editables = row.querySelectorAll('input, select');
                     
                     // Chuyển đổi giữa chế độ chỉnh sửa và xem
                     if (button.innerHTML.includes('fa-edit')) {
-                        const editables = row.querySelectorAll('input, select');
                         button.innerHTML = '<i class="fas fa-check"></i>';
                         button.classList.remove('text-blue-600');
                         button.classList.add('text-green-600');
                         button.title = 'Lưu thay đổi';
                         
-                        editables.forEach(editable => {
-                            editable.classList.add('border', 'border-blue-400', 'bg-white');
+                        const inputs = row.querySelectorAll('input, select');
+                        inputs.forEach(input => {
+                            input.classList.add('border', 'border-blue-400', 'bg-white');
                             
-                            if (editable.tagName === 'SELECT') {
-                                editable.disabled = false;
+                            if (input.tagName === 'SELECT') {
+                                input.disabled = false;
                             } else {
-                                editable.removeAttribute('readonly');
+                                input.removeAttribute('readonly');
+                                
+                                // Khởi tạo autocomplete cho input giảng viên
+                                if (input.classList.contains('instructor-autocomplete')) {
+                                    // Đảm bảo autocomplete được khởi tạo
+                                    setTimeout(() => {
+                                        initializeInstructorAutocomplete();
+                                    }, 100);
+                                }
                             }
                             
                             // Thêm sự kiện Enter để lưu nhanh (chỉ cho input)
-                            if (editable.tagName === 'INPUT') {
-                                editable.addEventListener('keydown', function(e) {
+                            if (input.tagName === 'INPUT') {
+                                input.addEventListener('keydown', function(e) {
                                     if (e.key === 'Enter') {
                                         button.click(); // Kích hoạt nút lưu
                                     }
