@@ -27,7 +27,17 @@ def home_page(request):
 
 def users_list(request):
     users = supabase_api.get_users()
-    return JsonResponse(users, safe=False)    
+    return JsonResponse(users, safe=False)
+
+class KeepAliveMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        
+    def __call__(self, request):
+        # Preload các model thường dùng
+        from django.apps import apps
+        apps.get_models()
+        return self.get_response(request)
 
 class TrainProgramManagerView(View):
     template_name = 'products/TrainProgram.html'

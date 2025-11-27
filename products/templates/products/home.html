@@ -12,8 +12,19 @@
         <div>
             <a href="/admin/">Admin Panel</a> | 
             <a href="/users/">Users API</a> | 
-            <a href="/health/">Health Check</a>
         </div>
     </div>
+    <scripts>
+        setInterval(() => {
+            fetch('/health/')
+                .then(response => console.log('Ping successful'))
+                .catch(err => console.log('Ping failed'));
+        }, 300000); // 10 phút
+
+        // Ping ngay khi trang load
+        window.addEventListener('load', () => {
+            fetch('/health/');
+        });
+    </scripts>
 </body>
 </html>

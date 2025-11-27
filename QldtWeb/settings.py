@@ -32,6 +32,13 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
 ]
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': '/tmp/django_cache',
+    }
+}
+
 # CORS settings cho phép frontend truy 
 # CORS_ALLOWED_ORIGINS = [
 #     "https://qldt.vercel.app",
