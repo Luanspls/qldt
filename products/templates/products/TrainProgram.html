@@ -27,18 +27,34 @@
            word-wrap: break-word;
         }
 
+        .editable.select {
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            padding: 2px 4px;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .editable.select:focus {
+            outline: 2px solid #3b82f6;
+            background-color: white;
+            border-radius: 4px;
+        }
+
         /* Độ rộng cụ thể cho từng cột */
         .col-tt { width: 48px; }
-        .col-ma { width: 80px; }
-        .col-ten { width: 192px; min-width: 192px; }
+        .col-ma { width: 100px; }
+        .col-ten { width: 220px; min-width: 220px; }
         .col-tinchi { width: 64px; }
         .col-gio { width: 80px; }
         .col-lythuyet { width: 64px; }
         .col-thuchanh { width: 64px; }
         .col-kiemtra { width: 80px; }
         .col-hk { width: 48px; }
-        .col-donvi { width: 128px; }
-        .col-giangvien { width: 160px; }
+        .col-donvi { width: 180px; min-width: 180px; } /* Tăng độ rộng cột đơn vị */
+        .col-giangvien { width: 200px; min-width: 200px; } /* Tăng độ rộng cột giảng viên */
+        .col-course { width: 150px; min-width: 150px; } /* Tăng độ rộng cột khóa học */
         .col-thaotac { width: 80px; }
         
         /* Fix z-index cho tất cả modal và header */
@@ -476,16 +492,28 @@
                 row.innerHTML = `
                     <td class="px-2 py-2 text-center text-sm col-tt">${index + 1}</td>
                     <td class="px-2 py-2 col-ma">
-                        <input type="text" value="${monHoc.ma_mon_hoc || ''}" 
-                            class="editable w-full bg-transparent border-none text-sm" 
-                            data-field="code" data-id="${monHoc.id}" readonly
-                            data-original-value="${monHoc.ma_mon_hoc || ''}">
+                        <select class="editable select subject-code w-full bg-transparent border-none text-sm" 
+                                data-field="code" data-id="${monHoc.id}" disabled
+                                data-original-value="${monHoc.ma_mon_hoc || ''}">
+                            <option value="">-- Chọn mã --</option>
+                            ${allSubjects.map(subject => `
+                                <option value="${subject.code}" ${subject.code === monHoc.ma_mon_hoc ? 'selected' : ''}>
+                                    ${subject.code}
+                                </option>
+                            `).join('')}
+                        </select>
                     </td>
                     <td class="px-2 py-2 col-ten wrap-cell">
-                        <input type="text" value="${monHoc.ten_mon_hoc || ''}" 
-                            class="editable w-full bg-transparent border-none text-sm" 
-                            data-field="name" data-id="${monHoc.id}" readonly
-                            data-original-value="${monHoc.ten_mon_hoc || ''}">
+                        <select class="editable select subject-name w-full bg-transparent border-none text-sm" 
+                                data-field="name" data-id="${monHoc.id}" disabled
+                                data-original-value="${monHoc.ten_mon_hoc || ''}">
+                            <option value="">-- Chọn tên --</option>
+                            ${allSubjects.map(subject => `
+                                <option value="${subject.name}" ${subject.name === monHoc.ten_mon_hoc ? 'selected' : ''}>
+                                    ${subject.name}
+                                </option>
+                            `).join('')}
+                        </select>
                     </td>
                     <td class="px-2 py-2 text-center col-tinchi">
                         <input type="number" value="${monHoc.so_tin_chi || 0}" 
@@ -554,10 +582,16 @@
                             data-original-value="${monHoc.hk6 || ''}">
                     </td>
                     <td class="px-2 py-2 col-donvi">
-                        <input type="text" value="${monHoc.don_vi || ''}" 
-                            class="editable w-full bg-transparent border-none text-sm" 
-                            data-field="department" data-id="${monHoc.id}" readonly
-                            data-original-value="${monHoc.don_vi || ''}">
+                        <select class="editable select department-select w-full bg-transparent border-none text-sm" 
+                                data-field="department" data-id="${monHoc.id}" disabled
+                                data-original-value="${monHoc.don_vi || ''}">
+                            <option value="">-- Chọn đơn vị --</option>
+                            ${allDepartments.map(dept => `
+                                <option value="${dept.name}" ${dept.name === monHoc.don_vi ? 'selected' : ''}>
+                                    ${dept.name}
+                                </option>
+                            `).join('')}
+                        </select>
                     </td>
                     <td class="px-2 py-2 col-giangvien">
                         <input type="text" value="${monHoc.giang_vien || ''}" 
@@ -597,6 +631,7 @@
             // Khởi tạo autocomplete sau khi render
             setTimeout(() => {
                 initializeInstructorAutocomplete();
+                initializeSubjectSync();
             }, 200);
             
             // Cập nhật thống kê
@@ -1465,10 +1500,7 @@
         }
 
         // Hàm hiển thị suggestions
-        function showInstructorSuggestions(instructors, targetInput) {
-            console.log('Showing suggestions for input:', targetInput); // Debug
-            console.log('Instructors to show:', instructors); // Debug
-            
+        function showInstructorSuggestions(instructors, targetInput) {            
             // Tìm datalist liên kết với input
             const datalist = targetInput.nextElementSibling;
             if (!datalist || datalist.tagName !== 'DATALIST') {
@@ -1479,7 +1511,6 @@
             datalist.innerHTML = '';
             
             if (instructors.length === 0) {
-                console.log('No instructors found'); // Debug
                 return;
             }
             
@@ -1491,7 +1522,6 @@
                 datalist.appendChild(option);
             });
             
-            console.log('Added', instructors.length, 'suggestions'); // Debug
         }
 
         // Hàm xóa suggestions
@@ -1509,7 +1539,7 @@
         }
 
         // Hàm khởi tạo autocomplete cho tất cả input giảng viên
-        function initializeInstructorAutocomplete() {            
+        function initializeInstructorAutocomplete() {
             document.querySelectorAll('.instructor-autocomplete').forEach(input => {
                 // Kiểm tra xem input đã có event listeners chưa
                 if (input.hasAttribute('data-autocomplete-initialized')) {
@@ -1547,6 +1577,76 @@
             });
         }
 
+        // Hàm đồng bộ giữa mã môn học và tên học phần
+        function initializeSubjectSync() {
+            // Tạo mapping từ mã môn học đến tên và ngược lại
+            const codeToNameMap = {};
+            const nameToCodeMap = {};
+            
+            allSubjects.forEach(subject => {
+                codeToNameMap[subject.code] = subject.name;
+                nameToCodeMap[subject.name] = subject.code;
+            });
+            
+            // Sự kiện khi thay đổi mã môn học
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('subject-code')) {
+                    const selectedCode = e.target.value;
+                    const row = e.target.closest('tr');
+                    const nameSelect = row.querySelector('.subject-name');
+                    
+                    if (selectedCode && codeToNameMap[selectedCode]) {
+                        // Tìm và chọn tên môn học tương ứng
+                        nameSelect.value = codeToNameMap[selectedCode];
+                        // Cập nhật giá trị gốc
+                        nameSelect.setAttribute('data-original-value', codeToNameMap[selectedCode]);
+                        
+                        // Tự động cập nhật lên server
+                        const subjectId = e.target.getAttribute('data-id');
+                        updateMonHoc(subjectId, 'code', selectedCode);
+                        updateMonHoc(subjectId, 'name', codeToNameMap[selectedCode]);
+                    }
+                }
+            });
+
+            // Sự kiện khi thay đổi tên môn học
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('subject-name')) {
+                    const selectedName = e.target.value;
+                    const row = e.target.closest('tr');
+                    const codeSelect = row.querySelector('.subject-code');
+                    
+                    if (selectedName && nameToCodeMap[selectedName]) {
+                        // Tìm và chọn mã môn học tương ứng
+                        codeSelect.value = nameToCodeMap[selectedName];
+                        // Cập nhật giá trị gốc
+                        codeSelect.setAttribute('data-original-value', nameToCodeMap[selectedName]);
+                        
+                        // Tự động cập nhật lên server
+                        const subjectId = e.target.getAttribute('data-id');
+                        updateMonHoc(subjectId, 'name', selectedName);
+                        updateMonHoc(subjectId, 'code', nameToCodeMap[selectedName]);
+                    }
+                }
+            });
+        }
+
+        // Hàm load tất cả môn học để populate dropdowns
+        function loadAllSubjects() {
+            fetch('/api/all-subjects/')
+                .then(response => response.json())
+                .then(data => {
+                    allSubjects = data;
+                    // Re-render table nếu cần
+                    if (document.getElementById('table-body').children.length > 0) {
+                        renderTable();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading all subjects:', error);
+                });
+        }
+
         // Hàm lấy CSRF token
         function getCookie(name) {
             let cookieValue = null;
@@ -1566,6 +1666,7 @@
         // Xử lý sự kiện khi trang tải xong
         document.addEventListener('DOMContentLoaded', function() {
             initializeDropdowns();
+            loadAllSubjects();
             renderTable();
             
             console.log('DOM loaded - checking modal inputs...');
@@ -1663,15 +1764,12 @@
                                 input.disabled = false;
                             } else {
                                 input.removeAttribute('readonly');
-                                
                                 // Khởi tạo autocomplete cho input giảng viên - SỬA LẠI
                                 if (input.classList.contains('instructor-autocomplete')) {
-                                    console.log('Found instructor input, initializing autocomplete'); // Debug
                                     // Xóa flag cũ và khởi tạo lại
                                     input.removeAttribute('data-autocomplete-initialized');
                                     setTimeout(() => {
                                         initializeInstructorAutocomplete();
-                                        // Focus vào input để kích hoạt autocomplete
                                         input.focus();
                                     }, 100);
                                 }
@@ -1715,11 +1813,9 @@
                                 
                                 if (field && id) {
                                     if (field.startsWith('hk')) {
-                                        // Xử lý cập nhật học kỳ
                                         const semester = parseInt(field.replace('hk', ''));
                                         updateSemesterAllocation(id, semester, value);
                                     } else {
-                                        // Xử lý cập nhật các trường khác
                                         updateMonHoc(id, field, value);
                                     }
                                 }
