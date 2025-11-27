@@ -19,6 +19,9 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 
 
+def health_check(request):
+    return HttpResponse('OK')
+
 def home_page(request):
     return render(request, 'products/home.html')
 

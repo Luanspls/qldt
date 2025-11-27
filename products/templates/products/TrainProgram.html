@@ -496,7 +496,7 @@
                                 data-field="code" data-id="${monHoc.id}" disabled
                                 data-original-value="${monHoc.ma_mon_hoc || ''}">
                             <option value="">-- Chọn mã --</option>
-                            ${allSubjects.map(subject => `
+                            ${monHocData.map(subject => `
                                 <option value="${subject.code}" ${subject.code === monHoc.ma_mon_hoc ? 'selected' : ''}>
                                     ${subject.code}
                                 </option>
@@ -508,7 +508,7 @@
                                 data-field="name" data-id="${monHoc.id}" disabled
                                 data-original-value="${monHoc.ten_mon_hoc || ''}">
                             <option value="">-- Chọn tên --</option>
-                            ${allSubjects.map(subject => `
+                            ${monHocData.map(subject => `
                                 <option value="${subject.name}" ${subject.name === monHoc.ten_mon_hoc ? 'selected' : ''}>
                                     ${subject.name}
                                 </option>

@@ -4,6 +4,7 @@ from QldtWeb.views import health_check
 
 
 urlpatterns = [
+    path('health/', views.health_check),
     path('', views.home_page, name='home'),
     path('users/', views.users_list, name='users-list'),
     path('health/', health_check, name='health-check'),
