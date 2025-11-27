@@ -1704,10 +1704,6 @@
                             
                             if (editable.tagName === 'SELECT') {
                                 editable.disabled = false;
-								// Cập nhật dropdown cho mã môn học và tên môn học
-        						if (editable.classList.contains('subject-code') || editable.classList.contains('subject-name')) {
-            						updateDropdownsForEditing(row);
-        						}
                             } else {
                                 editable.removeAttribute('readonly');
 								
