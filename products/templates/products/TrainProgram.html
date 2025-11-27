@@ -430,6 +430,8 @@
         let allCourses = {{ courses|safe }};
         let allSubjectTypes = {{ subject_types|safe }};
         let allMajors = {{ majors|safe }};
+		let allSubjects = [];
+		let isSubjectsLoaded = false;
 
         // let monHocData = JSON.parse('{{ mon_hoc_data|escapejs }}');
         let monHocData = {{ mon_hoc_data|safe }};
@@ -1641,8 +1643,7 @@
 			});
 		}
 
-		let allSubjects = [];
-		let isSubjectsLoaded = false;
+		
         // Hàm load tất cả môn học để populate dropdowns
         function loadAllSubjects() {
             if (isSubjectsLoaded) {
@@ -1775,33 +1776,33 @@
                         button.classList.add('text-green-600');
                         button.title = 'Lưu thay đổi';
                         
-                        const inputs = row.querySelectorAll('input, select');
-                        inputs.forEach(input => {
-                            input.classList.add('border', 'border-blue-400', 'bg-white');
+                        const editables = row.querySelectorAll('input, select');
+                        editables.forEach(editable => {
+                            editable.classList.add('border', 'border-blue-400', 'bg-white');
                             
-                            if (input.tagName === 'SELECT') {
-                                input.disabled = false;
+                            if (editable.tagName === 'SELECT') {
+                                editable.disabled = false;
 								// Cập nhật dropdown cho mã môn học và tên môn học
         						if (editable.classList.contains('subject-code') || editable.classList.contains('subject-name')) {
             						updateDropdownsForEditing(row);
         						}
                             } else {
-                                input.removeAttribute('readonly');
+                                editable.removeAttribute('readonly');
 								
                                 // Khởi tạo autocomplete cho input giảng viên - SỬA LẠI
-                                if (input.classList.contains('instructor-autocomplete')) {
+                                if (editable.classList.contains('instructor-autocomplete')) {
                                     // Xóa flag cũ và khởi tạo lại
-                                    input.removeAttribute('data-autocomplete-initialized');
+                                    editable.removeAttribute('data-autocomplete-initialized');
                                     setTimeout(() => {
                                         initializeInstructorAutocomplete();
-                                        input.focus();
+                                        editable.focus();
                                     }, 100);
                                 }
                             }
                             
                             // Thêm sự kiện Enter để lưu nhanh (chỉ cho input)
-                            if (input.tagName === 'INPUT') {
-                                input.addEventListener('keydown', function(e) {
+                            if (editable.tagName === 'INPUT') {
+                                editable.addEventListener('keydown', function(e) {
                                     if (e.key === 'Enter') {
                                         button.click();
                                     }
