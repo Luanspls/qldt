@@ -494,18 +494,16 @@
                 row.innerHTML = `
                     <td class="px-2 py-2 text-center text-sm col-tt">${index + 1}</td>
                     <td class="px-2 py-2 col-ma">
-                        <select class="editable select subject-code w-full bg-transparent border-none text-sm" 
-                                data-field="code" data-id="${monHoc.id}" disabled
-                                data-original-value="${monHoc.ma_mon_hoc || ''}">
-                            <option value="${monHoc.ma_mon_hoc || ''}" selected>${monHoc.ma_mon_hoc || '-- Chọn mã --'}</option>
-                        </select>
+                        <input type="text" value="${monHoc.ma_mon_hoc || ''}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center"
+                            data-field="code" data-id="${monHoc.id}" readonly
+                            data-original-value="${monHoc.ma_mon_hoc || ''}">
                     </td>
                     <td class="px-2 py-2 col-ten wrap-cell">
-                        <select class="editable select subject-name w-full bg-transparent border-none text-sm" 
-                                data-field="name" data-id="${monHoc.id}" disabled
-                                data-original-value="${monHoc.ten_mon_hoc || ''}">
-                            <option value="${monHoc.ten_mon_hoc || ''}" selected>${monHoc.ten_mon_hoc || '-- Chọn tên --'}</option>
-                        </select>
+                        <input type="text" value="${monHoc.ten_mon_hoc || 0}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center"
+                            data-field="name" data-id="${monHoc.id}" disabled
+                            data-original-value="${monHoc.ten_mon_hoc || ''}">
                     </td>
                     <td class="px-2 py-2 text-center col-tinchi">
                         <input type="number" value="${monHoc.so_tin_chi || 0}" 
@@ -1567,82 +1565,6 @@
                 });
             });
         }
-
-		function updateDropdownsForEditing(row) {
-			const subjectCodeSelect = row.querySelector('.subject-code');
-			const subjectNameSelect = row.querySelector('.subject-name');
-    
-			// Chỉ load dữ liệu nếu chưa có
-			if (subjectCodeSelect.children.length <= 1) {
-    			loadAllSubjects().then(() => {
-        			// Cập nhật dropdown mã môn học
-        			subjectCodeSelect.innerHTML = '<option value="">-- Chọn mã --</option>' +
-            			allSubjects.map(subject => 
-                			`<option value="${subject.code}" ${subject.code === subjectCodeSelect.value ? 'selected' : ''}>
-                    			${subject.code}
-                			</option>`
-            			).join('');
-            
-        			// Cập nhật dropdown tên môn học
-        			subjectNameSelect.innerHTML = '<option value="">-- Chọn tên --</option>' +
-            			allSubjects.map(subject => 
-                			`<option value="${subject.name}" ${subject.name === subjectNameSelect.value ? 'selected' : ''}>
-                    			${subject.name}
-                			</option>`
-            			).join('');
-            
-        			// Khởi tạo đồng bộ sau khi đã có dữ liệu
-        			initializeSubjectSyncForRow(row);
-    			});
-			} else {
-    			// Nếu đã có dữ liệu, chỉ cần khởi tạo đồng bộ
-    			initializeSubjectSyncForRow(row);
-			}
-		}
-
-        // Hàm đồng bộ cho từng dòng
-		function initializeSubjectSyncForRow(row) {
-			const codeSelect = row.querySelector('.subject-code');
-			const nameSelect = row.querySelector('.subject-name');
-    
-			// Tạo mapping từ dữ liệu đã load
-			const codeToNameMap = {};
-			const nameToCodeMap = {};
-    
-			allSubjects.forEach(subject => {
-    			codeToNameMap[subject.code] = subject.name;
-    			nameToCodeMap[subject.name] = subject.code;
-			});
-    
-			// Sự kiện khi thay đổi mã môn học
-			codeSelect.addEventListener('change', function(e) {
-    			const selectedCode = e.target.value;
-    			if (selectedCode && codeToNameMap[selectedCode]) {
-        			nameSelect.value = codeToNameMap[selectedCode];
-        			nameSelect.setAttribute('data-original-value', codeToNameMap[selectedCode]);
-            
-        			// Tự động cập nhật lên server
-        			const subjectId = codeSelect.getAttribute('data-id');
-        			updateMonHoc(subjectId, 'code', selectedCode);
-        			updateMonHoc(subjectId, 'name', codeToNameMap[selectedCode]);
-    			}
-			});
-    
-			// Sự kiện khi thay đổi tên môn học
-			nameSelect.addEventListener('change', function(e) {
-    			const selectedName = e.target.value;
-    			if (selectedName && nameToCodeMap[selectedName]) {
-        			codeSelect.value = nameToCodeMap[selectedName];
-        			codeSelect.setAttribute('data-original-value', nameToCodeMap[selectedName]);
-            
-        			// Tự động cập nhật lên server
-        			const subjectId = nameSelect.getAttribute('data-id');
-        			updateMonHoc(subjectId, 'name', selectedName);
-        			updateMonHoc(subjectId, 'code', nameToCodeMap[selectedName]);
-    			}
-			});
-		}
-
 		
         // Hàm load tất cả môn học để populate dropdowns
         function loadAllSubjects() {
