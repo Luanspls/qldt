@@ -1020,7 +1020,7 @@ def api_subjects(request):
     
     # subjects = Subject.objects.all()
     curriculum_subjects = Subject.objects.select_related(
-        'subject_type', 'department', 'curriculum'
+        'subject_type', 'department', 'curriculum', 'course' 
     ).all()
     
     if curriculum_id:
@@ -1037,9 +1037,24 @@ def api_subjects(request):
     for cs in curriculum_subjects:
         semester_allocations = SemesterAllocation.objects.filter(base_subject=cs)
         semester_data = {f'hk{alloc.semester}': float(alloc.credits) for alloc in semester_allocations}
+
+        giang_vien = ""
+        try:
+            teaching_assignments = TeachingAssignment.objects.filter(curriculum_subject=cs)
+            if teaching_assignments.exists():
+                instructor_names = [ta.instructor.full_name for ta in teaching_assignments if ta.instructor]
+                giang_vien = ", ".join(instructor_names)
+        except Exception:
+            pass
         
         subject_data.append({
             'id': cs.id,  # Sử dụng ID của CurriculumSubject
+            'curriculum_id': cs.curriculum.id if cs.curriculum else None,
+            'curriculum_name': cs.curriculum.name if cs.curriculum else '',
+            'curriculum_code': cs.curriculum.code if cs.curriculum else '',
+            'course_id': cs.course.id if cs.course else '',
+            'course_code': cs.course.code if cs.course else '',
+            'course_name': cs.course.name if cs.course else '',
             'ma_mon_hoc': cs.code,
             'ten_mon_hoc': cs.name,
             'so_tin_chi': float(cs.credits),
@@ -1054,11 +1069,11 @@ def api_subjects(request):
             'hk5': semester_data.get('hk5', ''),
             'hk6': semester_data.get('hk6', ''),
             'don_vi': cs.department.name if cs.department else '',
-            'giang_vien': '',
+            'bo_mon': cs.subject_group.name if cs.subject_group else '',
+            'order_number': cs.order_number,
+            'original_code': cs.original_code if cs.original_code else '',
+            'giang_vien': 'giang_vien',
             'loai_mon': cs.subject_type.name if cs.subject_type else '',
-            'curriculum_id': cs.curriculum.id if cs.curriculum else None,
-            'curriculum_name': cs.curriculum.name if cs.curriculum else '',
-            'curriculum_code': cs.curriculum.code if cs.curriculum else '',
             'subject_id': cs.id
         })
     
