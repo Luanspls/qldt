@@ -696,10 +696,11 @@
                     console.error('Update error:', data.message);
                     alert(data.message);
                     // Reload data to reset values
-                    //loadFilteredData();
+                    loadFilteredData();
                 } else {
                     console.log('Update success:', data.message);
                     //updateOriginalValue(id, field, value);
+					loadFilteredData();
                 }
             })
             .catch(error => {
@@ -758,6 +759,7 @@
                     loadFilteredData();
                 } else {
                     console.log('Semester update success:', data.message);
+					loadFilteredData();
                 }
             })
             .catch(error => {
@@ -809,6 +811,7 @@
             if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
             if (departmentId) params.push(`department_id=${departmentId}`);
             if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
+			if (courseId) params.push(`course_id=${courseId}`);
             
             url += params.join('&');
             
