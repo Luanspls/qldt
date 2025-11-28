@@ -1699,33 +1699,21 @@
                         button.title = 'Lưu thay đổi';
                         
                         const editables = row.querySelectorAll('input, select');
-                        editables.forEach(editable => {
-                            editable.classList.add('border', 'border-blue-400', 'bg-white');
-                            
-                            if (editable.tagName === 'SELECT') {
-                                editable.disabled = false;
-                            } else {
-                                editable.removeAttribute('readonly');
+                        inputs.forEach(input => {
+                            input.classList.add('border', 'border-blue-400', 'bg-white');
+                            input.removeAttribute('readonly');
 								
-                                // Khởi tạo autocomplete cho input giảng viên - SỬA LẠI
-                                if (editable.classList.contains('instructor-autocomplete')) {
-                                    // Xóa flag cũ và khởi tạo lại
-                                    editable.removeAttribute('data-autocomplete-initialized');
-                                    setTimeout(() => {
-                                        initializeInstructorAutocomplete();
-                                        editable.focus();
-                                    }, 100);
-                                }
-                            }
                             
-                            // Thêm sự kiện Enter để lưu nhanh (chỉ cho input)
-                            if (editable.tagName === 'INPUT') {
-                                editable.addEventListener('keydown', function(e) {
-                                    if (e.key === 'Enter') {
-                                        button.click();
-                                    }
-                                });
-                            }
+                            
+                            
+                    		// Thêm sự kiện Enter để lưu nhanh (chỉ cho input)
+                            
+                            input.addEventListener('keydown', function(e) {
+                                if (e.key === 'Enter') {
+                                    button.click();
+                                }
+                            });
+                            
                         });
                     } else {
                         button.innerHTML = '<i class="fas fa-edit"></i>';
@@ -1770,6 +1758,9 @@
                         
                         if (hasChanges) {
                             console.log('Có thay đổi được gửi đến server');
+							setTimeout(() => {
+								loadFilterData();
+							}, 1000);
                         }
                     }
                 }
