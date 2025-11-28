@@ -358,12 +358,12 @@ class TrainProgramManagerView(View):
         """Lấy dữ liệu môn học từ database"""
         try:           
             if curriculum_id:
-                curriculum_subjects = Subject.objects.select_related('subject_type', 'department', 'subject_group', 'curriculum'
+                curriculum_subjects = Subject.objects.select_related('subject_type', 'department', 'subject_group', 'curriculum', 'course' 
                 ).filter(curriculum=curriculum_id)
             else:
                 # Lấy tất cả CurriculumSubject
                 curriculum_subjects = Subject.objects.select_related(
-                    'subject_type', 'department', 'subject_group', 'curriculum'
+                    'subject_type', 'department', 'subject_group', 'curriculum', 'course' 
                 ).all()
                 
             curriculum_subjects = curriculum_subjects.order_by('order_number')
