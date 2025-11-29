@@ -432,6 +432,7 @@
         let allMajors = {{ majors|safe }};
 		let allSubjects = [];
 		let isSubjectsLoaded = false;
+		let updatePromises = [];
 
         // let monHocData = JSON.parse('{{ mon_hoc_data|escapejs }}');
         let monHocData = {{ mon_hoc_data|safe }};
@@ -692,16 +693,14 @@
                 return response.json();
             })
             .then(data => {
-                if (data.status !== 'success') {
-                    console.error('Update error:', data.message);
-                    alert(data.message);
-                    // Reload data to reset values
-                    loadFilteredData();
-                } else {
-                    console.log('Update success:', data.message);
-                    //updateOriginalValue(id, field, value);
-					loadFilteredData();
-                }
+                console.log('Update response:', data);
+    			if (data.status !== 'success') {
+        			console.error('Update failed:', data.message);
+        			throw new Error(data.message);
+    			} else {
+        			console.log('Update successful:', data.message);
+        			return data;
+    			}
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -1726,6 +1725,7 @@
                         
                         let hasChanges = false;
                         const editables = row.querySelectorAll('input, select');
+						let updatePromise =[];
                         
                         editables.forEach(editable => {
                             editable.classList.remove('border', 'border-blue-400', 'bg-white');
@@ -1748,9 +1748,9 @@
                                 if (field && id) {
                                     if (field.startsWith('hk')) {
                                         const semester = parseInt(field.replace('hk', ''));
-                                        updateSemesterAllocation(id, semester, value);
+                                        updatePromises.push(updateSemesterAllocation(id, semester, value));
                                     } else {
-                                        updateMonHoc(id, field, value);
+                                        updatePromises.push(updateMonHoc(id, field, value));
                                     }
                                 }
                             }
@@ -1758,7 +1758,38 @@
                             // Cập nhật giá trị gốc mới
                             editable.setAttribute('data-original-value', value);
                         });
-                        
+						
+                        // Đợi tất cả cập nhật hoàn thành rồi reload dữ liệu
+						if (updatePromises.length > 0) {
+    						console.log(`Waiting for ${updatePromises.length} updates to complete...`);
+        
+    						// Hiển thị loading
+    						button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    						button.disabled = true;
+        
+    						Promise.all(updatePromises)
+        						.then(results => {
+            						console.log('All updates completed successfully:', results);
+                
+            						// Reload dữ liệu sau khi tất cả cập nhật hoàn thành
+            						setTimeout(() => {
+                						loadFilteredData();
+                						button.innerHTML = '<i class="fas fa-edit"></i>';
+                						button.disabled = false;
+            						}, 500);
+        						})
+        						.catch(error => {
+            						console.error('Some updates failed:', error);
+            						alert('Có lỗi xảy ra khi cập nhật: ' + error.message);
+                
+            						// Vẫn reload dữ liệu để hiển thị trạng thái mới nhất
+            						setTimeout(() => {
+                						loadFilteredData();
+                						button.innerHTML = '<i class="fas fa-edit"></i>';
+                						button.disabled = false;
+            						}, 500);
+        						});
+    }					} 
                         if (hasChanges) {
                             console.log('Có thay đổi được gửi đến server');
 							setTimeout(() => {
