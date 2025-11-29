@@ -1588,6 +1588,37 @@
     			});
         }
 
+		function updateSemesterAllocation(id, semester, value) {
+			return new Promise((resolve, reject) => {
+    			const data = {
+        			id: id,
+        			field: `hk${semester}`,
+        			value: value
+    			};
+        
+    			const csrfToken = getCSRFToken();
+        
+    			fetch(`/train-program/${id}/`, {
+        			method: 'PUT',
+        			headers: {
+            			'Content-Type': 'application/json',
+            			'X-CSRFToken': csrfToken,
+            			'X-Requested-With': 'XMLHttpRequest'
+        			},
+        			body: JSON.stringify(data)
+    			})
+    			.then(response => response.json())
+    			.then(data => {
+        			if (data.status === 'success') {
+            			resolve(data);
+        			} else {
+            			reject(new Error(data.message));
+        			}
+    			})
+    			.catch(error => reject(error));
+			});
+		}
+
         // Hàm lấy CSRF token
         function getCookie(name) {
             let cookieValue = null;
