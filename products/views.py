@@ -206,7 +206,8 @@ class TrainProgramManagerView(View):
                             'status': 'success', 
                             'message': 'Đã xóa liên kết khóa học'
                         })
-                # Xử lý trường instructor
+				# Xử lý trường instructor
+				
 				elif field == 'instructor':
 					try:
     					# Xóa tất cả phân công giảng dạy hiện tại
