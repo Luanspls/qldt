@@ -211,7 +211,7 @@ class TrainProgramManagerView(View):
 					try:
     					# Xóa tất cả phân công giảng dạy hiện tại
     					deleted_count, _ = TeachingAssignment.objects.filter(
-        				curriculum_subject=curriculum_subject
+        					curriculum_subject=curriculum_subject
     					).delete()
         
     					# Nếu có giá trị mới, tạo phân công giảng dạy mới
