@@ -206,48 +206,55 @@ class TrainProgramManagerView(View):
                             'status': 'success', 
                             'message': 'Đã xóa liên kết khóa học'
                         })
-                elif field == 'instructor':
-                    try:
-                        # Xóa tất cả phân công giảng dạy hiện tại
-                        TeachingAssignment.objects.filter(
-                            curriculum_subject=curriculum_subject
-                        ).delete()
-                        
-                        # Nếu có giá trị mới, tạo phân công giảng dạy mới
-                        if value and str(value).strip():
-                            instructor_names = [name.strip() for name in value.split(',') if name.strip()]
-                            
-                            for instructor_name in instructor_names:
-                                try:
-                                    instructor = Instructor.objects.get(full_name=instructor_name)
-                                    TeachingAssignment.objects.create(
-                                        instructor=instructor,
-                                        curriculum_subject=curriculum_subject,
-                                        academic_year=curriculum_subject.curriculum.academic_year if curriculum_subject.curriculum else '',
-                                        semester=curriculum_subject.semester or 1,
-                                        is_main_instructor=True,
-                                        teaching_hours=0,
-                                        student_count=0
-                                    )
-                                except Instructor.DoesNotExist:
-                                    # Bỏ qua nếu không tìm thấy giảng viên
-                                    continue
-                            
-                            return JsonResponse({
-                                'status': 'success', 
-                                'message': f'Đã cập nhật phân công giảng dạy cho {len(instructor_names)} giảng viên'
-                            })
-                        else:
-                            return JsonResponse({
-                                'status': 'success', 
-                                'message': 'Đã xóa tất cả phân công giảng dạy'
-                            })
-                            
-                    except Exception as e:
-                        return JsonResponse({
-                            'status': 'error', 
-                            'message': f'Lỗi khi cập nhật giảng viên: {str(e)}'
-                        })
+                # Xử lý trường instructor
+				elif field == 'instructor':
+					try:
+    					# Xóa tất cả phân công giảng dạy hiện tại
+    					deleted_count, _ = TeachingAssignment.objects.filter(
+        				curriculum_subject_id=id
+    					).delete()
+        
+    					# Nếu có giá trị mới, tạo phân công giảng dạy mới
+    					if value and str(value).strip():
+        					instructor_names = [name.strip() for name in value.split(',') if name.strip()]
+        					created_count = 0
+            
+        					for instructor_name in instructor_names:
+            					try:
+                					# Tìm giảng viên theo tên
+                					instructor = Instructor.objects.get(full_name__iexact=instructor_name)
+                    
+                					# Tạo phân công giảng dạy mới
+                					TeachingAssignment.objects.create(
+                    					instructor=instructor,
+                    					curriculum_subject_id=id,
+                    					academic_year=curriculum_subject.curriculum.academic_year if curriculum_subject.curriculum else '',
+                    					semester=curriculum_subject.semester or 1,
+                    					is_main_instructor=True,
+                    					teaching_hours=0,
+                    					student_count=0
+                					)
+                					created_count += 1
+                    
+            					except Instructor.DoesNotExist:
+                					# Có thể tạo giảng viên mới ở đây nếu cần
+                					continue
+            
+        					return JsonResponse({
+            					'status': 'success', 
+            					'message': f'Đã cập nhật phân công giảng dạy cho {created_count} giảng viên'
+        					})
+    					else:
+        					return JsonResponse({
+            					'status': 'success', 
+            					'message': 'Đã xóa tất cả phân công giảng dạy'
+        					})
+            
+					except Exception as e:
+    					return JsonResponse({
+        					'status': 'error', 
+        					'message': f'Lỗi khi cập nhật giảng viên: {str(e)}'
+    					})
                 # Xử lý các trường khác của Subject
                 elif hasattr(curriculum_subject, field):
                     # Xử lý kiểu dữ liệu
@@ -1037,15 +1044,13 @@ def api_subjects(request):
     for cs in curriculum_subjects:
         semester_allocations = SemesterAllocation.objects.filter(base_subject=cs)
         semester_data = {f'hk{alloc.semester}': float(alloc.credits) for alloc in semester_allocations}
-
-        giang_vien = ""
-        try:
-            teaching_assignments = TeachingAssignment.objects.filter(curriculum_subject=cs)
-            if teaching_assignments.exists():
-                instructor_names = [ta.instructor.full_name for ta in teaching_assignments if ta.instructor]
-                giang_vien = ", ".join(instructor_names)
-        except Exception:
-            pass
+        
+		teaching_assignments = TeachingAssignment.objects.filter(curriculum_subject=cs)
+        instructors = []
+        for assignment in teaching_assignments:
+    		if assignment.instructor:
+                instructors.append(assignment.instructor.full_name)
+        		giang_vien = ", ".join(instructors) if instructors else "" 
         
         subject_data.append({
             'id': cs.id,  # Sử dụng ID của CurriculumSubject
@@ -1072,7 +1077,7 @@ def api_subjects(request):
             'bo_mon': cs.subject_group.name if cs.subject_group else '',
             'order_number': cs.order_number,
             'original_code': cs.original_code if cs.original_code else '',
-            'giang_vien': 'giang_vien',
+            'giang_vien': giang_vien,
             'loai_mon': cs.subject_type.name if cs.subject_type else '',
             'subject_id': cs.id
         })
