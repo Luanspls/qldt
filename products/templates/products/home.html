@@ -14,7 +14,7 @@
             <a href="/users/">Users API</a> | 
         </div>
     </div>
-    <scripts>
+    <script>
         setInterval(() => {
             fetch('/health/')
                 .then(response => console.log('Ping successful'))
@@ -25,6 +25,6 @@
         window.addEventListener('load', () => {
             fetch('/health/');
         });
-    </scripts>
+    </script>
 </body>
 </html>

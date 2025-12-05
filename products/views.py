@@ -313,11 +313,6 @@ class TrainProgramManagerView(View):
                 'status': 'error', 
                 'message': f'Lỗi khi cập nhật: {str(e)}'
             })
-        
-        return JsonResponse({
-            'status': 'error', 
-            'message': 'Invalid request'
-        })
     
     def delete(self, request, id=None):
         """Xóa môn học"""
@@ -1072,7 +1067,7 @@ def api_subjects(request):
             'bo_mon': cs.subject_group.name if cs.subject_group else '',
             'order_number': cs.order_number,
             'original_code': cs.original_code if cs.original_code else '',
-            'giang_vien': 'giang_vien',
+            'giang_vien': giang_vien,
             'loai_mon': cs.subject_type.name if cs.subject_type else '',
             'subject_id': cs.id
         })
