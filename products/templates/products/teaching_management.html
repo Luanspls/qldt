@@ -1648,13 +1648,15 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-CSRFToken': getCSRFToken(),
                 },
                 body: JSON.stringify(data)
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    return response.json().then(errorData => {
+        				throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    				});
                 }
                 return response.json();
             })
@@ -1664,7 +1666,11 @@
                     closeThemLopHocModal();
                     loadClassesData();
                 } else {
-                    alert('❌ Lỗi: ' + data.message);
+                    let errorMessage = data.message || 'Có lỗi xảy ra';
+    				if (data.errors) {
+        				errorMessage += ': ' + JSON.stringify(data.errors);
+    				}
+    				alert('❌ Lỗi: ' + errorMessage);
                 }
             })
             .catch(error => {
@@ -1674,8 +1680,9 @@
             .finally(() => {
                 // Khôi phục trạng thái nút
                 saveBtn.innerHTML = originalText;
-                saveBtn.disabled = false;
+                saveBtn.disabled = originalDisabled; //false;
                 isSubmitting = false;
+				currentModalType = null;
             });
         }
 
@@ -1716,13 +1723,15 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-CSRFToken': getCSRFToken(),
                 },
                 body: JSON.stringify(data)
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    return response.json().then(errorData => {
+        				throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    				});
                 }
                 return response.json();
             })
@@ -1732,7 +1741,11 @@
                     closeThemLopGhepModal();
                     loadCombinedClassesData();
                 } else {
-                    alert('❌ Lỗi: ' + data.message);
+                    let errorMessage = data.message || 'Có lỗi xảy ra';
+    				if (data.errors) {
+        				errorMessage += ': ' + JSON.stringify(data.errors);
+    				}
+    				alert('❌ Lỗi: ' + errorMessage);
                 }
             })
             .catch(error => {
@@ -1742,8 +1755,9 @@
             .finally(() => {
                 // Khôi phục trạng thái nút
                 saveBtn.innerHTML = originalText;
-                saveBtn.disabled = false;
+                saveBtn.disabled = originalDisabled; //false;
                 isSubmitting = false;
+				currentModalType = null;
             });
         }
 
@@ -1781,13 +1795,15 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-CSRFToken': getCSRFToken(),
                 },
                 body: JSON.stringify(data)
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    return response.json().then(errorData => {
+        				throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    				});
                 }
                 return response.json();
             })
@@ -1797,7 +1813,11 @@
                     closeThemGiangVienModal();
                     loadInstructorsData();
                 } else {
-                    alert('❌ Lỗi: ' + data.message);
+                    let errorMessage = data.message || 'Có lỗi xảy ra';
+    				if (data.errors) {
+        				errorMessage += ': ' + JSON.stringify(data.errors);
+    				}
+    				alert('❌ Lỗi: ' + errorMessage);
                 }
             })
             .catch(error => {
@@ -1807,8 +1827,9 @@
             .finally(() => {
                 // Khôi phục trạng thái nút
                 saveBtn.innerHTML = originalText;
-                saveBtn.disabled = false;
+                saveBtn.disabled = originalDisabled; //false;
                 isSubmitting = false;
+				currentModalType = null;
             });
         }
         
@@ -1829,24 +1850,46 @@
                 teaching_hours: parseInt(formData.get('teaching_hours')) || 0
             };
 
-			if (!data.class_obj_id && !data.combined_class_id) {
-                alert('Vui lòng chọn lớp học');
-				isSubmitting = false;
-                return;
-            }
-			
-            // Thêm class_obj hoặc combined_class tùy loại
-            if (classType === 'regular') {
-                data.class_obj_id = formData.get('class_id');
-            } else if (classType === 'combined') {
-                data.combined_class_id = formData.get('combined_class_id');
-            }
+			// SỬA: Thêm kiểm tra classType hợp lệ
+			if (!classType || (classType !== 'regular' && classType !== 'combined')) {
+    			alert('Vui lòng chọn loại lớp');
+    			isSubmitting = false;
+    			return;
+			}
 
-            // Validate
-            if (!data.instructor_id || !data.curriculum_subject_id || !data.academic_year || !data.semester) {
-                alert('Vui lòng điền đầy đủ các trường bắt buộc');
-                return;
-            }
+			// SỬA: Thêm class_obj hoặc combined_class tùy loại - CHUYỂN XUỐNG TRƯỚC KHI VALIDATE
+			if (classType === 'regular') {
+    			data.class_obj_id = formData.get('class_id');
+			} else if (classType === 'combined') {
+    			data.combined_class_id = formData.get('combined_class_id');
+			}
+
+			// Validate - SỬA THỨ TỰ VALIDATE
+			if (!data.instructor_id || !data.curriculum_subject_id || !data.academic_year || !data.semester) {
+    			alert('Vui lòng điền đầy đủ các trường bắt buộc');
+    			isSubmitting = false;
+    			return;
+			}
+
+			// SỬA: Validate lớp học sau khi đã gán giá trị
+			if (classType === 'regular' && !data.class_obj_id) {
+    			alert('Vui lòng chọn lớp học');
+    			isSubmitting = false;
+    			return;
+			}
+    
+			if (classType === 'combined' && !data.combined_class_id) {
+    			alert('Vui lòng chọn lớp ghép');
+    			isSubmitting = false;
+    			return;
+			}
+			
+
+			//if (!data.class_obj_id && !data.combined_class_id) {
+            //    alert('Vui lòng chọn lớp học');
+			//	isSubmitting = false;
+            //    return;
+            //}
 
             const saveBtn = document.getElementById('btn-luu-phan-cong');
             const originalText = saveBtn.innerHTML;
@@ -1858,7 +1901,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-CSRFToken': getCSRFToken(),
                 },
                 body: JSON.stringify(data)
             })
@@ -1869,7 +1912,11 @@
                     closeThemPhanCongModal();
                     loadTeachingAssignmentsData();
                 } else {
-                    alert('Lỗi: ' + data.message);
+                    let errorMessage = data.message || 'Có lỗi xảy ra';
+    				if (data.errors) {
+        				errorMessage += ': ' + JSON.stringify(data.errors);
+    				}
+    				alert('❌ Lỗi: ' + errorMessage);
                 }
             })
             .catch(error => {
@@ -1878,8 +1925,9 @@
             })
             .finally(() => {
                 saveBtn.innerHTML = originalText;
-                saveBtn.disabled = false;
+                saveBtn.disabled = originalDisabled; //false;
                 isSubmitting = false;
+				currentModalType = null;
             });
         }
 
@@ -2886,6 +2934,22 @@
             }
             return cookieValue;
         }
+
+		function getCSRFToken() {
+			const name = 'csrftoken';
+			let cookieValue = null;
+			if (document.cookie && document.cookie !== '') {
+    			const cookies = document.cookie.split(';');
+    			for (let i = 0; i < cookies.length; i++) {
+        			const cookie = cookies[i].trim();
+        			if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            			cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            			break;
+        			}
+    			}
+			}
+			return cookieValue;
+		}
 
         // ===== KHỞI TẠO ỨNG DỤNG =====
         document.addEventListener('DOMContentLoaded', function() {
