@@ -1384,6 +1384,9 @@
 			currentEditingId = null;
 			isSubmitting = false;
 
+			// Điền dữ liệu vào dropdowns
+			populateTeachingAssignmentModalDropdowns();
+
         	// Đặt lại trạng thái thêm mới
         	document.querySelector('#modal-them-phan-cong h3').textContent = 'Thêm phân công mới';
         	const saveBtn = document.getElementById('btn-luu-phan-cong');
@@ -1395,8 +1398,7 @@
 		        };
         	}
 
-			// Điền dữ liệu vào dropdowns
-			populateTeachingAssignmentModalDropdowns();
+			
 			
 			// Khởi tạo Select2 sau khi modal hiển thị và dữ liệu đã được điền
 			setTimeout(() => {
@@ -1527,7 +1529,7 @@
                 fetch('/api/all-subjects/')
                     .then(response => {
                 		if (!response.ok) {
-							throw new Error(`HTTP error! status: ${response.status}
+							throw new Error(`HTTP error! status: ${response.status}`)
 						}
                 		return response.json();
             		})
