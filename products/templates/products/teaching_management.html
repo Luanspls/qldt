@@ -1538,7 +1538,7 @@
                             data.forEach(subject => {
                                 const option = document.createElement('option');
                                 option.value = subject.id;
-                                option.textContent = `${subject.subject_code} - ${subject.subject_name}`;
+                                option.textContent = `${subject.code} - ${subject.name}`;
                                 subjectSelect.appendChild(option);
                             });
 							// Khởi tạo Select2 sau khi có dữ liệu
