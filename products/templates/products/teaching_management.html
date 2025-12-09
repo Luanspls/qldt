@@ -1395,26 +1395,19 @@
 		        };
         	}
 
-			// Tải dữ liệu trước khi điền vào dropdowns
-		    reloadDataForTeachingAssignmentModal().then(() => {
-		        // Điền dữ liệu vào dropdowns
-				populateTeachingAssignmentModalDropdowns();
+			// Điền dữ liệu vào dropdowns
+			populateTeachingAssignmentModalDropdowns();
 			
-				// Khởi tạo Select2 sau khi modal hiển thị và dữ liệu đã được điền
-			    setTimeout(() => {
-			        initializeModalSelect2('modal-them-phan-cong');
-			        
-			        // Đảm bảo dropdown được hiển thị đúng loại lớp
-			        const classTypeSelect = document.getElementById('class_type');
-			        if (classTypeSelect) {
-			            classTypeSelect.dispatchEvent(new Event('change'));
-			        }
-			    }, 500);
-			}).catch(error => {
-		        console.error('❌ Error loading data for modal:', error);
-		        // Vẫn thử điền dữ liệu với những gì đã có
-		        populateTeachingAssignmentModalDropdowns();
-		    });
+			// Khởi tạo Select2 sau khi modal hiển thị và dữ liệu đã được điền
+			setTimeout(() => {
+				initializeModalSelect2('modal-them-phan-cong');
+				
+				// Đảm bảo dropdown được hiển thị đúng loại lớp
+				const classTypeSelect = document.getElementById('class_type');
+				if (classTypeSelect) {
+					classTypeSelect.dispatchEvent(new Event('change'));
+				}
+			}, 500);
 		} 
 
         function closeThemPhanCongModal() {
@@ -1447,57 +1440,6 @@
 
 		function closeImportModal() {
             closeModal('modal-import');
-		}
-
-		function reloadDataForTeachingAssignmentModal() {
-		    console.log('🔄 Reloading data for teaching assignment modal...');
-		    
-		    const promises = [];
-		    
-		    // Tải lại giảng viên nếu cần
-		    if (!allInstructors || allInstructors.length === 0) {
-		        promises.push(
-		            fetch('/api/instructors/')
-		                .then(response => response.json())
-		                .then(data => {
-		                    allInstructors = data;
-		                    console.log(`Reloaded ${data.length} instructors`);
-		                })
-		        );
-		    }
-		    
-		    // Tải lại lớp học thường nếu cần
-		    if (!allClasses || allClasses.length === 0) {
-		        promises.push(
-		            fetch('/api/classes/')
-		                .then(response => response.json())
-		                .then(data => {
-		                    allClasses = data;
-		                    console.log(`Reloaded ${data.length} regular classes`);
-		                })
-		        );
-		    }
-		    
-		    // Tải lại lớp học ghép nếu cần
-		    if (!allCombinedClasses || allCombinedClasses.length === 0) {
-		        promises.push(
-		            fetch('/api/combined-classes/')
-		                .then(response => response.json())
-		                .then(data => {
-		                    allCombinedClasses = data;
-		                    console.log(`Reloaded ${data.length} combined classes`);
-		                })
-		        );
-		    }
-		    
-		    // Chờ tất cả dữ liệu tải xong
-		    return Promise.all(promises).then(() => {
-		        console.log('✅ All data reloaded for teaching assignment modal');
-		        return true;
-		    }).catch(error => {
-		        console.error('❌ Error reloading data:', error);
-		        return false;
-		    });
 		}
 
         // Thêm hàm điền dữ liệu vào modal thêm lớp học
@@ -1582,7 +1524,7 @@
 			// Điền môn học với tìm kiếm
             if (subjectSelect) {
                 subjectSelect.innerHTML = '<option value="">-- Chọn môn học --</option>';
-                fetch('/api/curriculum-subjects/')
+                fetch('/api/all-subjects/')
                     .then(response => {
                 		if (!response.ok) {
 							throw new Error(`HTTP error! status: ${response.status}
@@ -1669,7 +1611,7 @@
             }
 
 			// Điền lớp học ghép với tìm kiếm
-            if (classCombinedSelect && allCombinedClasses) {
+            if (classCombinedSelect) {
                 classCombinedSelect.innerHTML = '<option value="">-- Chọn lớp ghép --</option>';
                 if (allCombinedClasses && allCombinedClasses.length > 0) {
                     allCombinedClasses.forEach(combinedClass => {
