@@ -1379,9 +1379,14 @@
 
 		function openThemPhanCongModal() {
 			openModal('modal-them-phan-cong');
-            setTimeout(() => {
-				populateTeachingAssignmentModalDropdowns();
-			}, 100);
+
+			currentAction = 'create';
+			currentEditingId = null;
+			isSubmitting = false;
+			
+            //setTimeout(() => {
+			populateTeachingAssignmentModalDropdowns();
+			//}, 100);
 
         	// Đặt lại trạng thái thêm mới
         	document.querySelector('#modal-them-phan-cong h3').textContent = 'Thêm phân công mới';
@@ -1393,8 +1398,17 @@
 		            createPhanCong();
 		        };
         	}
-			currentEditingId = null;
-			currentAction = 'create';
+			
+			// Khởi tạo Select2 sau khi modal hiển thị và dữ liệu đã được điền
+		    setTimeout(() => {
+		        initializeModalSelect2('modal-them-phan-cong');
+		        
+		        // Đảm bảo dropdown được hiển thị đúng loại lớp
+		        const classTypeSelect = document.getElementById('class_type');
+		        if (classTypeSelect) {
+		            classTypeSelect.dispatchEvent(new Event('change'));
+		        }
+		    }, 200);
 		} 
 
         function closeThemPhanCongModal() {
@@ -1509,10 +1523,13 @@
             }
 
 			// Điền môn học với tìm kiếm
-            if (subjectSelect && allSubjects) {
+            if (subjectSelect) {
                 subjectSelect.innerHTML = '<option value="">-- Chọn môn học --</option>';
                 fetch('/api/curriculum-subjects/')
-                    .then(response => response.json())
+                    .then(response => {
+                		if (!response.ok) throw new Error('Network response was not ok');
+                		return response.json();
+            		})
                     .then(data => {
                         if (data && data.length > 0) {
                             data.forEach(subject => {
@@ -2391,49 +2408,60 @@
     			.then(data => {
 					if (data.status === 'success' && data.data) {
             			const assignmentData = data.data;
-        				document.querySelector('#form-them-phan-cong input[name="academic_year"]').value = assignmentData.academic_year;
-        				document.querySelector('#form-them-phan-cong select[name="semester"]').value = assignmentData.semester;
-        				document.querySelector('#form-them-phan-cong input[name="is_main_instructor"]').checked = assignmentData.is_main_instructor;
-        				document.querySelector('#form-them-phan-cong input[name="student_count"]').value = assignmentData.student_count;
-        				document.querySelector('#form-them-phan-cong input[name="teaching_hours"]').value = assignmentData.teaching_hours;
+
+						// Mở modal trước
+                		openThemPhanCongModal();
+
+						// Sau khi modal mở và dữ liệu được điền, đặt giá trị
+		                setTimeout(() => {
+		                    // Đặt các giá trị cơ bản
+	        				document.querySelector('#form-them-phan-cong input[name="academic_year"]').value = assignmentData.academic_year;
+	        				document.querySelector('#form-them-phan-cong select[name="semester"]').value = assignmentData.semester;
+	        				document.querySelector('#form-them-phan-cong input[name="is_main_instructor"]').checked = assignmentData.is_main_instructor;
+	        				document.querySelector('#form-them-phan-cong input[name="student_count"]').value = assignmentData.student_count;
+	        				document.querySelector('#form-them-phan-cong input[name="teaching_hours"]').value = assignmentData.teaching_hours;
             
-        				// Xử lý loại lớp và lớp tương ứng
-        				if (assignmentData.class_obj_id) {
-            				document.querySelector('#form-them-phan-cong select[name="class_type"]').value = 'regular';
-            				document.querySelector('#form-them-phan-cong select[name="class_id"]').value = assignmentData.class_obj_id;
-        				} else if (assignmentData.combined_class_id) {
-            				document.querySelector('#form-them-phan-cong select[name="class_type"]').value = 'combined';
-            				document.querySelector('#form-them-phan-cong select[name="combined_class_id"]').value = assignmentData.combined_class_id;
-        				}
-            
-        				// Kích hoạt sự kiện change để hiển thị đúng dropdown
-        				document.querySelector('#form-them-phan-cong select[name="class_type"]').dispatchEvent(new Event('change'));
-            
-        				openThemPhanCongModal();
+	        				// Kích hoạt sự kiện change để hiển thị đúng dropdown
+	        				document.querySelector('#form-them-phan-cong select[name="class_type"]').dispatchEvent(new Event('change'));
         				
-						// Xử lý loại lớp và lớp tương ứng - SỬA: thêm timeout
-            			setTimeout(() => {
+							// Đặt giá trị cho dropdowns
                 			const classTypeSelect = document.querySelector('#form-them-phan-cong select[name="class_type"]');
 							const curriculumSubjectSelect = $('select[name="curriculum_subject_id"]');
-                			const instructorSelect = $('select[name="instructor_id"]');
-                    
-                			instructorSelect.val(assignmentData.instructor_id || '').trigger('change');
-                			curriculumSubjectSelect.val(assignmentData.curriculum_subject_id || '').trigger('change');
-                    
+                			const instructorSelect = document.querySelector('#form-them-phan-cong select[name="instructor_id"]');
+							const subjectSelect = document.querySelector('#form-them-phan-cong select[name="curriculum_subject_id"]');
+
+							if (instructorSelect) {
+		                        $(instructorSelect).val(assignmentData.instructor_id).trigger('change');
+		                    }
+
+							if (subjectSelect) {
+		                        $(subjectSelect).val(assignmentData.curriculum_subject_id).trigger('change');
+		                    }
+							
+                			//instructorSelect.val(assignmentData.instructor_id || '').trigger('change');
+                			//curriculumSubjectSelect.val(assignmentData.curriculum_subject_id || '').trigger('change');
+
+							// Xử lý loại lớp và lớp tương ứng
                 			if (assignmentData.class_obj_id) {
                     			classTypeSelect.value = 'regular';
-                    			document.querySelector('#form-them-phan-cong select[name="class_id"]').value = assignmentData.class_obj_id;
+                    			const classRegularSelect = document.querySelector('#form-them-phan-cong select[name="class_id"]');
+		                        if (classRegularSelect) {
+		                            $(classRegularSelect).val(assignmentData.class_obj_id).trigger('change');
+								}
                 			} else if (assignmentData.combined_class_id) {
                     			classTypeSelect.value = 'combined';
-                    			document.querySelector('#form-them-phan-cong select[name="combined_class_id"]').value = assignmentData.combined_class_id;
+                    			const classCombinedSelect = document.querySelector('#form-them-phan-cong select[name="combined_class_id"]');
+		                        if (classCombinedSelect) {
+		                            $(classCombinedSelect).val(assignmentData.combined_class_id).trigger('change');
+		                        }
                 			}
                     
                 			// Kích hoạt sự kiện change để hiển thị đúng dropdown
                 			classTypeSelect.dispatchEvent(new Event('change'));
                     
                 			// Cập nhật Select2
-                			$('#modal-them-phan-cong select').trigger('change.select2');
-            			}, 500);
+                			//$('#modal-them-phan-cong select').trigger('change.select2');
+            			//}, 500);
 
 						document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
         				const saveBtn = document.getElementById('btn-luu-phan-cong');
@@ -2443,14 +2471,15 @@
                                 updateTeachingAssignment(id); 
                             }
                         };
-        			} else {
-            			alert('Không thể tải dữ liệu phân công giảng dạy: ' + (data.message || 'Lỗi không xác định'));
-        			}
-    			})
-    			.catch(error => {
-        			console.error('Error loading teaching assignment data:', error);
-        			alert('Không thể tải dữ liệu phân công giảng dạy');
-    			});
+					}, 500);
+				} else {
+					alert('Không thể tải dữ liệu phân công giảng dạy: ' + (data.message || 'Lỗi không xác định'));
+				}
+			})
+			.catch(error => {
+				console.error('Error loading teaching assignment data:', error);
+				alert('Không thể tải dữ liệu phân công giảng dạy');
+			});
 		}
 
 		function updateTeachingAssignment(id) {
@@ -3192,6 +3221,13 @@
                     closeThemGiangVienModal();
                 }
             });
+
+			// Sự kiện khi mở modal phân công giảng dạy
+			document.getElementById('modal-them-phan-cong').addEventListener('shown.bs.modal', function() {
+			    if (currentAction === 'create') {
+			        populateTeachingAssignmentModalDropdowns();
+			    }
+			});
 
             document.getElementById('modal-them-phan-cong').addEventListener('click', function(e) {
                 if (e.target === this) {
