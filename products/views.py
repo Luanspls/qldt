@@ -1273,7 +1273,7 @@ def api_classes(request):
     if course_id:
         classes = classes.filter(course_id=course_id)
     if is_combined:
-        classes = classes.filter(is_combined=(is_combined.lower() == 'true'))
+        classes = classes.filter(is_combined=(is_combined.lower() == 'false'))
     
     class_data = list(classes.values('id', 'code', 'name', 'curriculum_id', 'course_id', 'is_combined'))
     return JsonResponse(class_data, safe=False)
@@ -1282,11 +1282,19 @@ def api_classes(request):
 def api_combined_classes(request):
     """API lấy danh sách lớp học ghép"""
     curriculum_id = request.GET.get('curriculum_id')
+    class_type = request.GET.get('class_type')
     
     combined_classes = CombinedClass.objects.select_related('curriculum').prefetch_related('classes')
-    
+    is_combined = None
+    if class_type == 'regular':
+        is_combined = False
+    elif class_type == 'combined':
+        is_combined = True
+        
     if curriculum_id:
         combined_classes = combined_classes.filter(curriculum_id=curriculum_id)
+    elif not is_combined = None and is_combined:
+        combined_classes = combined_classes.filter(is_combined=(is_combined.lower() == 'true'))
     
     combined_class_data = []
     for cc in combined_classes:
