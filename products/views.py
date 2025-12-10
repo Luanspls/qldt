@@ -3003,6 +3003,8 @@ def api_teaching_assignment_detail(request, id):
                 'id': assignment.id,
                 'instructor_id': assignment.instructor.id,
                 'curiculum_subject_id': assignment.curriculum_subject.id,
+                'curiculum_subject_code': assignment.curriculum_subject.code,
+                'curiculum_subject_name': assignment.curriculum_subject.name,
                 'class_obj_id': assignment.class_obj.id if assignment.class_obj else None,
                 'combined_class_id': assignment.combined_class.id if assignment.combined_class else None,
                 'academic_year': assignment.academic_year,
