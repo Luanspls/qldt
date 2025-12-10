@@ -1325,13 +1325,15 @@ def api_teaching_assignments(request):
     combined_class_id = request.GET.get('combined_class_id')
     academic_year = request.GET.get('academic_year')
     semester = request.GET.get('semester')
+    class_type = request.GET.get('class_type')
     
     teaching_assignments = TeachingAssignment.objects.select_related(
         'instructor', 
-        'curriculum_subject__name',
-        'curriculum_subject__curriculum',
+        'curriculum_subject',
         'class_obj',
         'combined_class'
+    ).prefetch_related(
+        'curriculum_subject__curriculum'
     )
     
     if instructor_id:
@@ -1351,9 +1353,15 @@ def api_teaching_assignments(request):
         teaching_assignments = teaching_assignments.filter(academic_year=academic_year)
     if semester:
         teaching_assignments = teaching_assignments.filter(semester=semester)
+    if class_type:
+        if class_type == 'regular':
+            teaching_assignments = teaching_assignments.filter(class_obj__isnull=False)
+        elif class_type == 'combined':
+            teaching_assignments = teaching_assignments.filter(combined_class__isnull=False)
     
     assignments_data = []
     for assignment in teaching_assignments:
+        curriculum = assignment.curriculum_subject.curriculum if hasattr(assignment.curriculum_subject, 'curriculum') else None
         assignment_data = {
             'id': assignment.id,
             'instructor_id': assignment.instructor.id,
@@ -1362,8 +1370,8 @@ def api_teaching_assignments(request):
             'subject_id': assignment.curriculum_subject.id,
             'subject_code': assignment.curriculum_subject.code,
             'subject_name': assignment.curriculum_subject.name,
-            'curriculum_id': assignment.curriculum_subject.curriculum.id,
-            'curriculum_name': assignment.curriculum_subject.curriculum.name,
+            # 'curriculum_id': assignment.curriculum_subject.curriculum.id,
+            # 'curriculum_name': assignment.curriculum_subject.curriculum.name,
             'academic_year': assignment.academic_year,
             'semester': assignment.semester,
             'is_main_instructor': assignment.is_main_instructor,
@@ -1373,10 +1381,14 @@ def api_teaching_assignments(request):
             'class_name': assignment.class_name,
             'class_code': assignment.class_code,
         }
-        
+
+        if curriculum:
+            assignment_data['curriculum_id'] = curriculum.id
+            assignment_data['curriculum_name'] = curriculum.name
+            
         # Thêm thông tin lớp học cụ thể
         if assignment.class_obj:
-            assignment_data['class_id'] = assignment.class_obj.id
+            assignment_data['class_obj_id'] = assignment.class_obj.id
             assignment_data['class_is_combined'] = assignment.class_obj.is_combined
         elif assignment.combined_class:
             assignment_data['combined_class_id'] = assignment.combined_class.id
