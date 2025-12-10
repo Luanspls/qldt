@@ -1164,8 +1164,6 @@
 
         // Tải dữ liệu ban đầu
         function loadInitialData() {
-			console.log('Loading initial data...');
-    
             // Tải danh sách cho các dropdown filter
             const loadPromises = [
                 loadSelect2Data('/api/instructors/', 'filter-instructor', 'full_name', ['code', 'full_name']),
@@ -1739,43 +1737,39 @@
 			// Điền môn học với tìm kiếm
             if (subjectSelect) {
                 subjectSelect.innerHTML = '<option value="">-- Chọn môn học --</option>';
-                fetch('/api/all-subjects/')
-                    .then(response => {
-                		if (!response.ok) {
-							throw new Error(`HTTP error! status: ${response.status}`)
-						}
-                		return response.json();
-            		})
-                    .then(data => {
-                        if (data && data.length > 0) {
-                            data.forEach(subject => {
-                                const option = document.createElement('option');
-                                option.value = subject.id;
-                                option.textContent = `${subject.code} - ${subject.name}`;
-                                subjectSelect.appendChild(option);
-                            });
-							// Khởi tạo Select2
-            				initializeSelect2ForElement(subjectSelect);
-							
-							// Khởi tạo Select2 sau khi có dữ liệu
-		                    //setTimeout(() => {
-		                    //    if ($(subjectSelect).hasClass('select2-hidden-accessible')) {
-		                    //        $(subjectSelect).select2('destroy');
-		                    //    }
-		                    //    $(subjectSelect).select2({
-		                    //        language: 'vi',
-		                    //        placeholder: "Chọn môn học...",
-		                    //        allowClear: true,
-		                    //        width: '100%',
-		                    //        dropdownParent: $('#modal-them-phan-cong')
-		                    //    });
-		                    //}, 100);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading curriculum subjects:', error);
-						subjectSelect.innerHTML = '<option value="">-- Lỗi tải dữ liệu --</option>';
+                if (allSubjects && allSubjects.length > 0) {
+                    allSubjects.forEach(subject => {
+                        const option = document.createElement('option');
+                        option.value = subject.id;
+                        option.textContent = `${subject.code} - ${subject.name}`;
+                        subjectSelect.appendChild(option);
                     });
+                } else {
+                    fetch('/api/all-subjects/')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`)
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            allSubjects = data;
+                            if (data && data.length > 0) {
+                                data.forEach(subject => {
+                                    const option = document.createElement('option');
+                                    option.value = subject.id;
+                                    option.textContent = `${subject.code} - ${subject.name}`;
+                                    subjectSelect.appendChild(option);
+                                });
+                                // Khởi tạo Select2
+                                initializeSelect2ForElement(subjectSelect);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading curriculum subjects:', error);
+                            subjectSelect.innerHTML = '<option value="">-- Lỗi tải dữ liệu --</option>';
+                        });
+                }
             }
 
 			// Điền lớp học thường với tìm kiếm
@@ -2825,7 +2819,8 @@
             currentModalType = 'edit';
             currentAction = 'edit';
 
-            openThemPhanCongModal();
+            openModal('modal-them-phan-cong');
+            //openThemPhanCongModal();
 
             // Đặt tiêu đề modal
             document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
@@ -2870,31 +2865,46 @@
 		                    }
 
 							if (subjectSelect) {
+                                const optionExists = $(subjectSelect).find(`option[value="${assignmentData.curriculum_subject_id}"]`).length > 0;
+                                 if (optionExists) {
+                                    $(subjectSelect).val(assignmentData.curriculum_subject_id).trigger('change');
+                                } else {
+                                    console.warn(`Subject ID ${assignmentData.curriculum_subject_id} not found in dropdown`);
+                                    // Nếu không tìm thấy, có thể môn học này chưa có trong allSubjects
+                                    // Thêm option tạm thời
+                                    const tempOption = document.createElement('option');
+                                    tempOption.value = assignmentData.curriculum_subject_id;
+                                    tempOption.textContent = `[${assignmentData.subject_code}] ${assignmentData.subject_name}`;
+                                    tempOption.selected = true;
+                                    subjectSelect.appendChild(tempOption);
+                                    $(subjectSelect).trigger('change');
+                                }
+
                                 // Trước tiên, tải lại danh sách môn học nếu cần
-                                if ($(subjectSelect).find('option').length <= 1) {
-                                    fetch('/api/all-subjects/')
-                                        .then(response => response.json())
-                                        .then(subjects => {
-                                            if (subjects && subjects.length > 0) {
-                                                // Xóa options cũ (giữ option đầu tiên)
-                                                $(subjectSelect).find('option:not(:first)').remove();
+                                //if ($(subjectSelect).find('option').length <= 1) {
+                                //    fetch('/api/all-subjects/')
+                                //        .then(response => response.json())
+                                //        .then(subjects => {
+                                //            if (subjects && subjects.length > 0) {
+                                //                // Xóa options cũ (giữ option đầu tiên)
+                                //                $(subjectSelect).find('option:not(:first)').remove();
                                                 
-                                                // Thêm options mới
-                                                subjects.forEach(subject => {
-                                                    const option = document.createElement('option');
-                                                    option.value = subject.id;
-                                                    option.textContent = `${subject.code} - ${subject.name}`;
-                                                    subjectSelect.appendChild(option);
-                                                });
+                                //                // Thêm options mới
+                                //                subjects.forEach(subject => {
+                                //                    const option = document.createElement('option');
+                                //                    option.value = subject.id;
+                                //                    option.textContent = `${subject.code} - ${subject.name}`;
+                                //                    subjectSelect.appendChild(option);
+                                //                });
                                                 
                                                 // Set giá trị và trigger change
-                                                $(subjectSelect).val(assignmentData.subject_id).trigger('change');
-                                            }
-                                        });
-                                } else {
+                                //                $(subjectSelect).val(assignmentData.subject_id).trigger('change');
+                                //            }
+                                //        });
+                                //} else {
                                     // Nếu đã có dữ liệu, set giá trị ngay
-                                    $(subjectSelect).val(assignmentData.subject_id).trigger('change');
-                                }
+                                //    $(subjectSelect).val(assignmentData.subject_id).trigger('change');
+                                //}
                             }
 
 							// Kích hoạt sự kiện change để hiển thị đúng dropdown
