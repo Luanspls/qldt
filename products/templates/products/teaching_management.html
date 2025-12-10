@@ -1887,6 +1887,7 @@
 		    const $element = $(element);
 		    const elementId = element.id || element.name || 'unknown';
 		    const modalId = $element.closest('.modal').attr('id');
+            const isInModal = !!modalId;
 		    
 		    // Hủy Select2 cũ nếu tồn tại
 		    if ($element.hasClass('select2-hidden-accessible')) {
@@ -1900,7 +1901,7 @@
 		    // Kiểm tra nếu có dữ liệu (có ít nhất 1 option)
 		    const hasData = $element.find('option').length > 0;
 		    
-		    if (hasData) {
+		    if (hasData || elementId.includes('filter')) {
 		        try {
 		            // Xác định dropdown parent
 		            let dropdownParent = $(document.body);
@@ -1925,14 +1926,16 @@
 		                config.placeholder = "Chọn hoặc nhập để tìm kiếm...";
 		                config.closeOnSelect = false;
 		                config.minimumResultsForSearch = 0;
-		            } else if ($element.find('option').length > 20) {
-		                // Select có nhiều option -> enable search
-		                config.minimumResultsForSearch = 0;
-		            }
+		            } 
+                    
+                    // THÊM: Cấu hình riêng cho các filter bên ngoài modal
+                    if (elementId.includes('filter')) {
+                        config.minimumResultsForSearch = 0;
+                        config.dropdownParent = $(document.body); // Filter ở ngoài modal
+                    }
 		            
 		            // Khởi tạo Select2
 		            $element.select2(config);
-		            console.log(`✅ Select2 initialized for: ${elementId}`);
 
 					// THÊM: Auto-focus vào ô tìm kiếm khi mở dropdown
 		            $element.on('select2:open', function(e) {
@@ -1941,11 +1944,26 @@
 		                    const searchInput = document.querySelector('.select2-container--open .select2-search__field');
 		                    if (searchInput) {
 		                        searchInput.focus();
-		                        console.log(`🔍 Auto-focused search for: ${elementId}`);
+                                searchInput.select();
+
+                                searchInput.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.5)';
+                                setTimeout(() => {
+                                    searchInput.style.boxShadow = '';
+                                }, 500);
 		                    }
 		                }, 100);
 		            });
 		            
+                    // THÊM: Xử lý phím tắt cho filter
+                    if (elementId.includes('filter')) {
+                        $element.on('keydown', function(e) {
+                            // Ctrl + F để mở dropdown và focus vào search
+                            if (e.ctrlKey && e.key === 'f') {
+                                e.preventDefault();
+                                $element.select2('open');
+                            }
+                        });
+                    }
 		            // THÊM: Xử lý phím tắt
 		            $element.on('keydown', function(e) {
 		                // Alt + S để mở dropdown và focus vào search
@@ -2805,7 +2823,22 @@
     
             currentEditingId = id;
             currentModalType = 'edit';
+            currentAction = 'edit';
 
+            openThemPhanCongModal();
+
+            // Đặt tiêu đề modal
+            document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
+            const saveBtn = document.getElementById('btn-luu-phan-cong');
+            if (saveBtn) {
+                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật phân công';
+                saveBtn.onclick = function() { 
+                    if (!isSubmitting) {
+                        updateTeachingAssignment(id); 
+                    }
+                };
+            }
+            
 			fetch(`/api/teaching-assignments/${id}/`)
     			.then(response => {
         			if (!response.ok) {
@@ -2817,14 +2850,13 @@
 					if (data.status === 'success' && data.data) {
             			const assignmentData = data.data;
 
-						openThemPhanCongModal();
 						// Đặt các giá trị cơ bản
 						document.querySelector('#form-them-phan-cong input[name="academic_year"]').value = assignmentData.academic_year;
 						document.querySelector('#form-them-phan-cong select[name="semester"]').value = assignmentData.semester;
 						document.querySelector('#form-them-phan-cong input[name="is_main_instructor"]').checked = assignmentData.is_main_instructor;
 						document.querySelector('#form-them-phan-cong input[name="student_count"]').value = assignmentData.student_count;
 						document.querySelector('#form-them-phan-cong input[name="teaching_hours"]').value = assignmentData.teaching_hours;
-						document.querySelector('#form-them-phan-cong select[name="class_type"]').dispatchEvent(new Event('change'));
+						//document.querySelector('#form-them-phan-cong select[name="class_type"]').dispatchEvent(new Event('change'));
         				
 						setTimeout(() => {
 							// Đặt giá trị cho dropdowns
@@ -2838,44 +2870,74 @@
 		                    }
 
 							if (subjectSelect) {
-		                        $(subjectSelect).val(assignmentData.subject_id).trigger('change');
-		                    }
+                                // Trước tiên, tải lại danh sách môn học nếu cần
+                                if ($(subjectSelect).find('option').length <= 1) {
+                                    fetch('/api/all-subjects/')
+                                        .then(response => response.json())
+                                        .then(subjects => {
+                                            if (subjects && subjects.length > 0) {
+                                                // Xóa options cũ (giữ option đầu tiên)
+                                                $(subjectSelect).find('option:not(:first)').remove();
+                                                
+                                                // Thêm options mới
+                                                subjects.forEach(subject => {
+                                                    const option = document.createElement('option');
+                                                    option.value = subject.id;
+                                                    option.textContent = `${subject.code} - ${subject.name}`;
+                                                    subjectSelect.appendChild(option);
+                                                });
+                                                
+                                                // Set giá trị và trigger change
+                                                $(subjectSelect).val(assignmentData.subject_id).trigger('change');
+                                            }
+                                        });
+                                } else {
+                                    // Nếu đã có dữ liệu, set giá trị ngay
+                                    $(subjectSelect).val(assignmentData.subject_id).trigger('change');
+                                }
+                            }
 
 							// Kích hoạt sự kiện change để hiển thị đúng dropdown
                 			classTypeSelect.dispatchEvent(new Event('change'));
 							
-							// Xử lý loại lớp và lớp tương ứng
-                			if (assignmentData.class_obj_id) {
-                    			classTypeSelect.value = 'regular';
-                    			const classRegularSelect = document.querySelector('#form-them-phan-cong select[name="class_id"]');
-		                        if (classRegularSelect) {
-		                            $(classRegularSelect).val(assignmentData.class_obj_id).trigger('change');
-								}
-                			} else if (assignmentData.combined_class_id) {
-                    			classTypeSelect.value = 'combined';
-                    			const classCombinedSelect = document.querySelector('#form-them-phan-cong select[name="combined_class_id"]');
-		                        if (classCombinedSelect) {
-		                            $(classCombinedSelect).val(assignmentData.combined_class_id).trigger('change');
-		                        }
-                			}
-                    	}, 500);
+                            if (classTypeSelect) {
+                                // Xử lý loại lớp và lớp tương ứng
+                                if (assignmentData.class_obj_id) {
+                                    classTypeSelect.value = 'regular';
+                                    document.getElementById('class_regular').classList.remove('hidden');
+                                    document.getElementById('class_combined').classList.add('hidden');
+                                    const classRegularSelect = document.querySelector('#form-them-phan-cong select[name="class_id"]');
+                                    if (classRegularSelect) {
+                                        $(classRegularSelect).val(assignmentData.class_obj_id).trigger('change');
+                                    }
+                                } else if (assignmentData.combined_class_id) {
+                                    classTypeSelect.value = 'combined';
+                                    document.getElementById('class_regular').classList.add('hidden');
+                                    document.getElementById('class_combined').classList.remove('hidden');
 
-						document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
-						const saveBtn = document.getElementById('btn-luu-phan-cong');
-						saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật phân công';
-						saveBtn.onclick = function() { 
-							if (!isSubmitting) {
-								updateTeachingAssignment(id); 
-							}
-						};
-				} else {
-					alert('Không thể tải dữ liệu phân công giảng dạy: ' + (data.message || 'Lỗi không xác định'));
-				}
-			})
-			.catch(error => {
-				console.error('Error loading teaching assignment data:', error);
-				alert('Không thể tải dữ liệu phân công giảng dạy');
-			});
+                                    const classCombinedSelect = document.querySelector('#form-them-phan-cong select[name="combined_class_id"]');
+                                    if (classCombinedSelect) {
+                                        $(classCombinedSelect).val(assignmentData.combined_class_id).trigger('change');
+                                    }
+                                }
+
+                                // Trigger change event để cập nhật UI
+                                classTypeSelect.dispatchEvent(new Event('change'));
+                            }
+                            
+                            // Khởi tạo lại Select2 sau khi đã set giá trị
+                            setTimeout(() => {
+                                initializeModalSelect2('modal-them-phan-cong');
+                            }, 300);
+                    	}, 500);
+                    } else {
+                        alert('Không thể tải dữ liệu phân công giảng dạy: ' + (data.message || 'Lỗi không xác định'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading teaching assignment data:', error);
+                    alert('Không thể tải dữ liệu phân công giảng dạy');
+                });
 		}
 
 		function updateTeachingAssignment(id) {
