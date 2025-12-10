@@ -1282,19 +1282,11 @@ def api_classes(request):
 def api_combined_classes(request):
     """API lấy danh sách lớp học ghép"""
     curriculum_id = request.GET.get('curriculum_id')
-    class_type = request.GET.get('class_type')
     
     combined_classes = CombinedClass.objects.select_related('curriculum').prefetch_related('classes')
-    is_combined = None
-    if class_type == 'regular':
-        is_combined = False
-    elif class_type == 'combined':
-        is_combined = True
         
     if curriculum_id:
         combined_classes = combined_classes.filter(curriculum_id=curriculum_id)
-    elif not is_combined == None and is_combined:
-        combined_classes = combined_classes.filter(is_combined=(is_combined.lower() == 'true'))
     
     combined_class_data = []
     for cc in combined_classes:
@@ -1302,7 +1294,8 @@ def api_combined_classes(request):
             'id': cc.id,
             'code': cc.code,
             'name': cc.name,
-            'curriculum_id': cc.curriculum.id,
+            'curriculum_id': cc.curriculum.id if cc.curriculum else None,
+            'curriculum_name': cc.curriculum.name if cc.curriculum else '',
             'classes_count': cc.classes.count(),
             'class_codes': [c.code for c in cc.classes.all()]
         })
