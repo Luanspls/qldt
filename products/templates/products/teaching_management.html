@@ -2020,15 +2020,6 @@
 		            // Bỏ qua lỗi
 		        }
 		    });
-		    
-		    // Cách 2: Trigger blur trên selection
-		    //$('.select2-selection').trigger('blur');
-		    
-		    // Cách 3: Remove open class
-		    //$('.select2-container--open').removeClass('select2-container--open');
-		    
-		    // Cách 4: Ẩn dropdown
-		    //$('.select2-dropdown').hide();
 		}
 		
         function createLopHoc() {
@@ -2866,15 +2857,14 @@
 
 							if (subjectSelect) {
                                 const optionExists = $(subjectSelect).find(`option[value="${assignmentData.curriculum_subject_id}"]`).length > 0;
-                                 if (optionExists) {
+                                if (optionExists) {
                                     $(subjectSelect).val(assignmentData.curriculum_subject_id).trigger('change');
                                 } else {
-                                    console.warn(`Subject ID ${assignmentData.curriculum_subject_id} not found in dropdown`);
                                     // Nếu không tìm thấy, có thể môn học này chưa có trong allSubjects
                                     // Thêm option tạm thời
                                     const tempOption = document.createElement('option');
                                     tempOption.value = assignmentData.curriculum_subject_id;
-                                    tempOption.textContent = `[${assignmentData.subject_code}] ${assignmentData.subject_name}`;
+                                    tempOption.textContent = `[${assignmentData.curriculum_subject_code}] ${assignmentData.curriculum_subject_name}`;
                                     tempOption.selected = true;
                                     subjectSelect.appendChild(tempOption);
                                     $(subjectSelect).trigger('change');
