@@ -2871,36 +2871,6 @@
                                     subjectSelect.appendChild(tempOption);
                                     $(subjectSelect).trigger('change');
                                 }
-
-                                // Trước tiên, tải lại danh sách môn học nếu cần
-                                //if ($(subjectSelect).find('option').length <= 1) {
-                                //    fetch('/api/all-subjects/')
-                                //        .then(response => response.json())
-                                //        .then(subjects => {
-                                //            if (subjects && subjects.length > 0) {
-                                //                // Xóa options cũ (giữ option đầu tiên)
-                                //                $(subjectSelect).find('option:not(:first)').remove();
-                                                
-                                //                // Thêm options mới
-                                //                subjects.forEach(subject => {
-                                //                    const option = document.createElement('option');
-                                //                    option.value = subject.id;
-                                //                    option.textContent = `${subject.code} - ${subject.name}`;
-                                //                    subjectSelect.appendChild(option);
-                                //                });
-                                                
-                                                // Set giá trị và trigger change
-                                //                $(subjectSelect).val(assignmentData.subject_id).trigger('change');
-                                //            }
-                                //        });
-                                //} else {
-                                    // Nếu đã có dữ liệu, set giá trị ngay
-                                //    $(subjectSelect).val(assignmentData.subject_id).trigger('change');
-                                //}
-                            }
-
-							// Kích hoạt sự kiện change để hiển thị đúng dropdown
-                			classTypeSelect.dispatchEvent(new Event('change'));
 							
                             if (classTypeSelect) {
                                 // Xử lý loại lớp và lớp tương ứng
