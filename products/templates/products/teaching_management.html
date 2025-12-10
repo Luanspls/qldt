@@ -1313,19 +1313,34 @@
         }
 
         function closeModal(modalId) {
+			// Đóng tất cả dropdown Select2 đang mở
+			safeCloseAllSelect2();
+			
             const modal = document.getElementById(modalId);
             if (modal) {
             	// Ẩn modal
         		modal.classList.add('hidden');
-        		document.body.classList.remove('modal-open');
+        		//document.body.classList.remove('modal-open');
         		document.body.classList.remove('overflow-hidden');
-        		currentModal = null;
-			 
-        		const form = modal.querySelector('form');
-        		if (form) {
-            		form.reset();
-				} 
-            }
+        		//currentModal = null;
+
+				//const form = modal.querySelector('form');
+        		//if (form) {
+            	//	form.reset();
+				//} 
+
+				// Reset trạng thái
+		        currentAction = 'create';
+		        currentEditingId = null;
+		        isSubmitting = false;
+        		
+				// Khởi tạo Select2 sau khi modal hiển thị
+		        setTimeout(() => {
+		            initializeModalSelect2(modalId);
+		        }, 150);
+		    } else {
+		        console.error('Modal not found:', modalId);
+		    }
         }
 
         function openThemLopHocModal() {
@@ -1460,6 +1475,8 @@
                         option.textContent = `${curriculum.name} (${curriculum.academic_year})`;
                         curriculumSelect.appendChild(option);
                     });
+					// Khởi tạo Select2
+            		initializeSelect2ForElement(curriculumSelect);
                 }
             }
             
@@ -1472,6 +1489,8 @@
                         option.textContent = course.name;
                         courseSelect.appendChild(option);
                     });
+					// Khởi tạo Select2
+            		initializeSelect2ForElement(courseSelect);
                 }
             }
         }
@@ -1489,6 +1508,8 @@
                         option.textContent = `${curriculum.name} (${curriculum.academic_year})`;
                         curriculumSelect.appendChild(option);
                     });
+					// Khởi tạo Select2
+            		initializeSelect2ForElement(curriculumSelect);
                 }
             }
 
@@ -1501,6 +1522,8 @@
                         option.textContent = `${classItem.code} - ${classItem.name}`;
                         classesSelect.appendChild(option);
                     });
+					// Khởi tạo Select2
+            		initializeSelect2ForElement(classesSelect);
                 }
             }
 		}
@@ -1520,6 +1543,8 @@
                         option.textContent = `${instructor.full_name} (${instructor.code})`;
                         instructorSelect.appendChild(option);
                     });
+					// Khởi tạo Select2
+            		initializeSelect2ForElement(instructorSelect);
                 } 
             }
 
@@ -1541,19 +1566,22 @@
                                 option.textContent = `${subject.code} - ${subject.name}`;
                                 subjectSelect.appendChild(option);
                             });
+							// Khởi tạo Select2
+            				initializeSelect2ForElement(subjectSelect);
+							
 							// Khởi tạo Select2 sau khi có dữ liệu
-		                    setTimeout(() => {
-		                        if ($(subjectSelect).hasClass('select2-hidden-accessible')) {
-		                            $(subjectSelect).select2('destroy');
-		                        }
-		                        $(subjectSelect).select2({
-		                            language: 'vi',
-		                            placeholder: "Chọn môn học...",
-		                            allowClear: true,
-		                            width: '100%',
-		                            dropdownParent: $('#modal-them-phan-cong')
-		                        });
-		                    }, 100);
+		                    //setTimeout(() => {
+		                    //    if ($(subjectSelect).hasClass('select2-hidden-accessible')) {
+		                    //        $(subjectSelect).select2('destroy');
+		                    //    }
+		                    //    $(subjectSelect).select2({
+		                    //        language: 'vi',
+		                    //        placeholder: "Chọn môn học...",
+		                    //        allowClear: true,
+		                    //        width: '100%',
+		                    //        dropdownParent: $('#modal-them-phan-cong')
+		                    //    });
+		                    //}, 100);
                         }
                     })
                     .catch(error => {
@@ -1645,6 +1673,7 @@
                         option.textContent = `${department.code} ${department.name}`;
                         departmentSelect.appendChild(option);
                     });
+					initializeSelect2ForElement(departmentSelect);
                 }
             }
 
@@ -1658,6 +1687,7 @@
                         option.textContent = `${subjectGroup.code} ${subjectGroup.name}`;
                         subjectGroupSelect.appendChild(option);
                     });
+					initializeSelect2ForElement(subjectGroupSelect);
                 }
             }
 
@@ -1668,29 +1698,96 @@
 		    
 		    const $element = $(element);
 		    const elementId = element.id || element.name || 'unknown';
+		    const modalId = $element.closest('.modal').attr('id');
 		    
 		    // Hủy Select2 cũ nếu tồn tại
 		    if ($element.hasClass('select2-hidden-accessible')) {
-		        $element.select2('destroy');
+		        try {
+		            $element.select2('destroy');
+		        } catch (error) {
+		            console.warn(`⚠️ Could not destroy Select2 for ${elementId}:`, error);
+		        }
 		    }
 		    
-		    // Kiểm tra nếu có dữ liệu
-		    if ($element.find('option').length > 1) {
+		    // Kiểm tra nếu có dữ liệu (có ít nhất 1 option)
+		    const hasData = $element.find('option').length > 0;
+		    
+		    if (hasData) {
 		        try {
-		            $element.select2({
+		            // Xác định dropdown parent
+		            let dropdownParent = $(document.body);
+		            if (modalId) {
+		                dropdownParent = $(`#${modalId}`);
+		            }
+		            
+		            // Cấu hình cơ bản
+		            const config = {
 		                language: 'vi',
 		                placeholder: "Chọn...",
 		                allowClear: true,
 		                width: '100%',
-		                dropdownParent: $('#modal-them-phan-cong'),
+		                dropdownParent: dropdownParent,
 		                dropdownAutoWidth: true,
-		                minimumResultsForSearch: 0
-		            });
+		                minimumResultsForSearch: 10
+		            };
+		            
+		            // Cấu hình riêng cho các loại select
+		            if ($element.prop('multiple')) {
+		                // Select multiple
+		                config.placeholder = "Chọn hoặc nhập để tìm kiếm...";
+		                config.closeOnSelect = false;
+		                config.minimumResultsForSearch = 0;
+		            } else if ($element.find('option').length > 20) {
+		                // Select có nhiều option -> enable search
+		                config.minimumResultsForSearch = 0;
+		            }
+		            
+		            // Khởi tạo Select2
+		            $element.select2(config);
 		            console.log(`✅ Select2 initialized for: ${elementId}`);
+		            
 		        } catch (error) {
 		            console.error(`❌ Error initializing Select2 for ${elementId}:`, error);
+		            
+		            // Fallback: Khởi tạo đơn giản nếu có lỗi
+		            try {
+		                $element.select2({
+		                    language: 'vi',
+		                    placeholder: "Chọn...",
+		                    allowClear: true,
+		                    width: '100%',
+		                    dropdownParent: $(document.body)
+		                });
+		                console.log(`✅ Fallback Select2 initialized for: ${elementId}`);
+		            } catch (fallbackError) {
+		                console.error(`❌ Fallback also failed for ${elementId}:`, fallbackError);
+		            }
 		        }
+		    } else {
+		        console.log(`⚠️ Skipping Select2 for empty dropdown: ${elementId}`);
 		    }
+		    
+		    return $element;
+		}
+
+		function safeCloseAllSelect2() {
+		    // Cách 1: Sử dụng API Select2
+		    $('select.select2-hidden-accessible').each(function() {
+		        try {
+		            $(this).select2('close');
+		        } catch (error) {
+		            // Bỏ qua lỗi
+		        }
+		    });
+		    
+		    // Cách 2: Trigger blur trên selection
+		    //$('.select2-selection').trigger('blur');
+		    
+		    // Cách 3: Remove open class
+		    //$('.select2-container--open').removeClass('select2-container--open');
+		    
+		    // Cách 4: Ẩn dropdown
+		    //$('.select2-dropdown').hide();
 		}
 		
         function createLopHoc() {
@@ -3823,11 +3920,6 @@
 
         // Hàm khởi tạo Select2 cho modal cụ thể
         function initializeModalSelect2(modalId) {
-            console.log('🔄 Initializing Select2 for modal:', modalId);
-
-			// Hủy Select2 cũ nếu tồn tại
-            //$modal.find('select.select2-hidden-accessible').select2('destroy');
-			            
 			const modalElement = document.getElementById(modalId);
 			if (!modalElement) {
 		        console.error('Modal not found:', modalId);
@@ -3837,10 +3929,16 @@
 			// Đợi modal hiển thị hoàn toàn
     		setTimeout(() => {
 				const $modal = $(`#${modalId}`);
-				// Đặc biệt xử lý modal phân công giảng dạy
+
+				// Khởi tạo tất cả select trong modal
+		        $modal.find('select').each(function() {
+		            initializeSelect2ForElement(this);
+		        });
+				
+				// Khởi tạo riêng cho các dropdown đặc biệt nếu cần
 		        if (modalId === 'modal-them-phan-cong') {
-		            // Khởi tạo từng dropdown riêng biệt
-		            const dropdowns = [
+		            // Đảm bảo các dropdown quan trọng được khởi tạo
+		            const importantSelects = [
 		                'instructor_id',
 		                'curriculum_subject_id', 
 		                'class_type',
@@ -3849,17 +3947,21 @@
 		                'semester'
 		            ];
 		            
-		            dropdowns.forEach(name => {
-		                const element = document.querySelector(`#${modalId} select[name="${name}"]`);
+		            importantSelects.forEach(name => {
+		                const element = $modal.find(`select[name="${name}"]`)[0];
 		                if (element) {
-		                    initializeSelect2ForElement(element);
+		                    // Đã được khởi tạo ở trên, nhưng có thể thêm xử lý đặc biệt
+		                    console.log(`✅ Special select initialized: ${name}`);
 		                }
 		            });
-		        } else {
-		            // Xử lý các modal khác như bình thường
-		            $modal.find('select').each(function() {
-		                initializeSelect2ForElement(this);
-		            });
+		            
+		            // Kích hoạt sự kiện change cho loại lớp
+		            setTimeout(() => {
+		                const classTypeSelect = document.getElementById('class_type');
+		                if (classTypeSelect) {
+		                    classTypeSelect.dispatchEvent(new Event('change'));
+		                }
+		            }, 200);
 		        }
 			}, 300);
 		}
