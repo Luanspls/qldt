@@ -1462,7 +1462,9 @@
     		//resetFormAndListeners('modal-them-phan-cong');
 
 			// Điền dữ liệu vào dropdowns
-			populateTeachingAssignmentModalDropdowns();
+			setTimeout(() => {
+				populateTeachingAssignmentModalDropdowns();
+			}, 100);
 
         	// Đặt lại trạng thái thêm mới
         	document.querySelector('#modal-them-phan-cong h3').textContent = 'Thêm phân công mới';
@@ -1474,17 +1476,20 @@
 		            createPhanCong();
 		        };
         	}
+
+			currentEditingId = null;
+			currentAction = 'create';
 			
 			// Khởi tạo Select2 sau khi modal hiển thị và dữ liệu đã được điền
-			setTimeout(() => {
-				initializeModalSelect2('modal-them-phan-cong');
+			//setTimeout(() => {
+			//	initializeModalSelect2('modal-them-phan-cong');
 				
 				// Đảm bảo dropdown được hiển thị đúng loại lớp
-				const classTypeSelect = document.getElementById('class_type');
-				if (classTypeSelect) {
-					classTypeSelect.dispatchEvent(new Event('change'));
-				}
-			}, 500);
+			//	const classTypeSelect = document.getElementById('class_type');
+			//	if (classTypeSelect) {
+			//		classTypeSelect.dispatchEvent(new Event('change'));
+			//	}
+			//}, 500);
 		} 
 
         function closeThemPhanCongModal() {
@@ -2811,7 +2816,6 @@
             currentAction = 'edit';
 
             //openModal('modal-them-phan-cong');
-            
 
             // Đặt tiêu đề modal
             document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
