@@ -1575,9 +1575,8 @@
 		                classRegularSelect.appendChild(option);
 		            });
                 } else {
-		            console.log('No classes found in allClasses');
 		            // Tải lại dữ liệu
-		            fetch('/api/classes/?is_combined=false'')
+		            fetch('/api/classes/?is_combined=false')
 		                .then(response => response.json())
 		                .then(data => {
 		                    allClasses = data;
