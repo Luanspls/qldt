@@ -1293,7 +1293,7 @@ def api_combined_classes(request):
         
     if curriculum_id:
         combined_classes = combined_classes.filter(curriculum_id=curriculum_id)
-    elif not is_combined = None and is_combined:
+    elif not is_combined == None and is_combined:
         combined_classes = combined_classes.filter(is_combined=(is_combined.lower() == 'true'))
     
     combined_class_data = []
