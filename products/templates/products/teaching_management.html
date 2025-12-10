@@ -594,6 +594,11 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Năm học</label>
                         <input type="text" id="filter-academic-year" class="w-full p-2 border border-gray-300 rounded-md" placeholder="VD: 2023-2024">
                     </div>
+					<div class="flex items-end">
+                        <button id="btn-filter-assignment" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md w-full">
+                            Lọc
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="overflow-x-auto table-container">
@@ -2812,21 +2817,16 @@
 					if (data.status === 'success' && data.data) {
             			const assignmentData = data.data;
 
-						// Mở modal trước
-                		openThemPhanCongModal();
-
-						// Sau khi modal mở và dữ liệu được điền, đặt giá trị
-		                setTimeout(() => {
-		                    // Đặt các giá trị cơ bản
-	        				document.querySelector('#form-them-phan-cong input[name="academic_year"]').value = assignmentData.academic_year;
-	        				document.querySelector('#form-them-phan-cong select[name="semester"]').value = assignmentData.semester;
-	        				document.querySelector('#form-them-phan-cong input[name="is_main_instructor"]').checked = assignmentData.is_main_instructor;
-	        				document.querySelector('#form-them-phan-cong input[name="student_count"]').value = assignmentData.student_count;
-	        				document.querySelector('#form-them-phan-cong input[name="teaching_hours"]').value = assignmentData.teaching_hours;
-            
-	        				// Kích hoạt sự kiện change để hiển thị đúng dropdown
-	        				document.querySelector('#form-them-phan-cong select[name="class_type"]').dispatchEvent(new Event('change'));
+						openThemPhanCongModal();
+						// Đặt các giá trị cơ bản
+						document.querySelector('#form-them-phan-cong input[name="academic_year"]').value = assignmentData.academic_year;
+						document.querySelector('#form-them-phan-cong select[name="semester"]').value = assignmentData.semester;
+						document.querySelector('#form-them-phan-cong input[name="is_main_instructor"]').checked = assignmentData.is_main_instructor;
+						document.querySelector('#form-them-phan-cong input[name="student_count"]').value = assignmentData.student_count;
+						document.querySelector('#form-them-phan-cong input[name="teaching_hours"]').value = assignmentData.teaching_hours;
+						document.querySelector('#form-them-phan-cong select[name="class_type"]').dispatchEvent(new Event('change'));
         				
+						setTimeout(() => {
 							// Đặt giá trị cho dropdowns
                 			const classTypeSelect = document.querySelector('#form-them-phan-cong select[name="class_type"]');
 							const curriculumSubjectSelect = $('select[name="curriculum_subject_id"]');
@@ -2838,12 +2838,12 @@
 		                    }
 
 							if (subjectSelect) {
-		                        $(subjectSelect).val(assignmentData.curriculum_subject_id).trigger('change');
+		                        $(subjectSelect).val(assignmentData.subject_id).trigger('change');
 		                    }
-							
-                			//instructorSelect.val(assignmentData.instructor_id || '').trigger('change');
-                			//curriculumSubjectSelect.val(assignmentData.curriculum_subject_id || '').trigger('change');
 
+							// Kích hoạt sự kiện change để hiển thị đúng dropdown
+                			classTypeSelect.dispatchEvent(new Event('change'));
+							
 							// Xử lý loại lớp và lớp tương ứng
                 			if (assignmentData.class_obj_id) {
                     			classTypeSelect.value = 'regular';
@@ -2858,23 +2858,16 @@
 		                            $(classCombinedSelect).val(assignmentData.combined_class_id).trigger('change');
 		                        }
                 			}
-                    
-                			// Kích hoạt sự kiện change để hiển thị đúng dropdown
-                			classTypeSelect.dispatchEvent(new Event('change'));
-                    
-                			// Cập nhật Select2
-                			//$('#modal-them-phan-cong select').trigger('change.select2');
-            			//}, 500);
+                    	}, 500);
 
 						document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
-        				const saveBtn = document.getElementById('btn-luu-phan-cong');
-        				saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật phân công';
-                        saveBtn.onclick = function() { 
-                            if (!isSubmitting) {
-                                updateTeachingAssignment(id); 
-                            }
-                        };
-					}, 500);
+						const saveBtn = document.getElementById('btn-luu-phan-cong');
+						saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật phân công';
+						saveBtn.onclick = function() { 
+							if (!isSubmitting) {
+								updateTeachingAssignment(id); 
+							}
+						};
 				} else {
 					alert('Không thể tải dữ liệu phân công giảng dạy: ' + (data.message || 'Lỗi không xác định'));
 				}
@@ -3477,6 +3470,7 @@
             document.getElementById('btn-filter-classes').addEventListener('click', loadClassesData);
             document.getElementById('btn-filter-combined').addEventListener('click', loadCombinedClassesData);
             document.getElementById('btn-filter-instructors').addEventListener('click', loadInstructorsData);
+			document.getElementById('btn-filter-assignment').addEventListener('click', loadTeachingAssignmentsData);
 
             // Xử lý bộ lọc phân công giảng dạy
             document.getElementById('filter-instructor').addEventListener('change', loadTeachingAssignmentsData);
@@ -3837,7 +3831,7 @@
                 'btn-them-giang-vien', 'btn-dong-giang-vien', 'btn-huy-giang-vien', 'btn-luu-giang-vien',
                 'btn-them-phan-cong', 'btn-dong-phan-cong', 'btn-huy-phan-cong', 'btn-luu-phan-cong',
                 'btn-dong-import', 'btn-huy-import', 'btn-luu-import', 'btn-download-template',
-                'btn-dong-error', 'btn-close-error', 'btn-filter-classes', 'btn-filter-combined', 'btn-filter-instructors',
+                'btn-dong-error', 'btn-close-error', 'btn-filter-classes', 'btn-filter-combined', 'btn-filter-instructors', 'btn-filter-assignment'
             ];
             
             elementsToClean.forEach(id => {
