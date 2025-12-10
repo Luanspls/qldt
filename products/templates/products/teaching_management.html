@@ -90,12 +90,45 @@
         }
 
         /* ===== SELECT2 STYLES - QUAN TRỌNG: ĐƠN GIẢN HÓA ===== */
-		/*.select2-container {
-            z-index: 1; /*1000;*/
-        }*/
-        /*.select2-dropdown {
-            z-index: 2; /*!important;*/
-        }*/
+		/* Auto-focus style cho Select2 search */
+		.select2-search__field {
+		    outline: none !important;
+		    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
+		    transition: box-shadow 0.2s ease;
+		}
+		
+		.select2-search__field:focus {
+		    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.7) !important;
+		}
+		
+		/* Hiệu ứng khi mở dropdown */
+		.select2-container--open .select2-dropdown {
+		    animation: dropdownSlide 0.2s ease-out;
+		}
+
+		@keyframes dropdownSlide {
+		    from {
+		        opacity: 0;
+		        transform: translateY(-10px);
+		    }
+		    to {
+		        opacity: 1;
+		        transform: translateY(0);
+		    }
+		}
+		
+		/* Highlight option đang được hover */
+		.select2-container--default .select2-results__option--highlighted[aria-selected] {
+		    background-color: #3b82f6 !important;
+		    color: white !important;
+		}
+		
+		/* Style cho placeholder khi không có dữ liệu */
+		.select2-container--disabled .select2-selection--single {
+		    background-color: #f3f4f6 !important;
+		    border-color: #d1d5db !important;
+		    color: #9ca3af !important;
+		}
 		
         /* ======= THÊM =================== */
         /* CRITICAL FIX: When modal is open, hide ALL outside select2 */
@@ -239,6 +272,14 @@
             .modal {
                 padding: 10px !important;
             }
+
+			.select2-dropdown {
+		        font-size: 14px !important;
+		    }
+			
+			.select2-search__field {
+		        font-size: 16px !important; /* Ngăn chặn zoom trên iOS */
+		    }
             
             .modal > div {
                 width: 95% !important;
@@ -1345,6 +1386,13 @@
 
         function openThemLopHocModal() {
             openModal('modal-them-lop-hoc');
+
+			currentAction = 'create';
+			currentEditingId = null;
+			isSubmitting = false;
+			
+			// Reset form và listeners
+    		//resetFormAndListeners('modal-them-lop-hoc');
 			
             setTimeout(() => {
         		populateClassModalDropdowns();
@@ -1370,6 +1418,14 @@
 
 		function openThemLopGhepModal() {
 			openModal('modal-them-lop-ghep');
+
+			currentAction = 'create';
+			currentEditingId = null;
+			isSubmitting = false;
+			
+			// Reset form và listeners
+    		//resetFormAndListeners('modal-them-lop-ghep');
+			
             setTimeout(() => {
 				populateCombinedClassModalDropdowns();
 			}, 100);
@@ -1399,6 +1455,9 @@
 			currentEditingId = null;
 			isSubmitting = false;
 
+			// Reset form và listeners
+    		//resetFormAndListeners('modal-them-phan-cong');
+
 			// Điền dữ liệu vào dropdowns
 			populateTeachingAssignmentModalDropdowns();
 
@@ -1412,8 +1471,6 @@
 		            createPhanCong();
 		        };
         	}
-
-			
 			
 			// Khởi tạo Select2 sau khi modal hiển thị và dữ liệu đã được điền
 			setTimeout(() => {
@@ -1433,6 +1490,14 @@
 
 		function openThemGiangVienModal() {
 			openModal('modal-them-giang-vien');
+
+			currentAction = 'create';
+			currentEditingId = null;
+			isSubmitting = false;
+
+			// Reset form và listeners
+    		//resetFormAndListeners('modal-them-giang-vien');
+			
             setTimeout(() => {
 				populateInstructorModalDropdowns();
 			}, 100);
@@ -1457,6 +1522,124 @@
 
 		function closeImportModal() {
             closeModal('modal-import');
+		}
+
+		function resetFormAndListeners(modalId) {
+		    console.log(`🔄 Resetting form and listeners for ${modalId}`);
+		    
+		    const modal = document.getElementById(modalId);
+		    if (!modal) return;
+		    
+		    // Reset form
+		    const form = modal.querySelector('form');
+		    if (form) {
+		        form.reset();
+		        
+		        // Reset các checkbox về trạng thái mặc định
+		        const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+		        checkboxes.forEach(checkbox => {
+		            if (checkbox.id === 'is_active' || checkbox.id === 'is_main_instructor') {
+		                checkbox.checked = true;
+		            } else if (checkbox.id === 'is_combined') {
+		                checkbox.checked = false;
+		                // Trigger change event để ẩn/hiện các trường liên quan
+		                checkbox.dispatchEvent(new Event('change'));
+		            } else {
+		                checkbox.checked = false;
+		            }
+		        });
+		    }
+		    
+		    // Reset biến trạng thái
+		    currentEditingId = null;
+		    currentAction = 'create';
+		    isSubmitting = false;
+		    currentModalType = null;
+		    
+		    // Reset tiêu đề modal
+		    let title = modal.querySelector('h3');
+		    if (title) {
+		        switch(modalId) {
+		            case 'modal-them-lop-hoc':
+		                title.textContent = 'Thêm lớp học mới';
+		                break;
+		            case 'modal-them-lop-ghep':
+		                title.textContent = 'Thêm lớp học ghép mới';
+		                break;
+		            case 'modal-them-giang-vien':
+		                title.textContent = 'Thêm giảng viên mới';
+		                break;
+		            case 'modal-them-phan-cong':
+		                title.textContent = 'Thêm phân công giảng dạy mới';
+		                break;
+		        }
+		    }
+		    
+		    // Reset nút lưu và gắn lại event listeners
+		    resetSaveButton(modalId);
+		    
+		    console.log(`✅ Reset completed for ${modalId}`);
+		}
+		
+		function resetSaveButton(modalId) {
+		    console.log(`🔄 Resetting save button for ${modalId}`);
+		    
+		    let saveBtnId, saveFunction;
+		    
+		    switch(modalId) {
+		        case 'modal-them-lop-hoc':
+		            saveBtnId = 'btn-luu-lop-hoc';
+		            saveFunction = createLopHoc;
+		            break;
+		        case 'modal-them-lop-ghep':
+		            saveBtnId = 'btn-luu-lop-ghep';
+		            saveFunction = createLopGhep;
+		            break;
+		        case 'modal-them-giang-vien':
+		            saveBtnId = 'btn-luu-giang-vien';
+		            saveFunction = createGiangVien;
+		            break;
+		        case 'modal-them-phan-cong':
+		            saveBtnId = 'btn-luu-phan-cong';
+		            saveFunction = createPhanCong;
+		            break;
+		        default:
+		            return;
+		    }
+		    
+		    const saveBtn = document.getElementById(saveBtnId);
+		    if (saveBtn) {
+		        // Clone button để xóa event listeners cũ
+		        const newSaveBtn = saveBtn.cloneNode(true);
+		        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+		        
+		        // Gắn event listener mới
+		        newSaveBtn.onclick = function(e) {
+		            e.preventDefault();
+		            e.stopPropagation();
+		            if (!isSubmitting) {
+		                saveFunction();
+		            }
+		        };
+		        
+		        // Reset nội dung nút
+		        switch(modalId) {
+		            case 'modal-them-lop-hoc':
+		                newSaveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu lớp học';
+		                break;
+		            case 'modal-them-lop-ghep':
+		                newSaveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu lớp ghép';
+		                break;
+		            case 'modal-them-giang-vien':
+		                newSaveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu giảng viên';
+		                break;
+		            case 'modal-them-phan-cong':
+		                newSaveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Lưu phân công';
+		                break;
+		        }
+		        
+		        console.log(`✅ Save button reset for ${modalId}`);
+		    }
 		}
 
         // Thêm hàm điền dữ liệu vào modal thêm lớp học
@@ -1728,7 +1911,7 @@
 		                width: '100%',
 		                dropdownParent: dropdownParent,
 		                dropdownAutoWidth: true,
-		                minimumResultsForSearch: 10
+		                minimumResultsForSearch: 0
 		            };
 		            
 		            // Cấu hình riêng cho các loại select
@@ -1745,6 +1928,27 @@
 		            // Khởi tạo Select2
 		            $element.select2(config);
 		            console.log(`✅ Select2 initialized for: ${elementId}`);
+
+					// THÊM: Auto-focus vào ô tìm kiếm khi mở dropdown
+		            $element.on('select2:open', function(e) {
+		                setTimeout(function() {
+		                    // Tìm input tìm kiếm của Select2
+		                    const searchInput = document.querySelector('.select2-container--open .select2-search__field');
+		                    if (searchInput) {
+		                        searchInput.focus();
+		                        console.log(`🔍 Auto-focused search for: ${elementId}`);
+		                    }
+		                }, 100);
+		            });
+		            
+		            // THÊM: Xử lý phím tắt
+		            $element.on('keydown', function(e) {
+		                // Alt + S để mở dropdown và focus vào search
+		                if (e.altKey && e.key === 's') {
+		                    e.preventDefault();
+		                    $element.select2('open');
+		                }
+		            });
 		            
 		        } catch (error) {
 		            console.error(`❌ Error initializing Select2 for ${elementId}:`, error);
@@ -1758,13 +1962,33 @@
 		                    width: '100%',
 		                    dropdownParent: $(document.body)
 		                });
-		                console.log(`✅ Fallback Select2 initialized for: ${elementId}`);
+						
+						// Vẫn thêm auto-focus cho fallback
+		                $element.on('select2:open', function() {
+		                    setTimeout(function() {
+		                        const searchInput = document.querySelector('.select2-container--open .select2-search__field');
+		                        if (searchInput) searchInput.focus();
+		                    }, 100);
+		                });
 		            } catch (fallbackError) {
 		                console.error(`❌ Fallback also failed for ${elementId}:`, fallbackError);
 		            }
 		        }
 		    } else {
 		        console.log(`⚠️ Skipping Select2 for empty dropdown: ${elementId}`);
+				// Vẫn khởi tạo Select2 cho dropdown rỗng nhưng với placeholder
+		        try {
+		            $element.select2({
+		                language: 'vi',
+		                placeholder: "Không có dữ liệu",
+		                allowClear: false,
+		                width: '100%',
+		                dropdownParent: modalId ? $(`#${modalId}`) : $(document.body),
+		                disabled: true
+		            });
+		        } catch (error) {
+		            // Bỏ qua lỗi
+		        }
 		    }
 		    
 		    return $element;
@@ -1876,7 +2100,7 @@
             .finally(() => {
                 // Khôi phục trạng thái nút
                 saveBtn.innerHTML = originalText;
-                saveBtn.disabled = originalDisabled; //false;
+                saveBtn.disabled = false;  //originalDisabled;
                 isSubmitting = false;
 				currentModalType = null;
             });
@@ -1951,7 +2175,7 @@
             .finally(() => {
                 // Khôi phục trạng thái nút
                 saveBtn.innerHTML = originalText;
-                saveBtn.disabled = originalDisabled; //false;
+                saveBtn.disabled = false; //originalDisabled; 
                 isSubmitting = false;
 				currentModalType = null;
             });
@@ -2023,7 +2247,7 @@
             .finally(() => {
                 // Khôi phục trạng thái nút
                 saveBtn.innerHTML = originalText;
-                saveBtn.disabled = originalDisabled; //false;
+                saveBtn.disabled = false; //originalDisabled; 
                 isSubmitting = false;
 				currentModalType = null;
             });
@@ -2121,7 +2345,7 @@
             })
             .finally(() => {
                 saveBtn.innerHTML = originalText;
-                saveBtn.disabled = originalDisabled; //false;
+                saveBtn.disabled = false; //originalDisabled; 
                 isSubmitting = false;
 				currentModalType = null;
             });
@@ -2930,7 +3154,7 @@
             const classTypeFilter = document.getElementById('filter-class-type-assignment').value;
             const academicYearFilter = document.getElementById('filter-academic-year').value;
             
-            let url = '/api/teaching-assignments/?';
+            let url = '/api/teaching-assignments/';
             const params = [];
             
             if (instructorFilter) params.push(`instructor_id=${instructorFilter}`);
@@ -2938,18 +3162,22 @@
             if (classTypeFilter) params.push(`class_type=${classTypeFilter}`);
             if (academicYearFilter) params.push(`academic_year=${academicYearFilter}`);
             
-            url += params.join('&');
+            if (params.length > 0) {
+		        url += '?' + params.join('&');
+		    }
             
             fetch(url)
                 .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
+                    if (!response.ok) {
+		                throw new Error(`HTTP error! status: ${response.status}`);
+		            }
+		            return response.json();
 				}) 
                 .then(data => {
                     const tbody = document.getElementById('teaching-assignments-table-body');
                     tbody.innerHTML = '';
                     
-                    if (data.length === 0) {
+                    if (!data || data.length === 0) {
                         tbody.innerHTML = `
                             <tr>
                                 <td colspan="9" class="px-6 py-4 text-center text-gray-500">
@@ -2965,26 +3193,26 @@
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">${assignment.instructor_name}</div>
-                                <div class="text-sm text-gray-500">${assignment.instructor_code}</div>
+                                <div class="text-sm font-medium text-gray-900">${assignment.instructor_name || 'N/A'}</div>
+                                <div class="text-sm text-gray-500">${assignment.instructor_code || ''}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">${assignment.subject_code}</div>
-                                <div class="text-sm text-gray-500">${assignment.subject_name}</div>
+                                <div class="text-sm font-medium text-gray-900">${assignment.subject_code || 'N/A'}</div>
+                                <div class="text-sm text-gray-500">${assignment.subject_name || ''}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">${assignment.class_code}</div>
+                                <div class="text-sm font-medium text-gray-900">${assignment.class_code || 'N/A'}</div>
                                 <div class="text-sm text-gray-500">${assignment.class_type === 'combined' ? '(Ghép)' : '(Thường)'}</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.academic_year}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.semester}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.academic_year || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.semester || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${assignment.is_main_instructor ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
                                     ${assignment.is_main_instructor ? 'Chính' : 'Phụ'}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.student_count}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.teaching_hours}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.student_count || 0}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.teaching_hours || 0}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <button class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="editTeachingAssignment(${assignment.id})">Sửa</button>
                                 <button class="text-red-600 hover:text-red-900" onclick="deleteTeachingAssignment(${assignment.id})">Xóa</button>
@@ -2993,7 +3221,17 @@
                         tbody.appendChild(row);
                     });
                 })
-                .catch(error => console.error('Error loading teaching assignments:', error));
+                .catch(error => {
+		            console.error('❌ Error loading teaching assignments:', error);
+		            const tbody = document.getElementById('teaching-assignments-table-body');
+		            tbody.innerHTML = `
+		                <tr>
+		                    <td colspan="10" class="px-6 py-4 text-center text-red-500">
+		                        Lỗi tải dữ liệu: ${error.message}
+		                    </td>
+		                </tr>
+		            `;
+		        });
         }
         
         function loadStatisticsData() {
