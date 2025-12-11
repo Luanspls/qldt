@@ -512,7 +512,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Khoa</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Khoa chuyên môn</label>
                         <select id="filter-instructor-department" class="w-full p-2 border border-gray-300 rounded-md">
                             <option value="">Tất cả khoa</option>
                         </select>
@@ -3162,15 +3162,15 @@
             const subjectGroupId = document.getElementById('filter-instructor-subject-group').value;
             const status = document.getElementById('filter-instructor-status').value;
             
-            let url = '/api/instructors/?';
+            let url = '/api/instructors/';
             const params = [];
             
             if (departmentId) params.push(`department_id=${departmentId}`);
-            if (departmentTeacherId) params.push(`department_id=${departmentTeacherId}`);
+            if (departmentTeacherId) params.push(`department_of_teacher_management_id=${departmentTeacherId}`);
             if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
             if (status) params.push(`is_active=${status}`);
             
-            url += params.join('&');
+            url += '?' + params.join('&');
             
             fetch(url)
                 .then(response => {
