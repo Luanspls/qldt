@@ -1555,8 +1555,8 @@ def api_instructors(request):
     if department_id:
         instructors = instructors.filter(department_id=department_id)
     
-    department_teacher_id = request.GET.get('department_teacher_id')
-    if department_teacher_id:
+    department_of_teacher_management_id = request.GET.get('department_teacher_id')
+    if department_of_teacher_management_id:
         instructors = instructors.filter(department_of_teacher_management_id=department_teacher_id)
     
     subject_group_id = request.GET.get('subject_group_id')
@@ -2975,7 +2975,12 @@ def api_update_instructor(request, id):
                 try:
                     instructor.department = Department.objects.get(id=data['department_id'])
                 except Department.DoesNotExist:
-                    return JsonResponse({'status': 'error', 'message': 'Đơn vị Khoa không tồn tại'})
+                    return JsonResponse({'status': 'error', 'message': 'Khoa không tồn tại'})
+            if 'department_teacher_id' in data:
+                try:
+                    instructor.department_of_teacher_management = Department.objects.get(id=data['department_teacher_id'])
+                except Department.DoesNotExist:
+                    return JsonResponse({'status': 'error', 'message': 'Đơn vị không tồn tại'})
             if 'subject_group_id' in data:
                 try:
                     instructor.subject_group = SubjectGroup.objects.get(id=data['subject_group_id'])
