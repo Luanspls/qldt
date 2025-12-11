@@ -506,6 +506,12 @@
                 <!-- Bộ lọc giảng viên -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Đơn vị quản lý GV</label>
+                        <select id="filter-instructor-department-management" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả đơn vị</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Khoa</label>
                         <select id="filter-instructor-department" class="w-full p-2 border border-gray-300 rounded-md">
                             <option value="">Tất cả khoa</option>
@@ -846,6 +852,13 @@
                             placeholder="Vd: Nguyễn Văn A"
                             required>
                     </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Đơn vị quản lý</label>
+                        <select name="department_teacher_id" id="department_teacher_id"
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Chọn đơn vị --</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -865,7 +878,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Khoa</label>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Khoa chuyên môn</label>
                         <select name="department_id" id="department_id"
                                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">-- Chọn khoa --</option>
@@ -1105,6 +1118,7 @@
         let allCurricula = [];
         let allSubjects = [];
         let allDepartments = [];
+        let allDepartmentTeachers = [];
         let allCourses = [];
         let allClasses = [];
         let allCombinedClasses = [];
@@ -1172,6 +1186,7 @@
                 loadSelect2Data('/api/curricula/', 'filter-curriculum', 'name', ['code', 'name', 'academic_year']),
                 loadSelect2Data('/api/courses/', 'filter-class-course', 'name', ['code', 'name']),
                 loadSelect2Data('/api/departments/', 'filter-instructor-department', 'name', ['code', 'name']),
+                loadSelect2Data('/api/departments/', 'filter-instructor-department-management', 'name', ['code', 'name']),
                 loadSelect2Data('/api/subject-groups/', 'filter-instructor-subject-group', 'name', ['code', 'name'])
             ];
             
@@ -1848,6 +1863,7 @@
 
 		function populateInstructorModalDropdowns() {
             const departmentSelect = document.querySelector('#modal-them-giang-vien select[name="department_id"]');
+            const departmentTeacherSelect = document.querySelector('#modal-them-giang-vien select[name="department_teacher_id"]');
             const subjectGroupSelect = document.querySelector('#modal-them-giang-vien select[name="subject_group_id"]');
 
 			// Điền khoa với tìm kiếm
@@ -1861,6 +1877,19 @@
                         departmentSelect.appendChild(option);
                     });
 					initializeSelect2ForElement(departmentSelect);
+                }
+            }
+
+            if (departmentTeacherSelect && allDepartmentTeachers) {
+                departmentTeacherSelect.innerHTML = '<option value="">-- Chọn đơn vị --</option>';
+                if (allDepartmentTeachers && allDepartmentTeachers.length > 0) {
+                    allDepartmentTeachers.forEach(departmentTeacher => {
+                        const option = document.createElement('option');
+                        option.value = departmentTeacher.id;
+                        option.textContent = `${departmentTeacher.code} ${departmentTeacher.name}`;
+                        departmentTeacherSelect.appendChild(option);
+                    });
+					initializeSelect2ForElement(departmentTeacherSelect);
                 }
             }
 
@@ -2206,6 +2235,7 @@
                 email: formData.get('email') || null,
                 phone: formData.get('phone') || null,
                 department_id: formData.get('department_id') || null,
+                department_of_teacher_management_id: formData.get('department_teacher_id') || null,
                 subject_group_id: formData.get('subject_group_id') || null,
                 is_active: formData.get('is_active') === 'on'
             };
@@ -2704,9 +2734,11 @@
 						// Cập nhật Select2
             			setTimeout(() => {
 							const departmentSelect = $('select[name="department_id"]');
+                            const departmentTeacherSelect = $('select[name="department_teacher_id"]');
                 			const subjectGroupSelect = $('select[name="subject_group_id"]');
                     
                 			departmentSelect.val(instructorData.department_id || '').trigger('change');
+                            departmentTeacherSelect.val(instructorData.department_teacher_id || '').trigger('change');
                 			subjectGroupSelect.val(instructorData.subject_group_id || '').trigger('change');
                 			
                             $('#modal-them-giang-vien select').trigger('change.select2');
@@ -2742,6 +2774,7 @@
     			email: formData.get('email') || null,
     			phone: formData.get('phone') || null,
     			department_id: formData.get('department_id') || null,
+                department_teacher_id: formData.get('department_teacher_id') || null,
     			subject_group_id: formData.get('subject_group_id') || null,
     			is_active: formData.get('is_active') === 'on'
 			};
@@ -3122,6 +3155,7 @@
 		// Hàm tải dữ liệu giảng viên
         function loadInstructorsData() {
             const departmentId = document.getElementById('filter-instructor-department').value;
+            const departmentTeacherId = document.getElementById('filter-instructor-department-management').value;
             const subjectGroupId = document.getElementById('filter-instructor-subject-group').value;
             const status = document.getElementById('filter-instructor-status').value;
             
@@ -3129,6 +3163,7 @@
             const params = [];
             
             if (departmentId) params.push(`department_id=${departmentId}`);
+            if (departmentTeacherId) params.push(`department_id=${departmentTeacherId}`);
             if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
             if (status) params.push(`is_active=${status}`);
             
@@ -3157,11 +3192,13 @@
                     data.forEach((instructorItem, index) => {
                         const row = document.createElement('tr');
 						const departmentName = getDepartmentName(instructorItem.department || instructorItem.department_id);
+                        const departmentTeacherName = getDepartmentName(instructorItem.department_of_teacher_management || instructorItem.department_of_teacher_management_id);
 						const subjectGroupName = getSubjectGroupName(instructorItem.subject_group || instructorItem.subject_group_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructorItem.code}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.full_name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${departmentTeacherName || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.email || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.phone || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${departmentName || 'N/A'}</td>

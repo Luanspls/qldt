@@ -413,7 +413,6 @@ class TrainProgramManagerView(View):
             instructors = [assignment.instructor.full_name for assignment in teaching_assignments if assignment.instructor]
             return ", ".join(instructors) if instructors else ""
         except Exception as e:
-            print(f"Error getting instructors: {str(e)}")
             return ""
     
     def get_sample_data(self):
@@ -1451,6 +1450,17 @@ def api_teaching_statistics(request):
         total_hours=Sum('teaching_hours')
     )
     
+    # Thống kê theo đơn vị quản lý giáo viên
+    department_stats = TeachingAssignment.objects.values(
+        'instructor__department_of_teacher_management__id',
+        'instructor__department_of_teacher_management__name',
+        'instructor__department_of_teacher_management__code'
+    ).annotate(
+        total_assignments=Count('id'),
+        total_instructors=Count('instructor', distinct=True),
+        total_hours=Sum('teaching_hours')
+    )
+    
     return JsonResponse({
         'instructor_statistics': list(instructor_stats),
         'curriculum_statistics': list(curriculum_stats),
@@ -1519,6 +1529,7 @@ class TeachingManagementView(View):
         instructors = Instructor.objects.all().values('id', 'code', 'full_name', 'department__name')
         curricula = Curriculum.objects.all().values('id', 'code', 'name', 'academic_year')
         departments = Department.objects.all().values('id', 'code', 'name')
+        departmets_teacher_management = Department.objects.all().values('id', 'code', 'name')
         courses = Course.objects.all().values('id', 'code', 'name')
         subject_types = SubjectType.objects.all().values('id', 'code', 'name')
         majors = Major.objects.all().values('id', 'code', 'name')
@@ -1527,6 +1538,7 @@ class TeachingManagementView(View):
             'instructors': list(instructors),
             'curricula': list(curricula),
             'departments': list(departments),
+            'departmets_teacher_management': list(departmets_teacher_management),
             'courses': list(courses),
             'subject_types': list(subject_types),
             'majors': list(majors),
@@ -1543,6 +1555,10 @@ def api_instructors(request):
     if department_id:
         instructors = instructors.filter(department_id=department_id)
     
+    department_teacher_id = request.GET.get('department_teacher_id')
+    if department_teacher_id:
+        instructors = instructors.filter(department_of_teacher_management_id=department_teacher_id)
+    
     subject_group_id = request.GET.get('subject_group_id')
     if subject_group_id:
         instructors = instructors.filter(subject_group_id=subject_group_id)
@@ -1552,7 +1568,7 @@ def api_instructors(request):
         # Chuyển đổi từ string sang boolean
         is_active_bool = is_active.lower() == 'true'
         instructors = instructors.filter(is_active=is_active_bool)
-    instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'department_id', 'subject_group_id', 'is_active')
+    instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'department_id', 'department_of_teacher_management_id', 'subject_group_id', 'is_active')
     return JsonResponse(list(instructors_data), safe=False)
 
 @csrf_exempt
@@ -1644,6 +1660,13 @@ def api_create_instructor(request):
                 except Department.DoesNotExist:
                     pass
             
+            department_teacher = None
+            if data.get('department_teacher_id'):
+                try:
+                    department_teacher = Department.objects.get(id=data['department_teacher_id'])
+                except Department.DoesNotExist:
+                    pass
+            
             # Xử lý subject_group
             subject_group = None
             if data.get('subject_group_id'):
@@ -1659,6 +1682,7 @@ def api_create_instructor(request):
                 email=data.get('email'),
                 phone=data.get('phone'),
                 department=department,
+                department_of_teacher_management=department_teacher,
                 subject_group=subject_group,
                 is_active=data.get('is_active', True)
             )
@@ -2920,6 +2944,7 @@ def api_instructor_detail(request, id):
                 'email': instructor.email,
                 'phone': instructor.phone,
                 'department_id': instructor.department.id if instructor.department else None,
+                'department_teacher_id': instructor.department_of_teacher_management.id if instructor.department_of_teacher_management else None,
                 'subject_group_id': instructor.subject_group.id if instructor.subject_group else None,
                 'is_active': instructor.is_active
             }
