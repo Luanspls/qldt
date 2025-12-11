@@ -2371,6 +2371,9 @@
             currentEditingId = id;
             currentModalType = 'edit';
 
+			// Hiển thị modal
+        	openThemLopHocModal();
+
 			fetch(`/api/classes/${id}/`)
     			.then(response => {
 					if (!response.ok) {
@@ -2402,8 +2405,7 @@
         				} else {
             				combinedFields.classList.add('hidden');
         				}
-        				// Hiển thị modal
-        				openThemLopHocModal();
+        				
 
 						// Cập nhật Select2 sau khi điền giá trị
             			setTimeout(() => {
@@ -2542,6 +2544,8 @@
             currentEditingId = id;
             currentModalType = 'edit';
 
+			openThemLopGhepModal();
+
 			fetch(`/api/combined-classes/${id}/`)
     			.then(response =>  {
         			if (!response.ok) {
@@ -2562,8 +2566,6 @@
             				const classIds = classData.classes.map(cls => cls.id);
             				$('#classes').val(classIds).trigger('change');
         				}
-            
-        				openThemLopGhepModal();
 
 						// Điền các lớp thành phần - SỬA: chờ Select2 khởi tạo xong
             			if (classData.classes && classData.classes.length > 0) {
@@ -2681,6 +2683,8 @@
             currentEditingId = id;
             currentModalType = 'edit';
 
+			openThemGiangVienModal();
+
 			fetch(`/api/instructors/${id}/`)
     			.then(response => {
         			if (!response.ok) {
@@ -2696,8 +2700,6 @@
         				document.querySelector('#form-them-giang-vien input[name="email"]').value = instructorData.email || '';
         				document.querySelector('#form-them-giang-vien input[name="phone"]').value = instructorData.phone || '';
         				document.querySelector('#form-them-giang-vien input[name="is_active"]').checked = instructorData.is_active;
-            
-        				openThemGiangVienModal();
 
 						// Cập nhật Select2
             			setTimeout(() => {
@@ -2816,7 +2818,6 @@
             currentAction = 'edit';
 
 			openThemPhanCongModal();
-            //openModal('modal-them-phan-cong');
 
             // Đặt tiêu đề modal
             document.querySelector('#modal-them-phan-cong h3').textContent = 'Sửa phân công giảng dạy';
