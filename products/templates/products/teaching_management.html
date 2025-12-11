@@ -2815,6 +2815,7 @@
             currentModalType = 'edit';
             currentAction = 'edit';
 
+			openThemPhanCongModal();
             //openModal('modal-them-phan-cong');
 
             // Đặt tiêu đề modal
@@ -2848,7 +2849,7 @@
 						document.querySelector('#form-them-phan-cong input[name="teaching_hours"]').value = assignmentData.teaching_hours;
 						//document.querySelector('#form-them-phan-cong select[name="class_type"]').dispatchEvent(new Event('change'));
 
-						openThemPhanCongModal();
+						
 						
 						setTimeout(() => {
 							// Đặt giá trị cho dropdowns
