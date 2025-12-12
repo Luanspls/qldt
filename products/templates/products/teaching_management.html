@@ -636,6 +636,13 @@
                 <h3 class="text-lg font-semibold mb-4">Thống kê phân công giảng dạy</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <h4 class="text-lg font-semibold text-red-800 mb-2">Theo đơn vị quản lý GV</h4>
+                        <div id="department-teacher-stats" class="space-y-2 max-h-80 overflow-y-auto">
+                            <!-- Thống kê sẽ được thêm bằng JavaScript -->
+                        </div>
+                    </div>
+
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <h4 class="text-lg font-semibold text-blue-800 mb-2">Theo giảng viên</h4>
                         <div id="instructor-stats" class="space-y-2 max-h-80 overflow-y-auto">
@@ -649,9 +656,8 @@
                             <!-- Thống kê sẽ được thêm bằng JavaScript -->
                         </div>
                     </div>
-                    
                     <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                        <h4 class="text-lg font-semibold text-purple-800 mb-2">Theo đơn vị</h4>
+                        <h4 class="text-lg font-semibold text-purple-800 mb-2">Theo đơn vị Khoa</h4>
                         <div id="department-stats" class="space-y-2 max-h-80 overflow-y-auto">
                             <!-- Thống kê sẽ được thêm bằng JavaScript -->
                         </div>
@@ -711,7 +717,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Ngày bắt đầu</label>
-                        <input type="date" name="start_date" 
+                        <input type="date" name="start_date"
                             class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
@@ -3327,7 +3333,9 @@
                                 <div class="text-sm text-gray-600 mt-1">
                                     <div>Phân công: ${stat.total_assignments}</div>
                                     <div>Số giờ: ${stat.total_hours || 0}</div>
-                                    <div>Số lớp: ${stat.class_count || 0}</div>
+                                    <div>Số lớp thường: ${stat.regular_class_count || 0}</div>
+                                    <div>Số lớp ghép: ${stat.combined_class_count || 0}</div>
+                                    <div>Tổng số lớp: ${stat.class_count}</div>
                                     <div>Số môn: ${stat.subject_count}</div>
                                 </div>
                             `;
@@ -3359,6 +3367,7 @@
                     
                     // Hiển thị thống kê theo đơn vị
                     const departmentStats = document.getElementById('department-stats');
+                    const departmentTeacherStats = document.getElementById('department-teacher-stats');
                     departmentStats.innerHTML = '';
                     
                     if (data.department_statistics.length === 0) {
@@ -3376,6 +3385,28 @@
                                 </div>
                             `;
                             departmentStats.appendChild(statItem);
+                        });
+                    }
+
+                    // Hiển thị thống kê theo đơn vị quản lý giảng viên
+                    const departmentTeacherStats = document.getElementById('department-teacher-stats');
+                    departmentTeacherStats.innerHTML = '';
+                    
+                    if (data.department_teacher_statistics.length === 0) {
+                        departmentTeacherStats.innerHTML = '<p class="text-gray-500">Không có dữ liệu</p>';
+                    } else {
+                        data.department_teacher_statistics.forEach(stat => {
+                            const statItem = document.createElement('div');
+                            statItem.className = 'bg-white p-3 rounded border mb-2';
+                            statItem.innerHTML = `
+                                <div class="font-medium text-gray-900">${stat.instructor__department_of_teacher_management__name}</div>
+                                <div class="text-sm text-gray-600 mt-1">
+                                    <div>Phân công: ${stat.total_assignments}</div>
+                                    <div>Giảng viên: ${stat.total_instructors}</div>
+                                    <div>Số giờ: ${stat.total_hours || 0}</div>
+                                </div>
+                            `;
+                            departmentTeacherStats.appendChild(statItem);
                         });
                     }
                 })

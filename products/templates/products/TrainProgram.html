@@ -191,7 +191,7 @@
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2">Khoa đào tạo</label>
+                    <label class="block text-gray-700 font-medium mb-2">Khoa</label>
                     <select id="khoa-dao-tao" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">-- Chọn khoa --</option>
                         {% for department in departments %}
@@ -369,7 +369,8 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Tổng số giờ</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Lý thuyết</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Thực hành</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Kiểm tra/Thi</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Kiểm tra</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Thi</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">HK1</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">HK2</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider wg-12">HK3</th>
@@ -494,13 +495,13 @@
                 row.innerHTML = `
                     <td class="px-2 py-2 text-center text-sm col-tt">${index + 1}</td>
                     <td class="px-2 py-2 col-ma">
-                        <input type="text" value="${monHoc.ma_mon_hoc || ''}" 
+                        <input type="text" value="${monHoc.ma_mon_hoc || ''}"
                             class="editable w-full bg-transparent border-none text-sm text-center"
                             data-field="code" data-id="${monHoc.id}" readonly
                             data-original-value="${monHoc.ma_mon_hoc || ''}">
                     </td>
                     <td class="px-2 py-2 col-ten wrap-cell">
-                        <input type="text" value="${monHoc.ten_mon_hoc || 0}" 
+                        <input type="text" value="${monHoc.ten_mon_hoc || 0}"
                             class="editable w-full bg-transparent border-none text-sm text-center"
                             data-field="name" data-id="${monHoc.id}" disabled
                             data-original-value="${monHoc.ten_mon_hoc || ''}">
@@ -530,10 +531,16 @@
                             data-original-value="${monHoc.thuc_hanh || 0}">
                     </td>
                     <td class="px-2 py-2 text-center col-kiemtra">
-                        <input type="number" value="${monHoc.kiem_tra_thi || 0}" 
+                        <input type="number" value="${monHoc.kiem_tra || 0}" 
+                            class="editable w-full bg-transparent border-none text-sm text-center" 
+                            data-field="tests_hours" data-id="${monHoc.id}" readonly min="0"
+                            data-original-value="${monHoc.kiem_tra || 0}">
+                    </td>
+                    <td class="px-2 py-2 text-center col-kiemtra">
+                        <input type="number" value="${monHoc.thi || 0}" 
                             class="editable w-full bg-transparent border-none text-sm text-center" 
                             data-field="exam_hours" data-id="${monHoc.id}" readonly min="0"
-                            data-original-value="${monHoc.kiem_tra_thi || 0}">
+                            data-original-value="${monHoc.thi || 0}">
                     </td>
                     <td class="px-2 py-2 text-center col-hk">
                         <input type="number" value="${monHoc.hk1 || ''}" 
@@ -673,7 +680,7 @@
                 field: field,
                 value: value
             };
-                        
+            
             fetch(`/train-program/${id}/`, {
                 method: 'PUT',
                 headers: {
@@ -805,7 +812,7 @@
             const curriculumId = document.getElementById('chuong-trinh-dao-tao').value;
             const courseId = document.getElementById('khoa-hoc').value;
             
-            let url = '/api/subjects/?';
+            let url = '/api/subjects/';
             const params = [];
             
             if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
@@ -813,7 +820,7 @@
             if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
 			if (courseId) params.push(`course_id=${courseId}`);
             
-            url += params.join('&');
+            url += '?' + params.join('&');
             
             fetch(url)
                 .then(response => {
@@ -1947,7 +1954,7 @@
             }
             
             // Tự động tính tổng số giờ
-            const hourInputs = ['theory_hours', 'practice_hours', 'exam_hours'];
+            const hourInputs = ['theory_hours', 'practice_hours', 'tests_hours', 'exam_hours'];
             hourInputs.forEach(field => {
                 const input = document.querySelector(`input[name="${field}"]`);
                 if (input) {
@@ -1969,8 +1976,9 @@
             function calculateTotalHours() {
                 const theory = parseInt(document.querySelector('input[name="theory_hours"]')?.value) || 0;
                 const practice = parseInt(document.querySelector('input[name="practice_hours"]')?.value) || 0;
+                const test = parseInt(document.querySelector('input[name="tests_hours"]')?.value) || 0;
                 const exam = parseInt(document.querySelector('input[name="exam_hours"]')?.value) || 0;
-                const total = theory + practice + exam;
+                const total = theory + practice + test + exam;
                 const totalInput = document.querySelector('input[name="total_hours"]');
                 if (totalInput) {
                     totalInput.value = total || '';
@@ -2220,9 +2228,16 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Kiểm tra/Thi</label>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Kiểm tra</label>
+                        <input type="number" name="tests_hours" min="0"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="0"
+                            autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Thi</label>
                         <input type="number" name="exam_hours" min="0"
                             class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                             placeholder="0"

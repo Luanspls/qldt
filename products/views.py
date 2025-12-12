@@ -256,7 +256,7 @@ class TrainProgramManagerView(View):
                     try:
                         if field in ['credits']:
                             new_value = float(value) if value else 0.0
-                        elif field in ['total_hours', 'theory_hours', 'practice_hours', 'exam_hours', 'order_number', 'semester']:
+                        elif field in ['total_hours', 'theory_hours', 'practice_hours', 'tests_hours', 'exam_hours', 'order_number', 'semester']:
                             new_value = int(value) if value else 0
                         else:
                             new_value = value
@@ -384,7 +384,8 @@ class TrainProgramManagerView(View):
                     'tong_so_gio': cs.total_hours,
                     'ly_thuyet': cs.theory_hours,
                     'thuc_hanh': cs.practice_hours,
-                    'kiem_tra_thi': cs.exam_hours,
+                    'kiem_tra': cs.tests_hours,
+                    'thi': cs.exam_hours,
                     'hk1': semester_data.get('hk1', ''),
                     'hk2': semester_data.get('hk2', ''),
                     'hk3': semester_data.get('hk3', ''),
@@ -656,9 +657,14 @@ class ImportExcelView(View):
                         thuc_hanh = 0
                     
                     try:
-                        kiem_tra_thi = int(float(row.get('Kiểm tra/Thi', 0)))
+                        kiem_tra = int(float(row.get('Kiểm tra', 0)))
                     except (ValueError, TypeError):
-                        kiem_tra_thi = 0
+                        kiem_tra = 0
+                    
+                    try:
+                        thi = int(float(row.get('Thi', 0)))
+                    except (ValueError, TypeError):
+                        thi = 0
                     
                     # Xác định học kỳ mặc định từ phân bố học kỳ
                     default_semester = None
@@ -765,7 +771,8 @@ class ImportExcelView(View):
                             'total_hours': tong_so_gio,
                             'theory_hours': ly_thuyet,
                             'practice_hours': thuc_hanh,
-                            'exam_hours': kiem_tra_thi,
+                            'tests_hours': kiem_tra,
+                            'exam_hours': thi,
                             'department': department,
                             'subject_type': subject_type,
                             'subject_group': subject_group,
@@ -805,7 +812,8 @@ class ImportExcelView(View):
                         'tong_so_gio': subject.total_hours,
                         'ly_thuyet': subject.theory_hours,
                         'thuc_hanh': subject.practice_hours,
-                        'kiem_tra_thi': subject.exam_hours,
+                        'kiem_tra': subject.tests_hours,
+                        'thi': subject.exam_hours,
                         'hoc_ky': subject.semester
                     })
                     
@@ -1055,7 +1063,8 @@ def api_subjects(request):
             'tong_so_gio': cs.total_hours,
             'ly_thuyet': cs.theory_hours,
             'thuc_hanh': cs.practice_hours,
-            'kiem_tra_thi': cs.exam_hours,
+            'kiem_tra': cs.tests_hours,
+            'thi': cs.exam_hours,
             'hk1': semester_data.get('hk1', ''),
             'hk2': semester_data.get('hk2', ''),
             'hk3': semester_data.get('hk3', ''),
@@ -1150,6 +1159,7 @@ def api_create_subject(request):
                     total_hours=int(data.get('total_hours', 0) or 0),
                     theory_hours=int(data.get('theory_hours', 0) or 0),
                     practice_hours=int(data.get('practice_hours', 0) or 0),
+                    tests_hours=int(data.get('tests_hours', 0) or 0),
                     exam_hours=int(data.get('exam_hours', 0) or 0),
                     department=department,
                     subject_group=subject_group,
@@ -1163,29 +1173,6 @@ def api_create_subject(request):
                     'status': 'error', 
                     'message': f'Lỗi khi tạo môn học: {str(e)}'
                 })
-            
-            # # Tạo CurriculumSubject để liên kết
-            # try:
-            #     curriculum_subject = CurriculumSubject.objects.create(
-            #         curriculum=curriculum,
-            #         subject=subject,
-            #         credits=float(data['credits']),
-            #         total_hours=int(data.get('total_hours', 0) or 0),
-            #         theory_hours=int(data.get('theory_hours', 0) or 0),
-            #         practice_hours=int(data.get('practice_hours', 0) or 0),
-            #         exam_hours=int(data.get('exam_hours', 0) or 0),
-            #         semester=int(data.get('semester', 0)) if data.get('semester') else None,
-            #         order_number=int(data.get('order_number', 0) or 0)
-            #     )
-            #     print(f"CurriculumSubject created: {curriculum_subject.id}")  # Debug log
-            # except Exception as e:
-            #     # Nếu tạo CurriculumSubject thất bại, xóa Subject đã tạo
-            #     subject.delete()
-            #     print(f"Error creating curriculum_subject: {str(e)}")  # Debug log
-            #     return JsonResponse({
-            #         'status': 'error', 
-            #         'message': f'Lỗi khi thêm môn học vào chương trình: {str(e)}'
-            #     })
             
             # Tạo phân bố học kỳ
             semester_allocations = data.get('semester_allocations', {})
@@ -1409,21 +1396,21 @@ def api_teaching_statistics(request):
         total_students=Sum('student_count'),
         total_hours=Sum('teaching_hours'),
         subject_count=Count('curriculum_subject__code', distinct=True),
-        regular_class_count=Count(
-            Case(
-                When(class_obj__isnull=False, then=1),
-                output_field=IntegerField(),
-            ),
-            distinct=True
-        ),
+        regular_class_count=Count('class_obj', distinct=True),
+            # Case(
+            #     When(class_obj__isnull=False, then=1),
+            #     output_field=IntegerField(),
+            # ),
+            # distinct=True
+        # ),
         # Đếm lớp học ghép
-        combined_class_count=Count(
-            Case(
-                When(combined_class__isnull=False, then=1),
-                output_field=IntegerField(),
-            ),
-            distinct=True
-        )
+        combined_class_count=Count('combined_class', distinct=True)
+        #     Case(
+        #         When(combined_class__isnull=False, then=1),
+        #         output_field=IntegerField(),
+        #     ),
+        #     distinct=True
+        # )
     ).annotate(
         class_count=F('regular_class_count') + F('combined_class_count')
     )
@@ -1451,7 +1438,7 @@ def api_teaching_statistics(request):
     )
     
     # Thống kê theo đơn vị quản lý giáo viên
-    department_stats = TeachingAssignment.objects.values(
+    department_teacher_stats = TeachingAssignment.objects.values(
         'instructor__department_of_teacher_management__id',
         'instructor__department_of_teacher_management__name',
         'instructor__department_of_teacher_management__code'
@@ -1464,7 +1451,8 @@ def api_teaching_statistics(request):
     return JsonResponse({
         'instructor_statistics': list(instructor_stats),
         'curriculum_statistics': list(curriculum_stats),
-        'department_statistics': list(department_stats)
+        'department_statistics': list(department_stats),
+        'department_teacher_statistics': list(department_teacher_stats)
     })
 
 @csrf_exempt
@@ -1557,7 +1545,7 @@ def api_instructors(request):
     
     department_of_teacher_management_id = request.GET.get('department_teacher_id')
     if department_of_teacher_management_id:
-        instructors = instructors.filter(department_of_teacher_management_id=department_teacher_id)
+        instructors = instructors.filter(department_of_teacher_management_id=department_of_teacher_management_id)
     
     subject_group_id = request.GET.get('subject_group_id')
     if subject_group_id:
