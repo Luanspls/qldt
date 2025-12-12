@@ -944,10 +944,10 @@ class ThongKeView(View):
         except Exception as e:
             # Trả về dữ liệu mẫu nếu có lỗi
             return JsonResponse({
-                'tong_tin_chi': 76.0,
-                'tong_gio': 2475.0,
-                'ty_le_ly_thuyet': '30.5%',
-                'ty_le_thuc_hanh': '69.5%'
+                'tong_tin_chi': 0,
+                'tong_gio': 0,
+                'ty_le_ly_thuyet': '',
+                'ty_le_thuc_hanh': ''
             })
 
 # API endpoints cho các dropdown
@@ -1982,10 +1982,10 @@ class ImportTeachingDataView(View):
             row = 0
             
             # Section Khoa
-            worksheet.write(row, 0, "DANH SÁCH KHOA CÓ SẴN", bold_format)
+            worksheet.write(row, 0, "DANH SÁCH ĐƠN VỊ CÓ SẴN", bold_format)
             row += 1
-            worksheet.write(row, 0, "Mã khoa", header_format)
-            worksheet.write(row, 1, "Tên khoa", header_format)
+            worksheet.write(row, 0, "Mã đơn vị", header_format)
+            worksheet.write(row, 1, "Tên đơn vị", header_format)
             row += 1
             
             for department in departments:
@@ -2202,9 +2202,10 @@ class ImportTeachingDataView(View):
         return {
             'Mã giảng viên*': ['GV001', 'GV002', 'GV003'],
             'Họ và tên*': ['Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C'],
+            'Mã đơn vị quản lý GV': ['DCNTT', 'QLCL', 'QLDT'],
             'Email': ['nva@example.com', 'ttb@example.com', 'lvc@example.com'],
             'Số điện thoại': ['0123456789', '0987654321', '0912345678'],
-            'Mã khoa': ['KHOA_CNTT', 'KHOA_CNTT', 'KHOA_KT'],
+            'Mã khoa': ['DCNTT', 'DCNTT', 'KTNLN'],
             'Mã tổ bộ môn': ['BM_HTTT', 'BM_MMT', 'BM_QTKD'],
             'Trạng thái': ['Đang hoạt động', 'Đang hoạt động', 'Ngừng hoạt động']
         }
@@ -2218,7 +2219,7 @@ class ImportTeachingDataView(View):
             'Loại lớp*': ['Thường', 'Thường', 'Ghép'],
             'Năm học*': ['2023-2024', '2023-2024', '2023-2024'],
             'Học kỳ*': [1, 1, 2],
-            'Là giảng viên chính*': ['Có', 'Có', 'Không'],
+            'Là giảng viên GD chính*': ['Có', 'Có', 'Không'],
             'Số lượng sinh viên': [40, 35, 80],
             'Số giờ giảng dạy': [45, 60, 30]
         }
@@ -2494,6 +2495,16 @@ class ImportTeachingDataView(View):
                         errors.append(f"Dòng {index + 2}: Thiếu thông tin bắt buộc")
                         continue
 
+                    # Xử lý Đơn vị quản lý giảng viên
+                    department_teacher_code = str(row.get('Mã đơn vị quản lý GV', '')).strip()
+                    department_teacher = None
+                    if department_teacher_code and department_teacher_code not in ['', 'nan']:
+                        try:
+                            department_teacher = Department.objects.get(code=department_teacher_code)
+                        except Department.DoesNotExist:
+                            errors.append(f"Dòng {index + 2}: Không tìm thấy khoa với mã '{department_teacher_code}'")
+                            continue
+                        
                     # Xử lý email
                     email = str(row.get('Email', '')).strip()
                     if email in ['', 'nan']:
@@ -2536,6 +2547,7 @@ class ImportTeachingDataView(View):
                             'email': email,
                             'phone': phone,
                             'department': department,
+                            'department_teacher': department_teacher,
                             'subject_group': subject_group,
                             'is_active': is_active
                         }
@@ -2550,7 +2562,8 @@ class ImportTeachingDataView(View):
                         'code': instructor.code,
                         'full_name': instructor.full_name,
                         'email': instructor.email,
-                        'department': department.name if department else 'N/A'
+                        'department': department.name if department else 'N/A',
+                        'department_teacher': department_teacher.name if department_teacher else 'N/A'
                     })
                         
                 except Exception as e:
