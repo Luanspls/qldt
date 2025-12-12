@@ -1543,7 +1543,7 @@ def api_instructors(request):
     if department_id:
         instructors = instructors.filter(department_id=department_id)
     
-    department_of_teacher_management_id = request.GET.get('department_teacher_id')
+    department_of_teacher_management_id = request.GET.get('department_of_teacher_management_id')
     if department_of_teacher_management_id:
         instructors = instructors.filter(department_of_teacher_management_id=department_of_teacher_management_id)
     
