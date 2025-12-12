@@ -866,6 +866,13 @@
                             <option value="">-- Chọn đơn vị --</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Chức vụ</label>
+                        <input type="text" name="position" id="position"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Vd: Trưởng Khoa"
+                            required>
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1734,7 +1741,7 @@
                     allClasses.forEach(classItem => {
                         const option = document.createElement('option');
                         option.value = classItem.id;
-                        option.textContent = `${classItem.code} - ${classItem.name}`;
+                        option.textContent = `${classItem.code}`;
                         classesSelect.appendChild(option);
                     });
 					// Khởi tạo Select2
@@ -1810,7 +1817,7 @@
                     regularClasses.forEach(classItem => {
 		                const option = document.createElement('option');
 		                option.value = classItem.id;
-		                option.textContent = `${classItem.code} - ${classItem.name}`;
+		                option.textContent = `${classItem.code}`;
 		                classRegularSelect.appendChild(option);
 		            });
                 } else {
@@ -1823,7 +1830,7 @@
 		                        data.forEach(classItem => {
 		                            const option = document.createElement('option');
 		                            option.value = classItem.id;
-		                            option.textContent = `${classItem.code} - ${classItem.name}`;
+		                            option.textContent = `${classItem.code}`;
 		                            classRegularSelect.appendChild(option);
 		                        });
 		                        // Khởi tạo Select2
@@ -1851,7 +1858,7 @@
 		                    data.forEach(combinedClass => {
 		                        const option = document.createElement('option');
 		                        option.value = combinedClass.id;
-		                        option.textContent = `${combinedClass.code} - ${combinedClass.name}`;
+		                        option.textContent = `${combinedClass.code}`;
 		                        if (combinedClass.classes_count > 0) {
 		                            option.textContent += ` (${combinedClass.classes_count} lớp)`;
 		                        }
@@ -2738,6 +2745,7 @@
         				document.querySelector('#form-them-giang-vien input[name="full_name"]').value = instructorData.full_name;
         				document.querySelector('#form-them-giang-vien input[name="email"]').value = instructorData.email || '';
         				document.querySelector('#form-them-giang-vien input[name="phone"]').value = instructorData.phone || '';
+                        document.querySelector('#form-them-giang-vien input[name="position"]').value = instructorData.position || '';
         				document.querySelector('#form-them-giang-vien input[name="is_active"]').checked = instructorData.is_active;
 
 						// Cập nhật Select2
@@ -2784,6 +2792,7 @@
     			phone: formData.get('phone') || null,
     			department_id: formData.get('department_id') || null,
                 department_teacher_id: formData.get('department_teacher_id') || null,
+                position: formData.get('position') || null,
     			subject_group_id: formData.get('subject_group_id') || null,
     			is_active: formData.get('is_active') === 'on'
 			};
@@ -4025,7 +4034,7 @@
                         'Các cột bắt buộc: Mã giảng viên*, Họ và tên*',
                         'Mã giảng viên không được trùng',
                         'Email phải đúng định dạng',
-                        'Mã khoa và mã tổ bộ môn phải tồn tại trong hệ thống (nếu có)'
+                        'Mã đơn vị quản lý GV, Mã khoa và Mã tổ bộ môn phải tồn tại trong hệ thống (nếu có)'
                     ];
                     break;
                 case 'teaching-assignment':

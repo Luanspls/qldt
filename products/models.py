@@ -347,7 +347,7 @@ class SemesterAllocation(models.Model):
 
 
 class Instructor(models.Model):
-    code = models.CharField(max_length=20, unique=False, verbose_name="Mã giảng viên")
+    code = models.CharField(max_length=20, unique=True, verbose_name="Mã giảng viên")
     full_name = models.CharField(max_length=255, verbose_name="Họ và tên")
     email = models.EmailField(blank=True, null=True, verbose_name="Email")
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Số điện thoại")
@@ -368,7 +368,7 @@ class Instructor(models.Model):
         related_name="managed_instructors",
         verbose_name="Khoa quản lý giảng viên"
     )
-    
+    position = models.CharField(max_length=100, blank=True, null=True, verbose_name="Chức vụ")
     subject_group = models.ForeignKey(
         SubjectGroup, 
         on_delete=models.SET_NULL, 

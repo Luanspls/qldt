@@ -2,6 +2,7 @@ from django.http import JsonResponse, HttpResponse
 from django.db.models import Count, Sum, F, Q, Case, When, IntegerField
 from django.views.decorators.csrf import csrf_exempt
 import json
+import random
 from django.shortcuts import render, get_object_or_404
 from django.core.serializers import serialize
 from django.views import View
@@ -427,7 +428,8 @@ class TrainProgramManagerView(View):
                 'tong_so_gio': 75.0,
                 'ly_thuyet': 41.0,
                 'thuc_hanh': 29.0,
-                'kiem_tra_thi': 5.0,
+                'kiem_tra': 3.0,
+                'thi': 1.0,
                 'hk1': 4.0,
                 'hk2': '',
                 'hk3': '',
@@ -469,7 +471,8 @@ class ImportExcelView(View):
                 'Tổng số giờ': [75, 30, 60, 75, 75, 120, 75, 30],
                 'Lý thuyết': [41, 18, 5, 36, 15, 42, 15, 28],
                 'Thực hành': [29, 10, 51, 36, 58, 72, 58, 0],
-                'Kiểm tra/Thi': [5, 2, 4, 3, 2, 6, 2, 2],
+                'Kiểm tra': [3, 2, 3, 2, 2, 4, 2, 2],
+                'Thi': [2, 1, 1, 1, 1, 2, 1, 1],
                 'HK1': [4, '', '', '', 3, 5, '', ''],
                 'HK2': ['', '', 2, '', '', '', 3, ''],
                 'HK3': ['', '', '', 3, '', '', '', ''],
@@ -884,7 +887,11 @@ def generate_subject_code(self, curriculum, original_code, name, credits, total_
     base_code = original_code
     
     # Tạo mã đề xuất
-    proposed_code = f"{curriculum_prefix}_{base_code}"
+    proposed_code = ''
+    if base_code != '':
+        proposed_code = f"{curriculum_prefix}_{base_code}"
+    else:
+        proposed_code = f"{curriculum_prefix}_{random.randint(1000, 9999)}"
     
     # Kiểm tra xem mã đã tồn tại chưa
     counter = 1
@@ -1556,7 +1563,7 @@ def api_instructors(request):
         # Chuyển đổi từ string sang boolean
         is_active_bool = is_active.lower() == 'true'
         instructors = instructors.filter(is_active=is_active_bool)
-    instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'department_id', 'department_of_teacher_management_id', 'subject_group_id', 'is_active')
+    instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'position', 'department_id', 'department_of_teacher_management_id', 'subject_group_id', 'is_active')
     return JsonResponse(list(instructors_data), safe=False)
 
 @csrf_exempt
@@ -1671,6 +1678,7 @@ def api_create_instructor(request):
                 phone=data.get('phone'),
                 department=department,
                 department_of_teacher_management=department_teacher,
+                position=data.get('position'),
                 subject_group=subject_group,
                 is_active=data.get('is_active', True)
             )
@@ -2011,6 +2019,14 @@ class ImportTeachingDataView(View):
                 
             row += 2
             
+            # Section Chức vụ
+            worksheet.write(row, 0, "DANH SÁCH CHỨC VỤ CÓ SẴN", bold_format)
+            row += 1
+            positions = Instructor.objects.values_list('position', flat=True).distinct()
+            for position in positions:
+                worksheet.write(row, 0, position)
+                row += 1
+            
             # Thêm ghi chú
             worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format)
             row += 1
@@ -2203,6 +2219,7 @@ class ImportTeachingDataView(View):
             'Mã giảng viên*': ['GV001', 'GV002', 'GV003'],
             'Họ và tên*': ['Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C'],
             'Mã đơn vị quản lý GV': ['DCNTT', 'QLCL', 'QLDT'],
+            'Chức vụ': ['Trưởng Khoa', '', 'Phó Khoa'],
             'Email': ['nva@example.com', 'ttb@example.com', 'lvc@example.com'],
             'Số điện thoại': ['0123456789', '0987654321', '0912345678'],
             'Mã khoa': ['DCNTT', 'DCNTT', 'KTNLN'],
@@ -2504,6 +2521,11 @@ class ImportTeachingDataView(View):
                         except Department.DoesNotExist:
                             errors.append(f"Dòng {index + 2}: Không tìm thấy khoa với mã '{department_teacher_code}'")
                             continue
+                    
+                    # Xử lý chức vụ
+                    position = str(row.get('Chức vụ', '')).strip()
+                    if position in ['', 'nan']:
+                        position = None
                         
                     # Xử lý email
                     email = str(row.get('Email', '')).strip()
@@ -2548,6 +2570,7 @@ class ImportTeachingDataView(View):
                             'phone': phone,
                             'department': department,
                             'department_teacher': department_teacher,
+                            'position': position,
                             'subject_group': subject_group,
                             'is_active': is_active
                         }
@@ -2563,7 +2586,9 @@ class ImportTeachingDataView(View):
                         'full_name': instructor.full_name,
                         'email': instructor.email,
                         'department': department.name if department else 'N/A',
-                        'department_teacher': department_teacher.name if department_teacher else 'N/A'
+                        'department_teacher': department_teacher.name if department_teacher else 'N/A',
+                        'position': instructor.position or 'N/A',
+                        'is_active': instructor.is_active
                     })
                         
                 except Exception as e:
