@@ -887,7 +887,7 @@
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Chức vụ</label>
-                        <input type="text" name="position" id="position"
+                        <input type="text" name="position_id" id="position_id"
                             class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
                             placeholder="Vd: Trưởng Khoa"
                             required>
@@ -2765,7 +2765,7 @@
         				document.querySelector('#form-them-giang-vien input[name="full_name"]').value = instructorData.full_name;
         				document.querySelector('#form-them-giang-vien input[name="email"]').value = instructorData.email || '';
         				document.querySelector('#form-them-giang-vien input[name="phone"]').value = instructorData.phone || '';
-                        document.querySelector('#form-them-giang-vien input[name="position"]').value = instructorData.position || '';
+                        document.querySelector('#form-them-giang-vien input[name="position_id"]').value = instructorData.position || '';
         				document.querySelector('#form-them-giang-vien input[name="is_active"]').checked = instructorData.is_active;
 
 						// Cập nhật Select2
@@ -2812,7 +2812,7 @@
     			phone: formData.get('phone') || null,
     			department_id: formData.get('department_id') || null,
                 department_teacher_id: formData.get('department_teacher_id') || null,
-                position: formData.get('position') || null,
+                position_id: formData.get('position_id') || null,
     			subject_group_id: formData.get('subject_group_id') || null,
     			is_active: formData.get('is_active') === 'on'
 			};
