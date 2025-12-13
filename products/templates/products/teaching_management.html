@@ -1375,6 +1375,24 @@
                             allCombinedClasses = [];
                             resolve();
                         });
+                }),
+				new Promise((resolve) => {
+                    // Tải danh sách Chức vụ
+                    fetch('/api/positions/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allPositions = data;
+                            console.log('Loaded Positions:', data.length);
+                            resolve();
+                        })
+                        .catch(error => {
+                            console.error('Error loading Positions:', error);
+                            allPositions = [];
+                            resolve();
+                        });
                 })
             ];
             return Promise.all(promises);
