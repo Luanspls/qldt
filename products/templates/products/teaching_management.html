@@ -462,6 +462,12 @@
                             <option value="">Tất cả chương trình</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Môn học</label>
+                        <select id="filter-combined-subject" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả môn học</option>
+                        </select>
+                    </div>
                     <div class="flex items-end">
                         <button id="btn-filter-combined" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md w-full">
                             Lọc
@@ -477,6 +483,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã lớp ghép</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên lớp ghép</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chương trình</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Môn học</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lớp ghép</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Các lớp thành phần</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
@@ -595,6 +602,12 @@
                             <option value="">Tất cả</option>
                             <option value="regular">Lớp thường</option>
                             <option value="combined">Lớp ghép</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
+                        <select id="filter-class-assignment" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="">Tất cả các lớp</option>
                         </select>
                     </div>
                     <div>
@@ -793,11 +806,11 @@
                 </div>
                 
                 <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Chương trình đào tạo *</label>
-                    <select name="curriculum_id" id="curriculum_id"
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Môn học *</label>
+                    <select name="subject_id" id="subject_id"
                             class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
                             required>
-                        <option value="">-- Chọn chương trình --</option>
+                        <option value="">-- Chọn môn học --</option>
                     </select>
                 </div>
 
@@ -1197,6 +1210,7 @@
                 loadSelect2Data('/api/instructors/', 'filter-instructor', 'full_name', ['code', 'full_name']),
                 loadSelect2Data('/api/curricula/', 'filter-class-curriculum', 'name', ['code', 'name', 'academic_year']),
                 loadSelect2Data('/api/curricula/', 'filter-combined-curriculum', 'name', ['code', 'name', 'academic_year']),
+                loadSelect2Data('/api/subject/', 'filter-combined-subject', 'name', ['code', 'name', 'curriculum_code', 'academic_year']),
                 loadSelect2Data('/api/curricula/', 'filter-curriculum', 'name', ['code', 'name', 'academic_year']),
                 loadSelect2Data('/api/courses/', 'filter-class-course', 'name', ['code', 'name']),
                 loadSelect2Data('/api/departments/', 'filter-instructor-department', 'name', ['code', 'name']),
@@ -3121,10 +3135,14 @@
 
         function loadCombinedClassesData() {
             const curriculumId = document.getElementById('filter-combined-curriculum').value;
+            const subjectId = document.getElementById('filter-combined-subject').value;
             
             let url = '/api/combined-classes/';
             if (curriculumId) {
                 url += `?curriculum_id=${curriculumId}`;
+            }
+            if (subjectId) {
+                url += curriculumId ? `&subject_id=${subjectId}` : `?subject_id=${subjectId}`;
             }
             
             fetch(url)
@@ -3149,12 +3167,14 @@
                     
                     data.forEach((combinedClass, index) => {
                         const row = document.createElement('tr');
-						const curriculumName = getCurriculumName(combinedClass.curriculum || combinedClass.curriculum_id);
+                        const curriculumName = getCurriculumName(combinedClass.subject.curriculum || combinedClass.subject.curriculum_id);
+                        const subjectName = getSubjectName(combinedClass.subject || combinedClass.subject_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${combinedClass.code}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${combinedClass.name}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${curriculumName}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${subjectName}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${combinedClass.classes_count} lớp</td>
                             <td class="px-6 py-4 text-sm text-gray-500">
                                 ${combinedClass.class_codes ? combinedClass.class_codes.join(', ') : 'Không có'}
@@ -3241,6 +3261,7 @@
             const instructorFilter = document.getElementById('filter-instructor').value;
             const curriculumFilter = document.getElementById('filter-curriculum').value;
             const classTypeFilter = document.getElementById('filter-class-type-assignment').value;
+            const classFilter = document.getElementById('filter-class-assignment').value;
             const academicYearFilter = document.getElementById('filter-academic-year').value;
             
             let url = '/api/teaching-assignments/';
@@ -3249,6 +3270,7 @@
             if (instructorFilter) params.push(`instructor_id=${instructorFilter}`);
             if (curriculumFilter) params.push(`curriculum_id=${curriculumFilter}`);
             if (classTypeFilter) params.push(`class_type=${classTypeFilter}`);
+            if (classFilter) params.push(`class=${classFilter}`);
             if (academicYearFilter) params.push(`academic_year=${academicYearFilter}`);
             
             if (params.length > 0) {

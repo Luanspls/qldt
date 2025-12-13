@@ -8,7 +8,8 @@ from django.core.serializers import serialize
 from django.views import View
 from .models import (
     Department, SubjectGroup, Curriculum, Course, Subject, SubjectType, 
-    SemesterAllocation, Major, ImportHistory, Class, CombinedClass, TeachingAssignment, Instructor
+    SemesterAllocation, Major, ImportHistory, Class, CombinedClass, TeachingAssignment, 
+    Instructor, Position
 )
 import pandas as pd
 from django.core.files.storage import default_storage
@@ -456,8 +457,8 @@ class ImportExcelView(View):
         try:
             sample_data = {
                 'TT': [1, 2, 3, 4, 5, 6, 7, 8],
-                'Mã môn học': ['MH01', 'MH02', 'MH03', 'MH04', 'MH05', 'MH06', 'MH07', 'MH08'],
-                'Tên học phần': [
+                'Mã môn học*': ['MH01', 'MH02', 'MH03', 'MH04', 'MH05', 'MH06', 'MH07', 'MH08'],
+                'Tên học phần*': [
                     'Giáo dục chính trị', 
                     'Pháp luật', 
                     'Giáo dục thể chất',
@@ -467,11 +468,11 @@ class ImportExcelView(View):
                     'GD kỹ năng mềm',
                     'Tài chính doanh nghiệp'
                 ],
-                'Số tín chỉ': [4, 2, 2, 3, 3, 5, 3, 2],
-                'Tổng số giờ': [75, 30, 60, 75, 75, 120, 75, 30],
-                'Lý thuyết': [41, 18, 5, 36, 15, 42, 15, 28],
-                'Thực hành': [29, 10, 51, 36, 58, 72, 58, 0],
-                'Kiểm tra': [3, 2, 3, 2, 2, 4, 2, 2],
+                'Số tín chỉ*': [4, 2, 2, 3, 3, 5, 3, 2],
+                'Tổng số giờ*': [75, 30, 60, 75, 75, 120, 75, 30],
+                'Lý thuyết*': [41, 18, 5, 36, 15, 42, 15, 28],
+                'Thực hành*': [29, 10, 51, 36, 58, 72, 58, 0],
+                'Kiểm tra*': [3, 2, 3, 2, 2, 4, 2, 2],
                 'Thi': [2, 1, 1, 1, 1, 2, 1, 1],
                 'HK1': [4, '', '', '', 3, 5, '', ''],
                 'HK2': ['', '', 2, '', '', '', 3, ''],
@@ -479,7 +480,7 @@ class ImportExcelView(View):
                 'HK4': ['', 2, '', '', '', '', '', 2],
                 'HK5': ['', '', '', '', '', '', '', ''],
                 'HK6': ['', '', '', '', '', '', '', ''],
-                'Đơn vị': [
+                'Đơn vị quản lý chuyên môn*': [
                     'Khoa Khoa học cơ bản',
                     'Khoa Khoa học cơ bản', 
                     'Khoa Khoa học cơ bản',
@@ -489,15 +490,15 @@ class ImportExcelView(View):
                     'Khoa Khoa học cơ bản',
                     'Khoa Kinh tế - Nông, Lâm nghiệp'
                 ],
+                'Tổ bộ môn*': [
+                    'Bộ môn Lý luận chính trị', 'Bộ môn Lý luận chính trị', 'Bộ môn GD Thể chất & GD Quốc phòng và An ninh',
+                    'Bộ môn GD Thể chất & GD Quốc phòng và An ninh', 'Bộ môn Công nghệ thông tin', 'Bộ môn Tiếng Anh', 
+                    'Bộ môn Tâm lý học và Giáo dục học', 'Bộ môn Kinh tế'
+                ],
                 'Loại môn': [
                     'Môn học chung', 'Môn học chung', 'Môn học chung', 
                     'Môn học bắt buộc', 'Môn học chung', 'Môn học chung',
                     'Môn học cơ sở', 'Môn học chuyên ngành'
-                ],
-                'Tổ bộ môn': [
-                    'Bộ môn Lý luận chính trị', 'Bộ môn Lý luận chính trị', 'Bộ môn GD Thể chất & GD Quốc phòng và An ninh',
-                    'Bộ môn GD Thể chất & GD Quốc phòng và An ninh', 'Bộ môn Công nghệ thông tin', 'Bộ môn Tiếng Anh', 
-                    'Bộ môn Tâm lý học và Giáo dục học', 'Bộ môn Kinh tế'
                 ],
                 'Điều kiện tiên quyết': ['', '', '', '', '', '', '', ''],
                 'Chuẩn đầu ra': ['', '', '', '', '', '', '', ''],
@@ -507,32 +508,148 @@ class ImportExcelView(View):
             df = pd.DataFrame(sample_data)
             
             # Lấy dữ liệu từ database cho sheet hướng dẫn
-            departments = Department.objects.all().values('name')
-            subject_types = SubjectType.objects.all().values('name')
+            departments = Department.objects.all().values('code', 'name')
+            subject_groups = SubjectGroup.objects.all().values('code', 'name', 'department__name')
+            subject_types = SubjectType.objects.all().values('code', 'name')
             
-            # Tạo DataFrame cho các giá trị có sẵn
-            df_departments = pd.DataFrame(list(departments))
-            df_subject_types = pd.DataFrame(list(subject_types))
+            # # Tạo DataFrame cho các giá trị có sẵn
+            # df_departments = pd.DataFrame(list(departments))
+            # df_subject_groups = pd.DataFrame(list(subject_groups))
+            # df_subject_types = pd.DataFrame(list(subject_types))
             
             # Tạo file trong memory
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 # Sheet chính với dữ liệu mẫu
-                df.to_excel(writer, index=False, sheet_name='Chương trình đào tạo')
+                df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
                 
-                # Sheet hướng dẫn với các giá trị có sẵn
-                df_departments.to_excel(writer, index=False, sheet_name='Hướng dẫn', startrow=1)
-                df_subject_types.to_excel(writer, index=False, sheet_name='Hướng dẫn', startrow=len(df_departments) + 4)
+                # Format lại sheet dữ liệu mẫu, điều chỉnh độ rộng cột tự động theo nội dung cột
+                # Riêng cột 'Đơn vị chuyên môn' và 'Tổ bộ môn' đặt rộng hơn, nội dung của cột ngắt dòng tự động
+                worksheet_main = writer.sheets['Dữ liệu mẫu']
+                for column_cells in worksheet_main.columns:
+                    max_length = 0
+                    column = column_cells[0].column_letter  # Lấy chữ cái cột
+                    for cell in column_cells:
+                        try:
+                            if cell.value:
+                                max_length = max(max_length, len(str(cell.value)))
+                        except:
+                            pass
+                    adjusted_width = (max_length + 2)
+                    worksheet_main.column_dimensions[column].width = adjusted_width
+                    
+                    if cell.column_letter in ['P', 'Q', 'U']:  # Cột 'Đơn vị chuyên môn', 'Tổ bộ môn' và 'Mô tả môn học'
+                        worksheet_main.column_dimensions[column].width = max(adjusted_width, 30)
+                        for cell in column_cells:
+                            cell.alignment = cell.alignment.copy(wrap_text=True)
                 
-                # Lấy worksheet để thêm tiêu đề
-                worksheet = writer.sheets['Hướng dẫn']
-                worksheet.cell(1, 1, "DANH SÁCH ĐƠN VỊ CÓ SẴN")
-                worksheet.cell(len(df_departments) + 4, 1, "DANH SÁCH LOẠI MÔN CÓ SẴN")
+                # Thiết lập chế độ tự động lọc cho sheet dữ liệu mẫu
+                worksheet_main.auto_filter.ref = worksheet_main.dimensions
+                
+                # Thiết lập chế độ đóng băng hàng đầu tiên và cột D cho sheet dữ liệu mẫu
+                worksheet_main.freeze_panes = 'D2'
+
+                # Sheet hướng dẫn nhập liệu
+                workbook = writer.book
+                worksheet = workbook.add_worksheet('Hướng dẫn nhập liệu')
+                
+                # Định dạng
+                bold_format = workbook.add_format({'bold': True})
+                bold_format1 = workbook.add_format({'bold': True, 'font_color': 'red'})
+                italic_format = workbook.add_format({'italic': True, 'font_color': 'blue'})
+                header_format = workbook.add_format({'bold': True, 'bg_color': '#DDEBF7'})
+                
+                row = 0
+                
+                # Section Đơn vị
+                worksheet.write(row, 0, "DANH SÁCH ĐƠN VỊ CÓ SẴN", bold_format)
+                row += 1
+                worksheet.write(row, 0, "TT", header_format)
+                worksheet.write(row, 1, "Mã đơn vị", header_format)
+                worksheet.write(row, 2, "Tên đơn vị", header_format)
+                row += 1
+                tt_department=1
+                for department in departments:
+                    worksheet.write(row, 0, tt_department)
+                    worksheet.write(row, 1, department['code'])
+                    worksheet.write(row, 2, department['name'])
+                    row += 1
+                    tt_department += 1
+                row += 2
+                
+                # Section Bộ môn
+                worksheet.write(row, 0, "DANH SÁCH BỘ MÔN CÓ SẴN", bold_format)
+                row += 1
+                worksheet.write(row, 0, "TT", header_format)
+                worksheet.write(row, 1, "Mã bộ môn", header_format)
+                worksheet.write(row, 2, "Tên bộ môn", header_format)
+                worksheet.write(row, 3, "Tên đơn vị quản lý", header_format)
+                row += 1
+                tt_sub_gr=1
+                for subject_group in subject_groups:
+                    worksheet.write(row, 0, tt_sub_gr)
+                    worksheet.write(row, 1, subject_group['code'])
+                    worksheet.write(row, 2, subject_group['name'])
+                    worksheet.write(row, 3, subject_group['department__name'])
+                    row += 1
+                    tt_sub_gr += 1
+                row += 2
+                
+                # Section Loại môn
+                worksheet.write(row, 0, "DANH SÁCH LOẠI MÔN CÓ SẴN", bold_format)
+                row += 1
+                worksheet.write(row, 0, "TT", header_format)
+                worksheet.write(row, 1, "Mã loại môn", header_format)
+                worksheet.write(row, 2, "Tên loại môn", header_format)
+                row += 1
+                tt_sub_type=1
+                for subject_type in subject_types:
+                    worksheet.write(row, 0, tt_sub_type)
+                    worksheet.write(row, 1, subject_type['code'])
+                    worksheet.write(row, 2, subject_type['name'])
+                    row += 1
+                    tt_sub_type += 1
+                row += 2
+                
+                # Điều chỉnh độ rộng cột tự động vừa với nội dung
+                worksheet.column[0:3].width.auto = 'auto'
                 
                 # Thêm ghi chú
-                worksheet.cell(len(df_departments) + len(df_subject_types) + 7, 1, 
-                              "LƯU Ý: Khi nhập dữ liệu, vui lòng sử dụng các giá trị từ danh sách trên để đảm bảo tính nhất quán.")
-            
+                worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format1)
+                row += 1
+                
+                notes = [
+                    "1. Chỉ nhập dữ liệu vào sheet 'Dữ liệu mẫu'",
+                    "2. Các cột có dấu * là bắt buộc",
+                    "3. Sử dụng các giá trị từ danh sách trên để đảm bảo tính nhất quán",
+                    "4. Nếu dùng mã đơn vị, bộ môn, loại môn không có trong danh sách, hệ thống sẽ tự động tạo mới",
+                    "5. Thống nhất dùng tên (hoặc mã) đơn vị, bộ môn, loại môn như trong danh sách để tránh lỗi hệ thống",
+                    "6. Đảm bảo định dạng số cho các cột số tín chỉ, số giờ, học kỳ",
+                    "7. Kiểm tra kỹ dữ liệu trước khi import để tránh lỗi không mong muốn"
+                ]
+                for note in notes:
+                    worksheet.write(row, 0, note, italic_format)
+                    row += 1
+                
+                # Thiết lập chế độ lấy danh sách từ sheet hướng dẫn cho các cột tương ứng trong sheet dữ liệu mẫu
+                # Lấy số dòng đã sử dụng trong sheet hướng dẫn
+                used_rows = row
+                worksheet_main.data_validation('P2:P1000', {
+                    'validate': 'list',
+                    'source': f"'Hướng dẫn nhập liệu'!$B$2:$B${used_rows - 8}",
+                    'input_message': 'Chọn đơn vị từ danh sách'
+                })
+                worksheet_main.data_validation('Q2:Q1000', {
+                    'validate': 'list',
+                    'source': f"'Hướng dẫn nhập liệu'!$B${used_rows - 7}:$B${used_rows - 2}",
+                    'input_message': 'Chọn bộ môn từ danh sách'
+                })
+                worksheet_main.data_validation('R2:R1000', {
+                    'validate': 'list',
+                    'source': f"'Hướng dẫn nhập liệu'!$B${used_rows - 5}:$B${used_rows - 1}",
+                    'input_message': 'Chọn loại môn từ danh sách'
+                })
+                
             output.seek(0)
             
             # Trả về file để download
@@ -1274,12 +1391,12 @@ def api_classes(request):
 @csrf_exempt
 def api_combined_classes(request):
     """API lấy danh sách lớp học ghép"""
-    curriculum_id = request.GET.get('curriculum_id')
+    subject_id = request.GET.get('curiculum_subject_id') or request.GET.get('subject_id')
     
-    combined_classes = CombinedClass.objects.select_related('curriculum').prefetch_related('classes')
-        
-    if curriculum_id:
-        combined_classes = combined_classes.filter(curriculum_id=curriculum_id)
+    combined_classes = CombinedClass.objects.select_related('subject').prefetch_related('classes')
+    
+    if subject_id:
+        combined_classes = combined_classes.filter(subject_id=subject_id)
     
     combined_class_data = []
     for cc in combined_classes:
@@ -1287,8 +1404,8 @@ def api_combined_classes(request):
             'id': cc.id,
             'code': cc.code,
             'name': cc.name,
-            'curriculum_id': cc.curriculum.id if cc.curriculum else None,
-            'curriculum_name': cc.curriculum.name if cc.curriculum else '',
+            'subject_id': cc.subject.id if cc.subject else None,
+            'subject_name': cc.subject.name if cc.subject else '',
             'classes_count': cc.classes.count(),
             'class_codes': [c.code for c in cc.classes.all()]
         })
@@ -1313,6 +1430,7 @@ def api_teaching_assignments(request):
     """API lấy danh sách phân công giảng dạy với thông tin lớp học"""
     instructor_id = request.GET.get('instructor_id')
     curriculum_id = request.GET.get('curriculum_id')
+    subject_id = request.GET.get('subject_id')
     department_id = request.GET.get('department_id')
     class_id = request.GET.get('class_id')
     combined_class_id = request.GET.get('combined_class_id')
@@ -1326,13 +1444,16 @@ def api_teaching_assignments(request):
         'class_obj',
         'combined_class'
     ).prefetch_related(
-        'curriculum_subject__curriculum'
+        'curriculum_subject__curriculum',
+        'curriculum_subject__course'
     )
     
     if instructor_id:
         teaching_assignments = teaching_assignments.filter(instructor_id=instructor_id)
     if curriculum_id:
         teaching_assignments = teaching_assignments.filter(curriculum_subject__curriculum_id=curriculum_id)
+    if subject_id:
+        teaching_assignments = teaching_assignments.filter(curriculum_subject_id=subject_id)
     if department_id:
         teaching_assignments = teaching_assignments.filter(
             Q(instructor__department_id=department_id) |
@@ -1527,7 +1648,10 @@ class TeachingManagementView(View):
         departmets_teacher_management = Department.objects.all().values('id', 'code', 'name')
         courses = Course.objects.all().values('id', 'code', 'name')
         subject_types = SubjectType.objects.all().values('id', 'code', 'name')
+        subjects = Subject.objects.all().values('id', 'code', 'name')
         majors = Major.objects.all().values('id', 'code', 'name')
+        classes = Class.objects.all().values('id', 'code', 'name')
+        combined_classes = CombinedClass.objects.all().values('id', 'code', 'name')
         
         context = {
             'instructors': list(instructors),
@@ -1536,6 +1660,9 @@ class TeachingManagementView(View):
             'departmets_teacher_management': list(departmets_teacher_management),
             'courses': list(courses),
             'subject_types': list(subject_types),
+            'subjects': list(subjects),
+            'classes': list(classes),
+            'combined_classes': list(combined_classes),
             'majors': list(majors),
         }
         
@@ -1544,7 +1671,7 @@ class TeachingManagementView(View):
 @csrf_exempt
 def api_instructors(request):
     """API lấy danh sách giảng viên"""
-    instructors = Instructor.objects.select_related('department', 'subject_group')
+    instructors = Instructor.objects.select_related('department', 'subject_group', 'position')
      # Áp dụng bộ lọc nếu có
     department_id = request.GET.get('department_id')
     if department_id:
@@ -1553,6 +1680,10 @@ def api_instructors(request):
     department_of_teacher_management_id = request.GET.get('department_of_teacher_management_id')
     if department_of_teacher_management_id:
         instructors = instructors.filter(department_of_teacher_management_id=department_of_teacher_management_id)
+    
+    position_id = request.GET.get('position_id')
+    if position_id:
+        instructors = instructors.filter(position_id=position_id)
     
     subject_group_id = request.GET.get('subject_group_id')
     if subject_group_id:
@@ -1563,7 +1694,7 @@ def api_instructors(request):
         # Chuyển đổi từ string sang boolean
         is_active_bool = is_active.lower() == 'true'
         instructors = instructors.filter(is_active=is_active_bool)
-    instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'position', 'department_id', 'department_of_teacher_management_id', 'subject_group_id', 'is_active')
+    instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'position_id', 'department_id', 'department_of_teacher_management_id', 'subject_group_id', 'is_active')
     return JsonResponse(list(instructors_data), safe=False)
 
 @csrf_exempt
@@ -1662,6 +1793,13 @@ def api_create_instructor(request):
                 except Department.DoesNotExist:
                     pass
             
+            position = None
+            if data.get('position_id'):
+                try:
+                    position = Position.objects.get(id=data['position_id'])
+                except Position.DoesNotExist:
+                    pass
+            
             # Xử lý subject_group
             subject_group = None
             if data.get('subject_group_id'):
@@ -1678,7 +1816,7 @@ def api_create_instructor(request):
                 phone=data.get('phone'),
                 department=department,
                 department_of_teacher_management=department_teacher,
-                position=data.get('position'),
+                position=position,
                 subject_group=subject_group,
                 is_active=data.get('is_active', True)
             )
@@ -1708,7 +1846,7 @@ def api_create_combined_class(request):
             data = json.loads(request.body)
             
             # Kiểm tra các trường bắt buộc
-            required_fields = ['code', 'name', 'curriculum_id', 'classes']
+            required_fields = ['code', 'name', 'subject_id', 'classes']
             for field in required_fields:
                 if not data.get(field):
                     return JsonResponse({
@@ -1725,7 +1863,7 @@ def api_create_combined_class(request):
             combined_class = CombinedClass.objects.create(
                 code=data.get('code'),
                 name=data.get('name'),
-                curriculum_id=data.get('curriculum_id'),
+                subject_id=data.get('subject_id'),
                 description=description
             )
             
@@ -1772,6 +1910,33 @@ class ImportTeachingDataView(View):
                         
                     # Tạo sheet hướng dẫn cho lớp học
                     self.create_class_guide_sheet(writer)
+                    
+                    # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
+                    workbook  = writer.book
+                    sample_worksheet = writer.sheets['Dữ liệu mẫu']
+                    guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
+                    # Điều chỉnh độ rộng các cột vừa với nội dung cột
+                    for i, col in enumerate(df.columns):
+                        column_len = df[col].astype(str).str.len().max()
+                        column_len = max(column_len, len(col)) + 2  # Thêm khoảng trống
+                        sample_worksheet.set_column(i, i, column_len)
+                    for i in range(guide_worksheet.dim_rowmax + 1):
+                        guide_worksheet.set_row(i, None, {'hidden': False})
+                    # Tạo danh sách chọn cho cột "Mã chương trình" và "Mã khóa học"
+                    curricula = Curriculum.objects.all().values_list('code', flat=True)
+                    courses = Course.objects.all().values_list('code', flat=True)
+                    curriculum_str = ",".join(curricula)
+                    course_str = ",".join(courses)
+                    sample_worksheet.data_validation(1, 2, 1000, 2, {
+                        'validate': 'list',
+                        'source': curricula,
+                        'input_message': 'Chọn mã chương trình từ danh sách'
+                    })
+                    sample_worksheet.data_validation(1, 3, 1000, 3, {
+                        'validate': 'list',
+                        'source': courses,
+                        'input_message': 'Chọn mã khóa học từ danh sách'
+                    })
                         
                 elif object_type == 'combined-class':
                     sample_data = self.get_combined_class_template()
@@ -1781,6 +1946,32 @@ class ImportTeachingDataView(View):
                         
                     # Tạo sheet hướng dẫn cho lớp học ghép
                     self.create_combined_class_guide_sheet(writer)
+                    
+                    # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
+                    workbook  = writer.book
+                    sample_worksheet = writer.sheets['Dữ liệu mẫu']
+                    guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
+                    # Điều chỉnh độ rộng các cột vừa với nội dung cột
+                    for i, col in enumerate(df.columns):
+                        column_len = df[col].astype(str).str.len().max()
+                        column_len = max(column_len, len(col)) + 2  # Thêm khoảng trống
+                        sample_worksheet.set_column(i, i, column_len)
+                    for i in range(guide_worksheet.dim_rowmax + 1):
+                        guide_worksheet.set_row(i, None, {'hidden': False})
+                    
+                    # Tạo danh sách chọn cho cột "Mã môn học", "Lớp học thành phần" và có thể nhập từ khóa tìm kiếm
+                    subjects = Subject.objects.all().values_list('code', flat=True)
+                    classes = Class.objects.all().values_list('code', flat=True)
+                    sample_worksheet.data_validation(1, 2, 1000, 2, {
+                        'validate': 'list',
+                        'source': subjects,
+                        'input_message': 'Chọn mã môn học từ danh sách'
+                    })
+                    sample_worksheet.data_validation(1, 4, 1000, 4, {
+                        'validate': 'list',
+                        'source': classes,
+                        'input_message': 'Chọn mã lớp học thành phần từ danh sách (có thể chọn nhiều lớp, cách nhau bằng dấu chấm phẩy ";")'
+                    })
                 
                 elif object_type == 'instructor':
                     sample_data = self.get_instructor_template()
@@ -1790,6 +1981,42 @@ class ImportTeachingDataView(View):
                         
                     # Tạo sheet hướng dẫn cho giảng viên
                     self.create_instructor_guide_sheet(writer)
+                    
+                    # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
+                    workbook  = writer.book
+                    sample_worksheet = writer.sheets['Dữ liệu mẫu']
+                    guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
+                    # Điều chỉnh độ rộng các cột vừa với nội dung cột
+                    for i, col in enumerate(df.columns):
+                        column_len = df[col].astype(str).str.len().max()
+                        column_len = max(column_len, len(col)) + 2  # Thêm khoảng trống
+                        sample_worksheet.set_column(i, i, column_len)
+                    for i in range(guide_worksheet.dim_rowmax + 1):
+                        guide_worksheet.set_row(i, None, {'hidden': False})
+                    # Tạo danh sách chọn cho cột "Mã đơn vị", "Mã đơn vị quản lý giáo viên", "Mã chức vụ", "Mã nhóm môn học"
+                    departments = Department.objects.all().values_list('code', flat=True)
+                    positions = Position.objects.all().values_list('code', flat=True)
+                    subject_groups = SubjectGroup.objects.all().values_list('code', flat=True)
+                    sample_worksheet.data_validation(1, 4, 1000, 4, {
+                        'validate': 'list',
+                        'source': departments,
+                        'input_message': 'Chọn mã đơn vị từ danh sách'
+                    })
+                    sample_worksheet.data_validation(1, 5, 1000, 5, {
+                        'validate': 'list',
+                        'source': departments,
+                        'input_message': 'Chọn mã đơn vị quản lý giáo viên từ danh sách'
+                    })
+                    sample_worksheet.data_validation(1, 6, 1000, 6, {
+                        'validate': 'list',
+                        'source': positions,
+                        'input_message': 'Chọn mã chức vụ từ danh sách'
+                    })
+                    sample_worksheet.data_validation(1, 7, 1000, 7, {
+                        'validate': 'list',
+                        'source': subject_groups,
+                        'input_message': 'Chọn mã nhóm môn học từ danh sách'
+                    })
                         
                 elif object_type == 'teaching-assignment':
                     sample_data = self.get_teaching_assignment_template()
@@ -1799,6 +2026,44 @@ class ImportTeachingDataView(View):
                         
                     # Tạo sheet hướng dẫn cho phân công giảng dạy
                     self.create_teaching_assignment_guide_sheet(writer)
+                    
+                    # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
+                    workbook  = writer.book
+                    sample_worksheet = writer.sheets['Dữ liệu mẫu']
+                    guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
+                    # Điều chỉnh độ rộng các cột vừa với nội dung cột
+                    for i, col in enumerate(df.columns):
+                        column_len = df[col].astype(str).str.len().max()
+                        column_len = max(column_len, len(col)) + 2  # Thêm khoảng trống
+                        sample_worksheet.set_column(i, i, column_len)
+                    for i in range(guide_worksheet.dim_rowmax + 1):
+                        guide_worksheet.set_row(i, None, {'hidden': False})
+                    # Tạo danh sách chọn cho cột "Mã giảng viên", "Mã chương trình", "Mã môn học", "Mã lớp học", "Mã lớp học ghép"
+                    instructors = Instructor.objects.all().values_list('code', flat=True)
+                    curricula = Curriculum.objects.all().values_list('code', flat=True)
+                    subjects = Subject.objects.all().values_list('code', flat=True)
+                    classes = Class.objects.all().values_list('code', flat=True)
+                    combined_classes = CombinedClass.objects.all().values_list('code', flat=True)
+                    sample_worksheet.data_validation(1, 0, 1000, 0, {
+                        'validate': 'list',
+                        'source': instructors,
+                        'input_message': 'Chọn mã giảng viên từ danh sách'
+                    })
+                    sample_worksheet.data_validation(1, 2, 1000, 2, {
+                        'validate': 'list',
+                        'source': curricula,
+                        'input_message': 'Chọn mã chương trình từ danh sách'
+                    })
+                    sample_worksheet.data_validation(1, 3, 1000, 3, {
+                        'validate': 'list',
+                        'source': subjects,
+                        'input_message': 'Chọn mã môn học từ danh sách'
+                    })
+                    sample_worksheet.data_validation(1, 5, 1000, 5, {
+                        'validate': 'list',
+                        'source': classes,
+                        'input_message': 'Chọn mã lớp học từ danh sách'
+                    })
                         
                 else:
                     return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
@@ -1826,6 +2091,8 @@ class ImportTeachingDataView(View):
             
             # Định dạng
             bold_format = workbook.add_format({'bold': True})
+            bold_format1 = workbook.add_format({'bold': True, 'font_color': 'red'})
+            italic_format = workbook.add_format({'italic': True, 'font_color': 'blue'})
             header_format = workbook.add_format({'bold': True, 'bg_color': '#DDEBF7'})
             
             # Lấy danh sách chương trình
@@ -1840,55 +2107,61 @@ class ImportTeachingDataView(View):
             # Section Chương trình đào tạo
             worksheet.write(row, 0, "DANH SÁCH CHƯƠNG TRÌNH ĐÀO TẠO CÓ SẴN", bold_format)
             row += 1
-            worksheet.write(row, 0, "Mã chương trình", header_format)
-            worksheet.write(row, 1, "Tên chương trình", header_format)
-            worksheet.write(row, 2, "Năm học", header_format)
+            worksheet.write(row, 0, "TT", header_format)
+            worksheet.write(row, 1, "Mã chương trình", header_format)
+            worksheet.write(row, 2, "Tên chương trình", header_format)
+            worksheet.write(row, 3, "Năm học", header_format)
             row += 1
-            
+            tt_cur=1
             for curriculum in curricula:
-                worksheet.write(row, 0, curriculum['code'])
-                worksheet.write(row, 1, curriculum['name'])
-                worksheet.write(row, 2, curriculum['academic_year'])
+                worksheet.write(row, 0, tt_cur)
+                worksheet.write(row, 1, curriculum['code'])
+                worksheet.write(row, 2, curriculum['name'])
+                worksheet.write(row, 3, curriculum['academic_year'])
                 row += 1
-                
+                tt_cur += 1
             row += 2
             
             # Section Khóa học
             worksheet.write(row, 0, "DANH SÁCH KHÓA HỌC CÓ SẴN", bold_format)
             row += 1
-            worksheet.write(row, 0, "Mã khóa học", header_format)
-            worksheet.write(row, 1, "Tên khóa học", header_format)
-            worksheet.write(row, 2, "Mã chương trình", header_format)
+            worksheet.write(row, 0, "TT", header_format)
+            worksheet.write(row, 1, "Mã khóa học", header_format)
+            worksheet.write(row, 2, "Tên khóa học", header_format)
+            worksheet.write(row, 3, "Mã chương trình", header_format)
             row += 1
-            
+            tt_course=1
             for course in courses:
-                worksheet.write(row, 0, course['code'])
-                worksheet.write(row, 1, course['name'])
-                worksheet.write(row, 2, course['curriculum__code'])
+                worksheet.write(row, 0, tt_course)
+                worksheet.write(row, 1, course['code'])
+                worksheet.write(row, 2, course['name'])
+                worksheet.write(row, 3, course['curriculum__code'])
                 row += 1
-                
+                tt_course += 1
             row += 2
             
             # Section Lớp học hiện có
             worksheet.write(row, 0, "DANH SÁCH LỚP HỌC HIỆN CÓ", bold_format)
             row += 1
-            worksheet.write(row, 0, "Mã lớp", header_format)
-            worksheet.write(row, 1, "Tên lớp", header_format)
-            worksheet.write(row, 2, "Mã chương trình", header_format)
-            worksheet.write(row, 3, "Mã khóa học", header_format)
+            worksheet.write(row, 0, "TT", header_format)
+            worksheet.write(row, 1, "Mã lớp", header_format)
+            worksheet.write(row, 2, "Tên lớp", header_format)
+            worksheet.write(row, 3, "Mã chương trình", header_format)
+            worksheet.write(row, 4, "Mã khóa học", header_format)
             row += 1
-            
+            tt_class=1
             for class_item in classes:
-                worksheet.write(row, 0, class_item['code'])
-                worksheet.write(row, 1, class_item['name'])
-                worksheet.write(row, 2, class_item['curriculum__code'])
-                worksheet.write(row, 3, class_item['course__code'])
+                worksheet.write(row, 0, tt_class)
+                worksheet.write(row, 1, class_item['code'])
+                worksheet.write(row, 2, class_item['name'])
+                worksheet.write(row, 3, class_item['curriculum__code'])
+                worksheet.write(row, 4, class_item['course__code'])
                 row += 1
-                
+                tt_class += 1
             row += 2
             
             # Thêm ghi chú
-            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format)
+            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format1)
             row += 1
             
             notes = [
@@ -1900,7 +2173,7 @@ class ImportTeachingDataView(View):
             ]
             
             for note in notes:
-                worksheet.write(row, 0, note)
+                worksheet.write(row, 0, note, italic_format)
                 row += 1
                 
         except Exception as e:
@@ -1913,49 +2186,75 @@ class ImportTeachingDataView(View):
             worksheet = workbook.add_worksheet('Hướng dẫn nhập liệu')
             
             bold_format = workbook.add_format({'bold': True})
+            bold_format1 = workbook.add_format({'bold': True, 'font_color': 'red'})
+            italic_format = workbook.add_format({'italic': True, 'font_color': 'blue'})
             header_format = workbook.add_format({'bold': True, 'bg_color': '#E2EFDA'})
             
             # Lấy dữ liệu
-            curricula = Curriculum.objects.all().values('code', 'name', 'academic_year')
+            # curricula = Curriculum.objects.all().values('code', 'name', 'academic_year')
+            subjects = Subject.objects.all().values('code', 'name', 'department__code', 'curriculum__code')
             classes = Class.objects.filter(is_combined=False).values('code', 'name', 'curriculum__code')
             combined_classes = CombinedClass.objects.all().values('code', 'name', 'curriculum__code')
             
             row = 0
             
-            # Section Chương trình đào tạo
-            worksheet.write(row, 0, "DANH SÁCH CHƯƠNG TRÌNH ĐÀO TẠO CÓ SẴN", bold_format)
+            # Section Môn học
+            worksheet.write(row, 0, "DANH SÁCH MÔN HỌC CÓ SẴN", bold_format)
             row += 1
-            worksheet.write(row, 0, "Mã chương trình", header_format)
-            worksheet.write(row, 1, "Tên chương trình", header_format)
-            worksheet.write(row, 2, "Năm học", header_format)
+            worksheet.write(row, 0, "TT", header_format)
+            worksheet.write(row, 1, "Mã môn học", header_format)
+            worksheet.write(row, 2, "Tên môn học", header_format)
+            worksheet.write(row, 3, "Mã chương trình (nếu có)", header_format)
             row += 1
-            
-            for curriculum in curricula:
-                worksheet.write(row, 0, curriculum['code'])
-                worksheet.write(row, 1, curriculum['name'])
-                worksheet.write(row, 2, curriculum['academic_year'])
+            tt_sub=1
+            for subject in subjects:
+                worksheet.write(row, 0, tt_sub)
+                worksheet.write(row, 1, subject['code'])
+                worksheet.write(row, 2, subject['name'])
+                worksheet.write(row, 3, subject['curriculum__code'] or '')
                 row += 1
-                
+                tt_sub += 1
             row += 2
             
             # Section Lớp học có thể ghép
             worksheet.write(row, 0, "DANH SÁCH LỚP HỌC CÓ THỂ GHÉP", bold_format)
             row += 1
-            worksheet.write(row, 0, "Mã lớp", header_format)
-            worksheet.write(row, 1, "Tên lớp", header_format)
-            worksheet.write(row, 2, "Mã chương trình", header_format)
+            worksheet.write(row, 0, "TT", header_format)
+            worksheet.write(row, 1, "Mã lớp", header_format)
+            worksheet.write(row, 2, "Tên lớp", header_format)
+            worksheet.write(row, 3, "Mã chương trình", header_format)
             row += 1
-            
+            tt_class=1
             for class_item in classes:
-                worksheet.write(row, 0, class_item['code'])
-                worksheet.write(row, 1, class_item['name'])
-                worksheet.write(row, 2, class_item['curriculum__code'])
+                worksheet.write(row, 0, tt_class)
+                worksheet.write(row, 1, class_item['code'])
+                worksheet.write(row, 2, class_item['name'])
+                worksheet.write(row, 3, class_item['curriculum__code'])
                 row += 1
+                tt_class += 1
                 
             row += 2
             
+            # Section Lớp học ghép hiện có
+            worksheet.write(row, 0, "DANH SÁCH LỚP HỌC GHÉP HIỆN CÓ", bold_format)
+            row += 1
+            worksheet.write(row, 0, "TT", header_format)
+            worksheet.write(row, 1, "Mã lớp ghép", header_format)
+            worksheet.write(row, 2, "Tên lớp ghép", header_format)
+            worksheet.write(row, 3, "Mã chương trình (nếu có)", header_format)
+            row += 1
+            tt_combined_class=1
+            for combined_class in combined_classes:
+                worksheet.write(row, 0, tt_combined_class)
+                worksheet.write(row, 1, combined_class['code'])
+                worksheet.write(row, 2, combined_class['name'])
+                worksheet.write(row, 3, combined_class['curriculum__code'] or '')
+                row += 1
+                tt_combined_class += 1
+            row += 2
+            
             # Thêm ghi chú
-            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format)
+            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format1)
             row += 1
             
             notes = [
@@ -1968,7 +2267,7 @@ class ImportTeachingDataView(View):
             ]
             
             for note in notes:
-                worksheet.write(row, 0, note)
+                worksheet.write(row, 0, note, italic_format)
                 row += 1
                 
         except Exception as e:
@@ -1981,54 +2280,69 @@ class ImportTeachingDataView(View):
             worksheet = workbook.add_worksheet('Hướng dẫn nhập liệu')
             
             bold_format = workbook.add_format({'bold': True})
+            bold_format1 = workbook.add_format({'bold': True, 'font_color': 'red'})
+            italic_format = workbook.add_format({'italic': True, 'font_color': 'blue'})
             header_format = workbook.add_format({'bold': True, 'bg_color': '#DDEBF7'})
             
             # Lấy dữ liệu từ database
             departments = Department.objects.all().values('code', 'name')
             subject_groups = SubjectGroup.objects.all().values('code', 'name', 'department__code')
+            positions = Position.objects.all().values('name', 'description')
             
             row = 0
             
             # Section Khoa
             worksheet.write(row, 0, "DANH SÁCH ĐƠN VỊ CÓ SẴN", bold_format)
             row += 1
-            worksheet.write(row, 0, "Mã đơn vị", header_format)
-            worksheet.write(row, 1, "Tên đơn vị", header_format)
+            worksheet.write(row, 0, "TT", header_format)
+            worksheet.write(row, 1, "Mã đơn vị", header_format)
+            worksheet.write(row, 2, "Tên đơn vị", header_format)
             row += 1
-            
+            tt_department=1
             for department in departments:
-                worksheet.write(row, 0, department['code'])
-                worksheet.write(row, 1, department['name'])
+                worksheet.write(row, 0, tt_department)
+                worksheet.write(row, 1, department['code'])
+                worksheet.write(row, 2, department['name'])
                 row += 1
-                
+                tt_department += 1
             row += 2
             
             # Section Tổ bộ môn
             worksheet.write(row, 0, "DANH SÁCH TỔ BỘ MÔN CÓ SẴN", bold_format)
             row += 1
-            worksheet.write(row, 0, "Mã tổ bộ môn", header_format)
-            worksheet.write(row, 1, "Tên tổ bộ môn", header_format)
-            worksheet.write(row, 2, "Mã khoa", header_format)
+            worksheet.write(row, 0, "TT", header_format)
+            worksheet.write(row, 1, "Mã tổ bộ môn", header_format)
+            worksheet.write(row, 2, "Tên tổ bộ môn", header_format)
+            worksheet.write(row, 3, "Mã khoa", header_format)
             row += 1
-            
+            tt_subject_group=1
             for subject_group in subject_groups:
-                worksheet.write(row, 0, subject_group['code'])
-                worksheet.write(row, 1, subject_group['name'])
-                worksheet.write(row, 2, subject_group['department__code'] or '')
+                worksheet.write(row, 0, tt_subject_group)
+                worksheet.write(row, 1, subject_group['code'])
+                worksheet.write(row, 2, subject_group['name'])
+                worksheet.write(row, 3, subject_group['department__code'] or '')
                 row += 1
-                
+                tt_subject_group += 1
             row += 2
             
             # Section Chức vụ
             worksheet.write(row, 0, "DANH SÁCH CHỨC VỤ CÓ SẴN", bold_format)
             row += 1
-            positions = Instructor.objects.values_list('position', flat=True).distinct()
+            worksheet.write(row, 0, 'TT', header_format)
+            worksheet.write(row, 1, 'Tên chức vụ', header_format)
+            worksheet.write(row, 2, 'Mô tả', header_format)
+            row += 1
+            tt_position=1
             for position in positions:
-                worksheet.write(row, 0, position)
+                worksheet.write(row, 0, tt_position)
+                worksheet.write(row, 1, position['name'])
+                worksheet.write(row, 2, position['description'])
                 row += 1
+                tt_position += 1
+            row += 2
             
             # Thêm ghi chú
-            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format)
+            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format1)
             row += 1
             
             notes = [
@@ -2041,7 +2355,7 @@ class ImportTeachingDataView(View):
             ]
             
             for note in notes:
-                worksheet.write(row, 0, note)
+                worksheet.write(row, 0, note, italic_format)
                 row += 1
                 
         except Exception as e:
@@ -2054,6 +2368,8 @@ class ImportTeachingDataView(View):
             worksheet = workbook.add_worksheet('Hướng dẫn nhập liệu')
             
             bold_format = workbook.add_format({'bold': True})
+            bold_format1 = workbook.add_format({'bold': True, 'font_color': 'red'})
+            italic_format = workbook.add_format({'italic': True, 'font_color': 'blue'})
             header_format = workbook.add_format({'bold': True, 'bg_color': '#FCE4D6'})
             
             # Lấy dữ liệu
@@ -2067,37 +2383,41 @@ class ImportTeachingDataView(View):
             # Section Giảng viên
             worksheet.write(row, 0, "DANH SÁCH GIẢNG VIÊN", bold_format)
             row += 1
-            worksheet.write(row, 0, "Mã giảng viên", header_format)
-            worksheet.write(row, 1, "Họ tên", header_format)
-            worksheet.write(row, 2, "Khoa", header_format)
+            worksheet.write(row, 0, "TT", header_format)
+            worksheet.write(row, 1, "Mã giảng viên", header_format)
+            worksheet.write(row, 2, "Họ tên", header_format)
+            worksheet.write(row, 3, "Khoa", header_format)
             row += 1
-            
+            tt_instructor=1
             for instructor in instructors:
-                worksheet.write(row, 0, instructor['code'])
-                worksheet.write(row, 1, instructor['full_name'])
-                worksheet.write(row, 2, instructor['department__name'] or '')
+                worksheet.write(row, 0, tt_instructor)
+                worksheet.write(row, 1, instructor['code'])
+                worksheet.write(row, 2, instructor['full_name'])
+                worksheet.write(row, 3, instructor['department__name'] or '')
                 row += 1
-                
+                tt_instructor += 1
             row += 2
             
             # Section Môn học
             worksheet.write(row, 0, "DANH SÁCH MÔN HỌC", bold_format)
             row += 1
-            worksheet.write(row, 0, "Mã môn học", header_format)
-            worksheet.write(row, 1, "Tên môn học", header_format)
-            worksheet.write(row, 2, "Mã chương trình", header_format)
+            worksheet.write(row, 0, "TT", header_format)
+            worksheet.write(row, 1, "Mã môn học", header_format)
+            worksheet.write(row, 2, "Tên môn học", header_format)
+            worksheet.write(row, 3, "Mã chương trình", header_format)
             row += 1
-            
+            tt_subject=1
             for subject in curriculum_subjects:
-                worksheet.write(row, 0, subject.code)
-                worksheet.write(row, 1, subject.name)
-                worksheet.write(row, 2, subject.curriculum.code if subject.curriculum else '')
+                worksheet.write(row, 0, tt_subject)
+                worksheet.write(row, 1, subject.code)
+                worksheet.write(row, 2, subject.name)
+                worksheet.write(row, 3, subject.curriculum.code if subject.curriculum else '')
                 row += 1
-                
+                tt_subject += 1
             row += 2
             
             # Thêm ghi chú
-            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format)
+            worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format1)
             row += 1
             
             notes = [
@@ -2111,7 +2431,7 @@ class ImportTeachingDataView(View):
             ]
             
             for note in notes:
-                worksheet.write(row, 0, note)
+                worksheet.write(row, 0, note, italic_format)
                 row += 1
                 
         except Exception as e:
@@ -2196,21 +2516,21 @@ class ImportTeachingDataView(View):
             'Tên lớp*': ['Lớp Công nghệ Thông tin 001', 'Lớp Công nghệ Thông tin 002', 'Lớp Công nghệ Thông tin 003'],
             'Mã chương trình*': ['CNTT_2023', 'CNTT_2023', 'CNTT_2023'],
             'Mã khóa học*': ['K2023', 'K2023', 'K2023'],
-            'Ngày bắt đầu': ['2023-09-01', '2023-09-01', '2023-09-01'],
-            'Ngày kết thúc': ['2027-06-30', '2027-06-30', '2027-06-30'],
+            'Ngày bắt đầu': ['01/9/2025', '01/9/2025', '01/9/2025'],
+            'Ngày kết thúc': ['30/6/2028', '30/6/2028', '30/6/2028'],
             'Là lớp ghép': ['Không', 'Không', 'Có'],
-            'Mã lớp ghép (nếu có)': ['', '', 'GHÉP001'],
-            'Mô tả': ['', '', 'Lớp ghép cho các môn chung']
+            'Mã lớp ghép (nếu có)': ['', '', 'G_GDCT_01'],
+            'Mô tả': ['', '', 'Lớp ghép môn Giáo dục Chính trị']
         }
         
     def get_combined_class_template(self):
         """Tạo template cho import lớp học ghép"""
         return {
-            'Mã lớp ghép*': ['GHÉP001', 'GHÉP002'],
-            'Tên lớp ghép*': ['Lớp ghép Công nghệ Thông tin', 'Lớp ghép Kỹ thuật phần mềm'],
-            'Mã chương trình*': ['CNTT_2023', 'KTPM_2023'],
-            'Mã các lớp thành phần*': ['DHTI001,DHTI002', 'DHTI003,DHTI004'],
-            'Mô tả': ['Lớp ghép cho các môn đại cương', 'Lớp ghép cho các môn chuyên ngành']
+            'Mã lớp ghép*': ['G_GDCT_01', 'G_KNM_02'],
+            'Tên lớp ghép*': ['Lớp ghép Giáo dục Chính trị', 'Lớp ghép GD Kỹ năng mềm'],
+            'Mã môn học*': ['GDCT_2025', 'GDKNM_2025'],
+            'Mã các lớp thành phần*': ['K21TV2; K7TA', 'K22TV3; K22TV4; K10TIN'],
+            'Mô tả': ['Lớp ghép cho các môn đại cương', 'Lớp ghép cho các môn chung']
         }
     
     def get_instructor_template(self):
@@ -2232,13 +2552,13 @@ class ImportTeachingDataView(View):
         return {
             'Mã giảng viên*': ['GV001', 'GV002', 'GV001'],
             'Mã môn học*': ['MH001', 'MH002', 'MH003'],
-            'Mã lớp*': ['DHTI001', 'DHTI002', 'GHÉP001'],
+            'Mã lớp*': ['K21TV1', 'K10TIN', 'G_GDCT_01'],
             'Loại lớp*': ['Thường', 'Thường', 'Ghép'],
             'Năm học*': ['2023-2024', '2023-2024', '2023-2024'],
             'Học kỳ*': [1, 1, 2],
             'Là giảng viên GD chính*': ['Có', 'Có', 'Không'],
             'Số lượng sinh viên': [40, 35, 80],
-            'Số giờ giảng dạy': [45, 60, 30]
+            'Số giờ giảng dạy': [45, 75, 30]
         }
         
     def process_class_import(self, df, user, excel_file, sheet_name):
@@ -2380,7 +2700,7 @@ class ImportTeachingDataView(View):
             processed_data = []
                 
             # Kiểm tra cấu trúc file
-            required_columns = ['Mã lớp ghép*', 'Tên lớp ghép*', 'Mã chương trình*', 'Mã các lớp thành phần*']
+            required_columns = ['Mã lớp ghép*', 'Tên lớp ghép*', 'Mã môn học*', 'Mã các lớp thành phần*']
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 return {
@@ -2397,18 +2717,18 @@ class ImportTeachingDataView(View):
                     # Chuẩn hóa dữ liệu
                     code = str(row.get('Mã lớp ghép*')).strip()
                     name = str(row.get('Tên lớp ghép*')).strip()
-                    curriculum_code = str(row.get('Mã chương trình*')).strip()
+                    subject_code = str(row.get('Mã môn học*')).strip()
                     classes_codes_str = str(row.get('Mã các lớp thành phần*')).strip()
                         
-                    if not code or not name or not curriculum_code or not classes_codes_str:
+                    if not code or not name or not subject_code or not classes_codes_str:
                         errors.append(f"Dòng {index + 2}: Thiếu thông tin bắt buộc")
                         continue
                         
-                    # Tìm curriculum
+                    # Tìm môn học
                     try:
-                        curriculum = Curriculum.objects.get(code=curriculum_code)
-                    except Curriculum.DoesNotExist:
-                        errors.append(f"Dòng {index + 2}: Không tìm thấy chương trình với mã '{curriculum_code}'")
+                        subject = Subject.objects.get(code=subject_code)
+                    except Subject.DoesNotExist:
+                        errors.append(f"Dòng {index + 2}: Không tìm thấy môn học với mã '{subject_code}'")
                         continue
                         
                     # Xử lý các lớp thành phần
@@ -2434,7 +2754,7 @@ class ImportTeachingDataView(View):
                         code=code,
                         defaults={
                             'name': name,
-                            'curriculum': curriculum,
+                            'subject': subject,
                             'description': description
                         }
                     )
@@ -2450,7 +2770,8 @@ class ImportTeachingDataView(View):
                     processed_data.append({
                         'code': combined_class.code,
                         'name': combined_class.name,
-                        'curriculum': curriculum.name,
+                        'subject_code': subject.code,
+                        'subject': subject.name,
                         'classes_count': len(classes)
                     })
                         
@@ -2524,8 +2845,13 @@ class ImportTeachingDataView(View):
                     
                     # Xử lý chức vụ
                     position = str(row.get('Chức vụ', '')).strip()
+                    position_obj = None
                     if position in ['', 'nan']:
-                        position = None
+                        try:
+                            position_obj = Position.objects.get(name=position)
+                        except Position.DoesNotExist:
+                            errors.append(f"Dòng {index + 2}: Không tìm thấy chức vụ '{position}'")
+                            continue
                         
                     # Xử lý email
                     email = str(row.get('Email', '')).strip()
@@ -2570,7 +2896,7 @@ class ImportTeachingDataView(View):
                             'phone': phone,
                             'department': department,
                             'department_teacher': department_teacher,
-                            'position': position,
+                            'position': position_obj,
                             'subject_group': subject_group,
                             'is_active': is_active
                         }
@@ -2890,7 +3216,7 @@ def api_combined_class_detail(request, id):
                 'id': combined_class.id,
                 'code': combined_class.code,
                 'name': combined_class.name,
-                'curriculum_id': combined_class.curriculum.id if combined_class.curriculum else None,
+                'subject_id': combined_class.subject.id if combined_class.subject else None,
                 'description': combined_class.description,
                 'classes': [{'id': c.id, 'code': c.code, 'name': c.name} for c in combined_class.classes.all()]
             }
@@ -2913,11 +3239,11 @@ def api_update_combined_class(request, id):
                 combined_class.code = data['code']
             if 'name' in data:
                 combined_class.name = data['name']
-            if 'curriculum_id' in data:
+            if 'subject_id' in data:
                 try:
-                    combined_class.curriculum = Curriculum.objects.get(id=data['curriculum_id'])
-                except Curriculum.DoesNotExist:
-                    return JsonResponse({'status': 'error', 'message': 'Chương trình không tồn tại'})
+                    combined_class.subject = Subject.objects.get(id=data['subject_id'])
+                except Subject.DoesNotExist:
+                    return JsonResponse({'status': 'error', 'message': 'Môn học không tồn tại'})
             if 'description' in data:
                 combined_class.description = data['description'] if data['description'] else None
             

@@ -87,9 +87,9 @@ class ClassAdmin(admin.ModelAdmin):
 
 @admin.register(CombinedClass)
 class CombinedClassAdmin(admin.ModelAdmin):
-    list_display = ['code', 'name', 'curriculum', 'get_classes_count']
+    list_display = ['code', 'name', 'subject', 'get_classes_count']
     search_fields = ['code', 'name']
-    list_filter = ['curriculum']
+    list_filter = ['subject']
     filter_horizontal = ['classes']
     readonly_fields = ['created_at', 'updated_at']
     

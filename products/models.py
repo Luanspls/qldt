@@ -238,7 +238,7 @@ class Subject(models.Model):
     semester = models.IntegerField(
         null=True, 
         blank=True,
-        validators=[MinValueValidator(1), MaxValueValidator(12)],
+        validators=[MinValueValidator(1), MaxValueValidator(8)],
         verbose_name="Học kỳ mặc định"
     )
     
@@ -345,6 +345,20 @@ class SemesterAllocation(models.Model):
     def __str__(self):
         return f"{self.base_subject.code} - HK{self.semester} ({self.credits} tín chỉ)"
 
+class Position(models.Model):
+    name = models.CharField(max_length=100, unique=True, verbose_name="Tên chức vụ")
+    description = models.TextField(blank=True, null=True, verbose_name="Mô tả")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'positions'
+        verbose_name = 'Chức vụ'
+        verbose_name_plural = 'Các chức vụ'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
 
 class Instructor(models.Model):
     code = models.CharField(max_length=20, unique=True, verbose_name="Mã giảng viên")
@@ -368,7 +382,16 @@ class Instructor(models.Model):
         related_name="managed_instructors",
         verbose_name="Khoa quản lý giảng viên"
     )
-    position = models.CharField(max_length=100, blank=True, null=True, verbose_name="Chức vụ")
+    position = models.ForeignKey(
+        Position,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="instructors",
+        verbose_name="Chức vụ",
+        db_column="position_id"
+    )
+    
     subject_group = models.ForeignKey(
         SubjectGroup, 
         on_delete=models.SET_NULL, 
@@ -451,11 +474,19 @@ class CombinedClass(models.Model):
         related_name='combined_classes',
         verbose_name="Các lớp được ghép"
     )
-    curriculum = models.ForeignKey(
-        Curriculum,
+    # curriculum = models.ForeignKey(
+    #     Curriculum,
+    #     on_delete=models.CASCADE,
+    #     related_name='combined_classes',
+    #     verbose_name="Chương trình đào tạo"
+    # )
+    subject = models.ForeignKey(
+        Subject,
         on_delete=models.CASCADE,
         related_name='combined_classes',
-        verbose_name="Chương trình đào tạo"
+        verbose_name="Môn học",
+        db_column="subject_id",
+        null=True, blank=True
     )
     description = models.TextField(blank=True, null=True, verbose_name="Mô tả")
     created_at = models.DateTimeField(auto_now_add=True)
