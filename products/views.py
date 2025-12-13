@@ -1451,7 +1451,6 @@ def api_teaching_assignments(request):
         'combined_class'
     ).prefetch_related(
         'curriculum_subject__curriculum',
-        'curriculum_subject__course'
     )
     
     if instructor_id:
@@ -1463,7 +1462,7 @@ def api_teaching_assignments(request):
     if department_id:
         teaching_assignments = teaching_assignments.filter(
             Q(instructor__department_id=department_id) |
-            Q(curriculum_subject__subject__department_id=department_id)
+            Q(curriculum_subject__curriculum__department_id=department_id)
         )
     if class_id:
         teaching_assignments = teaching_assignments.filter(class_obj_id=class_id)
@@ -1502,9 +1501,15 @@ def api_teaching_assignments(request):
             'class_code': assignment.class_code,
         }
 
-        if curriculum:
-            assignment_data['curriculum_id'] = curriculum.id
-            assignment_data['curriculum_name'] = curriculum.name
+        # Lấy thông tin chương trình từ Subject
+        try:
+            if assignment.curriculum_subject and assignment.curriculum_subject.curriculum:
+                assignment_data['curriculum_id'] = assignment.curriculum_subject.curriculum.id
+                assignment_data['curriculum_name'] = assignment.curriculum_subject.curriculum.name
+        except AttributeError as e:
+            print(f"Error accessing curriculum for assignment {assignment.id}: {e}")
+            assignment_data['curriculum_id'] = None
+            assignment_data['curriculum_name'] = 'N/A'
             
         # Thêm thông tin lớp học cụ thể
         if assignment.class_obj:
@@ -1677,7 +1682,7 @@ class TeachingManagementView(View):
 @csrf_exempt
 def api_instructors(request):
     """API lấy danh sách giảng viên"""
-    instructors = Instructor.objects.select_related('department', 'subject_group', 'position')
+    instructors = Instructor.objects.select_related('department', 'subject_group', 'position', 'department_of_teacher_management')
      # Áp dụng bộ lọc nếu có
     department_id = request.GET.get('department_id')
     if department_id:
@@ -1700,8 +1705,44 @@ def api_instructors(request):
         # Chuyển đổi từ string sang boolean
         is_active_bool = is_active.lower() == 'true'
         instructors = instructors.filter(is_active=is_active_bool)
-    instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'position_id', 'department_id', 'department_of_teacher_management_id', 'subject_group_id', 'is_active')
-    return JsonResponse(list(instructors_data), safe=False)
+    # instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'position_id', 'department_id', 'department_of_teacher_management_id', 'subject_group_id', 'is_active')
+    # Tạo danh sách dữ liệu với thông tin đầy đủ
+    instructors_data = []
+    for instructor in instructors:
+        instructor_data = {
+            'id': instructor.id,
+            'code': instructor.code,
+            'full_name': instructor.full_name,
+            'email': instructor.email,
+            'phone': instructor.phone,
+            'position_id': instructor.position_id,
+            'position': {
+                'id': instructor.position.id if instructor.position else None,
+                'name': instructor.position.name if instructor.position else None,
+                'code': None,  # Position không có code trong model của bạn
+            } if instructor.position else None,
+            'department_id': instructor.department_id,
+            'department': {
+                'id': instructor.department.id if instructor.department else None,
+                'name': instructor.department.name if instructor.department else None,
+                'code': instructor.department.code if instructor.department else None,
+            } if instructor.department else None,
+            'department_of_teacher_management_id': instructor.department_of_teacher_management_id,
+            'department_of_teacher_management': {
+                'id': instructor.department_of_teacher_management.id if instructor.department_of_teacher_management else None,
+                'name': instructor.department_of_teacher_management.name if instructor.department_of_teacher_management else None,
+                'code': instructor.department_of_teacher_management.code if instructor.department_of_teacher_management else None,
+            } if instructor.department_of_teacher_management else None,
+            'subject_group_id': instructor.subject_group_id,
+            'subject_group': {
+                'id': instructor.subject_group.id if instructor.subject_group else None,
+                'name': instructor.subject_group.name if instructor.subject_group else None,
+                'code': instructor.subject_group.code if instructor.subject_group else None,
+            } if instructor.subject_group else None,
+            'is_active': instructor.is_active,
+        }
+        instructors_data.append(instructor_data)
+    return JsonResponse(instructors_data, safe=False)
 
 @csrf_exempt
 def api_create_class(request):
