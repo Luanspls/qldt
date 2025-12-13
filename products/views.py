@@ -1225,6 +1225,12 @@ def api_all_subjects(request):
     return JsonResponse(list(subjects), safe=False)
 
 @csrf_exempt
+def api_positions(request):
+    """API lấy tất cả chức vụ (cho dropdown chọn chức vụ có sẵn)"""
+    positions = Position.objects.all().values('id', 'name', 'description')
+    return JsonResponse(list(positions), safe=False)
+
+@csrf_exempt
 def api_create_subject(request):
     """API tạo môn học mới"""
     if request.method == 'POST':
