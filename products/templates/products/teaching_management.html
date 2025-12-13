@@ -887,10 +887,10 @@
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Chức vụ</label>
-                        <input type="text" name="position_id" id="position_id"
-                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                            placeholder="Vd: Trưởng Khoa"
-                            required>
+                        <select name="position_id" id="position_id"
+                            	class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+							<option value="">-- Chọn chức vụ --</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -2193,12 +2193,12 @@
             const data = {
                 code: formData.get('code'),
                 name: formData.get('name'),
-                curriculum_id: formData.get('curriculum_id'),
+                subject_id: formData.get('subject_id'),
                 classes: Array.from(formData.getAll('classes')).map(id => parseInt(id))
             };
 
 			// Validate
-            if (!data.code || !data.name || !data.curriculum_id || data.classes.length === 0) {
+            if (!data.code || !data.name || !data.subject_id || data.classes.length === 0) {
                 alert('Vui lòng điền đầy đủ các trường bắt buộc');
 				isSubmitting = false;
                 return;
@@ -2272,6 +2272,7 @@
                 phone: formData.get('phone') || null,
                 department_id: formData.get('department_id') || null,
                 department_of_teacher_management_id: formData.get('department_teacher_id') || null,
+				position_id: formData.get('position_id') || null,
                 subject_group_id: formData.get('subject_group_id') || null,
                 is_active: formData.get('is_active') === 'on'
             };
@@ -2624,7 +2625,6 @@
             			const classData = data.data;
         				document.querySelector('#form-them-lop-ghep input[name="code"]').value = classData.code;
         				document.querySelector('#form-them-lop-ghep input[name="name"]').value = classData.name;
-        				// document.querySelector('#form-them-lop-ghep select[name="curriculum_id"]').value = classData.curriculum_id;
         				document.querySelector('#form-them-lop-ghep textarea[name="description"]').value = classData.description || '';
             
         				// Điền các lớp thành phần
@@ -2640,8 +2640,10 @@
                 			setTimeout(() => {
                     			const classesSelect = $('#classes');
 								const curriculumSelect = $('select[name="curriculum_id"]');
+								const subjectSelect = $('select[name="subject_id"]');
                     
                 				curriculumSelect.val(classData.curriculum_id || '').trigger('change');
+								subjectSelect.val(classData.subject_id || '').trigger('change');
 
                     			if (classesSelect.length) {
                         			classesSelect.val(classIds).trigger('change');
@@ -2676,7 +2678,7 @@
 			const data = {
     			code: formData.get('code'),
     			name: formData.get('name'),
-    			curriculum_id: formData.get('curriculum_id'),
+    			subject_id: formData.get('subject_id'),
     			classes: Array.from(formData.getAll('classes')).map(id => parseInt(id))
 			};
 
@@ -2765,7 +2767,6 @@
         				document.querySelector('#form-them-giang-vien input[name="full_name"]').value = instructorData.full_name;
         				document.querySelector('#form-them-giang-vien input[name="email"]').value = instructorData.email || '';
         				document.querySelector('#form-them-giang-vien input[name="phone"]').value = instructorData.phone || '';
-                        document.querySelector('#form-them-giang-vien input[name="position_id"]').value = instructorData.position || '';
         				document.querySelector('#form-them-giang-vien input[name="is_active"]').checked = instructorData.is_active;
 
 						// Cập nhật Select2
@@ -2773,10 +2774,12 @@
 							const departmentSelect = $('select[name="department_id"]');
                             const departmentTeacherSelect = $('select[name="department_teacher_id"]');
                 			const subjectGroupSelect = $('select[name="subject_group_id"]');
+							const positionSelect = $('select[name="position_id"]');
                     
                 			departmentSelect.val(instructorData.department_id || '').trigger('change');
                             departmentTeacherSelect.val(instructorData.department_teacher_id || '').trigger('change');
                 			subjectGroupSelect.val(instructorData.subject_group_id || '').trigger('change');
+							positionSelect.val(instructorData.position_id || '').trigger('change');
                 			
                             $('#modal-them-giang-vien select').trigger('change.select2');
             			}, 500);
@@ -2919,9 +2922,6 @@
 						document.querySelector('#form-them-phan-cong input[name="is_main_instructor"]').checked = assignmentData.is_main_instructor;
 						document.querySelector('#form-them-phan-cong input[name="student_count"]').value = assignmentData.student_count;
 						document.querySelector('#form-them-phan-cong input[name="teaching_hours"]').value = assignmentData.teaching_hours;
-						//document.querySelector('#form-them-phan-cong select[name="class_type"]').dispatchEvent(new Event('change'));
-
-						
 						
 						setTimeout(() => {
 							// Đặt giá trị cho dropdowns
@@ -3144,12 +3144,14 @@
             const subjectId = document.getElementById('filter-combined-subject').value;
             
             let url = '/api/combined-classes/';
-            if (curriculumId) {
-                url += `?curriculum_id=${curriculumId}`;
-            }
-            if (subjectId) {
-                url += curriculumId ? `&subject_id=${subjectId}` : `?subject_id=${subjectId}`;
-            }
+			const params = [];
+            
+            if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
+            if (subjectId) params.push(`subject_id=${subjectId}`);
+			
+			if (params.length > 0) {
+				url += '?' + params.join('&');
+			}
             
             fetch(url)
                 .then(response => {
@@ -3210,8 +3212,10 @@
             if (departmentTeacherId) params.push(`department_of_teacher_management_id=${departmentTeacherId}`);
             if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
             if (status) params.push(`is_active=${status}`);
-            
-            url += '?' + params.join('&');
+
+			if (params.length > 0) {
+            	url += '?' + params.join('&');
+			}
             
             fetch(url)
                 .then(response => {
