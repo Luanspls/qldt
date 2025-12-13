@@ -1152,6 +1152,7 @@
         let allSubjects = [];
         let allDepartments = [];
         let allDepartmentTeachers = [];
+		let allPositions = [];
         let allCourses = [];
         let allClasses = [];
         let allCombinedClasses = [];
@@ -1221,7 +1222,9 @@
                 loadSelect2Data('/api/courses/', 'filter-class-course', 'name', ['code', 'name']),
                 loadSelect2Data('/api/departments/', 'filter-instructor-department', 'name', ['code', 'name']),
                 loadSelect2Data('/api/departments/', 'filter-instructor-department-management', 'name', ['code', 'name']),
-                loadSelect2Data('/api/subject-groups/', 'filter-instructor-subject-group', 'name', ['code', 'name'])
+                loadSelect2Data('/api/subject-groups/', 'filter-instructor-subject-group', 'name', ['code', 'name']),
+				loadSelect2Data('/api/classes/', 'filter-class-assignment', 'name', ['code', 'name']),
+				loadSelect2Data('/api/combined-classes/', 'filter-combined-class-assignment', 'name', ['code', 'name']),
             ];
             
              // Tạo promises cho tất cả API calls
@@ -3242,11 +3245,13 @@
 						const departmentName = getDepartmentName(instructorItem.department || instructorItem.department_id);
                         const departmentTeacherName = getDepartmentName(instructorItem.department_of_teacher_management || instructorItem.department_of_teacher_management_id);
 						const subjectGroupName = getSubjectGroupName(instructorItem.subject_group || instructorItem.subject_group_id);
+						const positionName = getPositionName(instructorItem.position || instructorItem.position_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructorItem.code}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.full_name}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${departmentTeacherName || 'N/A'}</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${positionName || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.email || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${instructorItem.phone || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${departmentName || 'N/A'}</td>
@@ -3512,6 +3517,20 @@
             return 'N/A';
 		}
 
+		function getPositionName(position) {
+			if (!position) return 'N/A';
+    
+			if (typeof position === 'object' && position !== null && position.code) {
+    			return position.name || position.code || 'N/A';
+			}
+    
+			if (allPositions && allPositions.length > 0) {
+                const positionObj = allPositions.find(sg => sg.id == position);
+                return positionObj ? (positionObj.name || positionObj.code || 'N/A') : 'N/A';
+            }
+            return 'N/A';
+		}
+		
         // Hàm lấy CSRF token
         function getCookie(name) {
             let cookieValue = null;
@@ -3630,6 +3649,8 @@
             document.getElementById('filter-instructor').addEventListener('change', loadTeachingAssignmentsData);
             document.getElementById('filter-curriculum').addEventListener('change', loadTeachingAssignmentsData);
             document.getElementById('filter-class-type-assignment').addEventListener('change', loadTeachingAssignmentsData);
+			document.getElementById('filter-class-assignment').addEventListener('change', loadTeachingAssignmentsData);
+			document.getElementById('filter-combined-class-assignment').addEventListener('change', loadTeachingAssignmentsData);
             document.getElementById('filter-academic-year').addEventListener('input', loadTeachingAssignmentsData);
 
             // Xử lý modal lớp học ghép
