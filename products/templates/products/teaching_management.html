@@ -3276,10 +3276,10 @@
                     
                     data.forEach((instructorItem, index) => {
                         const row = document.createElement('tr');
-						const departmentName = instructorItem.department ? instructorItem.department.name : 'N/A';
-		                const departmentTeacherName = instructorItem.department_of_teacher_management ? instructorItem.department_of_teacher_management.name : 'N/A';
-		                const subjectGroupName = instructorItem.subject_group ? instructorItem.subject_group.name : 'N/A';
-		                const positionName = instructorItem.position ? instructorItem.position.name : 'N/A';
+						const departmentName = instructorItem.department ? instructorItem.department_id : 'N/A';
+		                const departmentTeacherName = instructorItem.department_of_teacher_management ? instructorItem.department_of_teacher_management_id : 'N/A';
+		                const subjectGroupName = instructorItem.subject_group ? instructorItem.subject_group_id : 'N/A';
+		                const positionName = instructorItem.position ? instructorItem.position_id : 'N/A';
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructorItem.code}</td>
