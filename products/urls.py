@@ -39,7 +39,7 @@ urlpatterns = [
     path('api/teaching-statistics/', views.api_teaching_statistics, name='api_teaching_statistics'),
     path('api/instructors/', views.api_instructors, name='api_instructors'),
     path('api/instructors/create/', views.api_create_instructor, name='api_create_instructor'),
-    # path('api/curriculum-subjects/', views.api_curriculum_subjects, name='api_curriculum_subjects'),
+    path('api/positions/', views.api_positions, name='api_positions'),
     path('api/get-sheet-names/', views.api_get_sheet_names, name='api_get_sheet_names'),
 
     # API cho Lớp học
