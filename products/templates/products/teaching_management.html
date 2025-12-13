@@ -1759,20 +1759,20 @@
         }
 
         function populateCombinedClassModalDropdowns() {
-            const curriculumSelect = document.querySelector('#modal-them-lop-ghep select[name="curriculum_id"]');
+            const subjectSelect = document.querySelector('#modal-them-lop-ghep select[name="subject_id"]');
             const classesSelect = document.querySelector('#modal-them-lop-ghep select[name="classes"]');
 
-            if (curriculumSelect && allCurricula) {
-                curriculumSelect.innerHTML = '<option value="">-- Chọn chương trình --</option>';
-                if (allCurricula && allCurricula.length > 0) {
-                    allCurricula.forEach(curriculum => {
+            if (subjectSelect && alllSubjects) {
+                subjectSelect.innerHTML = '<option value="">-- Chọn môn học --</option>';
+                if (allSubjects && allSubjects.length > 0) {
+                    allSubjects.forEach(subject => {
                         const option = document.createElement('option');
-                        option.value = curriculum.id;
-                        option.textContent = `${curriculum.name} (${curriculum.academic_year})`;
-                        curriculumSelect.appendChild(option);
+                        option.value = subject.id;
+                        option.textContent = `${subject.name} (${subject.code)`;
+                        subjectSelect.appendChild(option);
                     });
 					// Khởi tạo Select2
-            		initializeSelect2ForElement(curriculumSelect);
+            		initializeSelect2ForElement(subjectSelect);
                 }
             }
 
@@ -1922,6 +1922,7 @@
             const departmentSelect = document.querySelector('#modal-them-giang-vien select[name="department_id"]');
             const departmentTeacherSelect = document.querySelector('#modal-them-giang-vien select[name="department_teacher_id"]');
             const subjectGroupSelect = document.querySelector('#modal-them-giang-vien select[name="subject_group_id"]');
+			const positionSelect = document.querySelector('#modal-them-giang-vien select[name="position_id"]');
 
 			// Điền khoa với tìm kiếm
             if (departmentSelect && allDepartments) {
@@ -1930,7 +1931,7 @@
                     allDepartments.forEach(department => {
                         const option = document.createElement('option');
                         option.value = department.id;
-                        option.textContent = `${department.code} ${department.name}`;
+                        option.textContent = `${department.name}`;
                         departmentSelect.appendChild(option);
                     });
 					initializeSelect2ForElement(departmentSelect);
@@ -1943,7 +1944,7 @@
                     allDepartmentTeachers.forEach(departmentTeacher => {
                         const option = document.createElement('option');
                         option.value = departmentTeacher.id;
-                        option.textContent = `${departmentTeacher.code} ${departmentTeacher.name}`;
+                        option.textContent = `${departmentTeacher.name}`;
                         departmentTeacherSelect.appendChild(option);
                     });
 					initializeSelect2ForElement(departmentTeacherSelect);
@@ -1957,13 +1958,26 @@
                     allSubjectGroups.forEach(subjectGroup => {
                         const option = document.createElement('option');
                         option.value = subjectGroup.id;
-                        option.textContent = `${subjectGroup.code} ${subjectGroup.name}`;
+                        option.textContent = `${subjectGroup.name}`;
                         subjectGroupSelect.appendChild(option);
                     });
 					initializeSelect2ForElement(subjectGroupSelect);
                 }
             }
 
+			// Điền chức vụ với tìm kiếm
+            if (positionSelect && allPositions) {
+                positionSelect.innerHTML = '<option value="">-- Chọn chức vụ --</option>';
+                if (allPositions && allPositions.length > 0) {
+                    allPositions.forEach(position => {
+                        const option = document.createElement('option');
+                        option.value = position.id;
+                        option.textContent = `${position.name}`;
+                        positionSelect.appendChild(option);
+                    });
+					initializeSelect2ForElement(positionSelect);
+                }
+            }
 		}
 
 		function initializeSelect2ForElement(element) {
@@ -2660,10 +2674,8 @@
                 			// Đợi modal mở và Select2 khởi tạo
                 			setTimeout(() => {
                     			const classesSelect = $('#classes');
-								const curriculumSelect = $('select[name="curriculum_id"]');
 								const subjectSelect = $('select[name="subject_id"]');
                     
-                				curriculumSelect.val(classData.curriculum_id || '').trigger('change');
 								subjectSelect.val(classData.subject_id || '').trigger('change');
 
                     			if (classesSelect.length) {
@@ -2947,7 +2959,6 @@
 						setTimeout(() => {
 							// Đặt giá trị cho dropdowns
                 			const classTypeSelect = document.querySelector('#form-them-phan-cong select[name="class_type"]');
-							const curriculumSubjectSelect = $('select[name="curriculum_subject_id"]');
                 			const instructorSelect = document.querySelector('#form-them-phan-cong select[name="instructor_id"]');
 							const subjectSelect = document.querySelector('#form-them-phan-cong select[name="curriculum_subject_id"]');
 
