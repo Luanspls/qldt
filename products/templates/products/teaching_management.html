@@ -1215,10 +1215,10 @@
             // Tải danh sách cho các dropdown filter
             const loadPromises = [
                 loadSelect2Data('/api/instructors/', 'filter-instructor', 'full_name', ['code', 'full_name']),
-                loadSelect2Data('/api/curricula/', 'filter-class-curriculum', 'name', ['code', 'name', 'academic_year']),
-                loadSelect2Data('/api/curricula/', 'filter-combined-curriculum', 'name', ['code', 'name', 'academic_year']),
-                loadSelect2Data('/api/subject/', 'filter-combined-subject', 'name', ['code', 'name', 'curriculum_code', 'academic_year']),
-                loadSelect2Data('/api/curricula/', 'filter-curriculum', 'name', ['code', 'name', 'academic_year']),
+                loadSelect2Data('/api/curricula/', 'filter-class-curriculum', 'name', ['code', 'name']),
+                loadSelect2Data('/api/curricula/', 'filter-combined-curriculum', 'name', ['code', 'name']),
+                loadSelect2Data('/api/all-subjects/', 'filter-combined-subject', 'name', ['code', 'name']),
+                loadSelect2Data('/api/curricula/', 'filter-curriculum', 'name', ['code', 'name']),
                 loadSelect2Data('/api/courses/', 'filter-class-course', 'name', ['code', 'name']),
                 loadSelect2Data('/api/departments/', 'filter-instructor-department', 'name', ['code', 'name']),
                 loadSelect2Data('/api/departments/', 'filter-instructor-department-management', 'name', ['code', 'name']),
