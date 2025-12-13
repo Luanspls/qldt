@@ -1434,93 +1434,98 @@ def api_search_instructors(request):
 @csrf_exempt
 def api_teaching_assignments(request):
     """API lấy danh sách phân công giảng dạy với thông tin lớp học"""
-    instructor_id = request.GET.get('instructor_id')
-    curriculum_id = request.GET.get('curriculum_id')
-    subject_id = request.GET.get('subject_id')
-    department_id = request.GET.get('department_id')
-    class_id = request.GET.get('class_id')
-    combined_class_id = request.GET.get('combined_class_id')
-    academic_year = request.GET.get('academic_year')
-    semester = request.GET.get('semester')
-    class_type = request.GET.get('class_type')
-    
-    teaching_assignments = TeachingAssignment.objects.select_related(
-        'instructor', 
-        'curriculum_subject',
-        'class_obj',
-        'combined_class'
-    ).prefetch_related(
-        'curriculum_subject__curriculum',
-    )
-    
-    if instructor_id:
-        teaching_assignments = teaching_assignments.filter(instructor_id=instructor_id)
-    if curriculum_id:
-        teaching_assignments = teaching_assignments.filter(curriculum_subject__curriculum_id=curriculum_id)
-    if subject_id:
-        teaching_assignments = teaching_assignments.filter(curriculum_subject_id=subject_id)
-    if department_id:
-        teaching_assignments = teaching_assignments.filter(
-            Q(instructor__department_id=department_id) |
-            Q(curriculum_subject__curriculum__department_id=department_id)
-        )
-    if class_id:
-        teaching_assignments = teaching_assignments.filter(class_obj_id=class_id)
-    if combined_class_id:
-        teaching_assignments = teaching_assignments.filter(combined_class_id=combined_class_id)
-    if academic_year:
-        teaching_assignments = teaching_assignments.filter(academic_year=academic_year)
-    if semester:
-        teaching_assignments = teaching_assignments.filter(semester=semester)
-    if class_type:
-        if class_type == 'regular':
-            teaching_assignments = teaching_assignments.filter(class_obj__isnull=False)
-        elif class_type == 'combined':
-            teaching_assignments = teaching_assignments.filter(combined_class__isnull=False)
-    
-    assignments_data = []
-    for assignment in teaching_assignments:
-        curriculum = assignment.curriculum_subject.curriculum if hasattr(assignment.curriculum_subject, 'curriculum') else None
-        assignment_data = {
-            'id': assignment.id,
-            'instructor_id': assignment.instructor.id,
-            'instructor_name': assignment.instructor.full_name,
-            'instructor_code': assignment.instructor.code,
-            'subject_id': assignment.curriculum_subject.id,
-            'subject_code': assignment.curriculum_subject.code,
-            'subject_name': assignment.curriculum_subject.name,
-            # 'curriculum_id': assignment.curriculum_subject.curriculum.id,
-            # 'curriculum_name': assignment.curriculum_subject.curriculum.name,
-            'academic_year': assignment.academic_year,
-            'semester': assignment.semester,
-            'is_main_instructor': assignment.is_main_instructor,
-            'student_count': assignment.student_count,
-            'teaching_hours': assignment.teaching_hours,
-            'class_type': assignment.class_type,
-            'class_name': assignment.class_name,
-            'class_code': assignment.class_code,
-        }
-
-        # Lấy thông tin chương trình từ Subject
-        try:
-            if assignment.curriculum_subject and assignment.curriculum_subject.curriculum:
-                assignment_data['curriculum_id'] = assignment.curriculum_subject.curriculum.id
-                assignment_data['curriculum_name'] = assignment.curriculum_subject.curriculum.name
-        except AttributeError as e:
-            print(f"Error accessing curriculum for assignment {assignment.id}: {e}")
-            assignment_data['curriculum_id'] = None
-            assignment_data['curriculum_name'] = 'N/A'
-            
-        # Thêm thông tin lớp học cụ thể
-        if assignment.class_obj:
-            assignment_data['class_obj_id'] = assignment.class_obj.id
-            assignment_data['class_is_combined'] = assignment.class_obj.is_combined
-        elif assignment.combined_class:
-            assignment_data['combined_class_id'] = assignment.combined_class.id
+    try:
+        instructor_id = request.GET.get('instructor_id')
+        curriculum_id = request.GET.get('curriculum_id')
+        subject_id = request.GET.get('subject_id')
+        department_id = request.GET.get('department_id')
+        class_id = request.GET.get('class_id')
+        combined_class_id = request.GET.get('combined_class_id')
+        academic_year = request.GET.get('academic_year')
+        semester = request.GET.get('semester')
+        class_type = request.GET.get('class_type')
         
-        assignments_data.append(assignment_data)
-    
-    return JsonResponse(assignments_data, safe=False)
+        teaching_assignments = TeachingAssignment.objects.select_related(
+            'instructor', 
+            'curriculum_subject',
+            'class_obj',
+            'combined_class'
+        ).prefetch_related(
+            'curriculum_subject__curriculum',
+        )
+        
+        if instructor_id:
+            teaching_assignments = teaching_assignments.filter(instructor_id=instructor_id)
+        if curriculum_id:
+            teaching_assignments = teaching_assignments.filter(curriculum_subject__curriculum_id=curriculum_id)
+        if subject_id:
+            teaching_assignments = teaching_assignments.filter(curriculum_subject_id=subject_id)
+        if department_id:
+            teaching_assignments = teaching_assignments.filter(
+                Q(instructor__department_id=department_id) |
+                Q(curriculum_subject__curriculum__department_id=department_id)
+            )
+        if class_id:
+            teaching_assignments = teaching_assignments.filter(class_obj_id=class_id)
+        if combined_class_id:
+            teaching_assignments = teaching_assignments.filter(combined_class_id=combined_class_id)
+        if academic_year:
+            teaching_assignments = teaching_assignments.filter(academic_year=academic_year)
+        if semester:
+            teaching_assignments = teaching_assignments.filter(semester=semester)
+        if class_type:
+            if class_type == 'regular':
+                teaching_assignments = teaching_assignments.filter(class_obj__isnull=False)
+            elif class_type == 'combined':
+                teaching_assignments = teaching_assignments.filter(combined_class__isnull=False)
+        
+        assignments_data = []
+        for assignment in teaching_assignments:
+            assignment_data = {
+                'id': assignment.id,
+                'instructor_id': assignment.instructor.id,
+                'instructor_name': assignment.instructor.full_name,
+                'instructor_code': assignment.instructor.code,
+                'academic_year': assignment.academic_year,
+                'semester': assignment.semester,
+                'is_main_instructor': assignment.is_main_instructor,
+                'student_count': assignment.student_count,
+                'teaching_hours': assignment.teaching_hours,
+            }
+            # Thêm thông tin môn học
+            if assignment.curriculum_subject:
+                assignment_data.update({
+                    'subject_id': assignment.curriculum_subject.id,
+                    'subject_code': assignment.curriculum_subject.code,
+                    'subject_name': assignment.curriculum_subject.name,
+                })
+            
+            # Thêm thông tin lớp học
+            if assignment.class_obj:
+                assignment_data.update({
+                    'class_type': 'regular',
+                    'class_name': assignment.class_obj.name,
+                    'class_code': assignment.class_obj.code,
+                    'class_obj_id': assignment.class_obj.id,
+                })
+            elif assignment.combined_class:
+                assignment_data.update({
+                    'class_type': 'combined',
+                    'class_name': assignment.combined_class.name,
+                    'class_code': assignment.combined_class.code,
+                    'combined_class_id': assignment.combined_class.id,
+                })
+            
+            assignments_data.append(assignment_data)
+        return JsonResponse(assignments_data, safe=False)
+    except Exception as e:
+        # Trả về lỗi dạng JSON thay vì HTML
+        error_data = {
+            'status': 'error',
+            'message': str(e),
+            'traceback': traceback.format_exc()
+        }
+        return JsonResponse(error_data, status=500, safe=False)
 
 @csrf_exempt
 def api_teaching_statistics(request):
@@ -1682,67 +1687,85 @@ class TeachingManagementView(View):
 @csrf_exempt
 def api_instructors(request):
     """API lấy danh sách giảng viên"""
-    instructors = Instructor.objects.select_related('department', 'subject_group', 'position', 'department_of_teacher_management')
-     # Áp dụng bộ lọc nếu có
-    department_id = request.GET.get('department_id')
-    if department_id:
-        instructors = instructors.filter(department_id=department_id)
-    
-    department_of_teacher_management_id = request.GET.get('department_of_teacher_management_id')
-    if department_of_teacher_management_id:
-        instructors = instructors.filter(department_of_teacher_management_id=department_of_teacher_management_id)
-    
-    position_id = request.GET.get('position_id')
-    if position_id:
-        instructors = instructors.filter(position_id=position_id)
-    
-    subject_group_id = request.GET.get('subject_group_id')
-    if subject_group_id:
-        instructors = instructors.filter(subject_group_id=subject_group_id)
-    
-    is_active = request.GET.get('is_active')
-    if is_active is not None:
-        # Chuyển đổi từ string sang boolean
-        is_active_bool = is_active.lower() == 'true'
-        instructors = instructors.filter(is_active=is_active_bool)
-    # instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'position_id', 'department_id', 'department_of_teacher_management_id', 'subject_group_id', 'is_active')
-    # Tạo danh sách dữ liệu với thông tin đầy đủ
-    instructors_data = []
-    for instructor in instructors:
-        instructor_data = {
-            'id': instructor.id,
-            'code': instructor.code,
-            'full_name': instructor.full_name,
-            'email': instructor.email,
-            'phone': instructor.phone,
-            'position_id': instructor.position_id,
-            'position': {
-                'id': instructor.position.id if instructor.position else None,
-                'name': instructor.position.name if instructor.position else None,
-                'code': None,  # Position không có code trong model của bạn
-            } if instructor.position else None,
-            'department_id': instructor.department_id,
-            'department': {
-                'id': instructor.department.id if instructor.department else None,
-                'name': instructor.department.name if instructor.department else None,
-                'code': instructor.department.code if instructor.department else None,
-            } if instructor.department else None,
-            'department_of_teacher_management_id': instructor.department_of_teacher_management_id,
-            'department_of_teacher_management': {
-                'id': instructor.department_of_teacher_management.id if instructor.department_of_teacher_management else None,
-                'name': instructor.department_of_teacher_management.name if instructor.department_of_teacher_management else None,
-                'code': instructor.department_of_teacher_management.code if instructor.department_of_teacher_management else None,
-            } if instructor.department_of_teacher_management else None,
-            'subject_group_id': instructor.subject_group_id,
-            'subject_group': {
-                'id': instructor.subject_group.id if instructor.subject_group else None,
-                'name': instructor.subject_group.name if instructor.subject_group else None,
-                'code': instructor.subject_group.code if instructor.subject_group else None,
-            } if instructor.subject_group else None,
-            'is_active': instructor.is_active,
+    try:
+        instructors = Instructor.objects.select_related('department', 'subject_group', 'position', 'department_of_teacher_management')
+         # Áp dụng bộ lọc nếu có
+        department_id = request.GET.get('department_id')
+        if department_id:
+            instructors = instructors.filter(department_id=department_id)
+        
+        department_of_teacher_management_id = request.GET.get('department_of_teacher_management_id')
+        if department_of_teacher_management_id:
+            instructors = instructors.filter(department_of_teacher_management_id=department_of_teacher_management_id)
+        
+        position_id = request.GET.get('position_id')
+        if position_id:
+            instructors = instructors.filter(position_id=position_id)
+        
+        subject_group_id = request.GET.get('subject_group_id')
+        if subject_group_id:
+            instructors = instructors.filter(subject_group_id=subject_group_id)
+        
+        is_active = request.GET.get('is_active')
+        if is_active is not None:
+            # Chuyển đổi từ string sang boolean
+            is_active_bool = is_active.lower() == 'true'
+            instructors = instructors.filter(is_active=is_active_bool)
+            
+        # instructors_data = instructors.values('id', 'code', 'full_name', 'email', 'phone', 'position_id', 'department_id', 'department_of_teacher_management_id', 'subject_group_id', 'is_active')
+        # Tạo danh sách dữ liệu với thông tin đầy đủ
+        instructors_data = []
+        for instructor in instructors:
+            instructor_data = {
+                'id': instructor.id,
+                'code': instructor.code,
+                'full_name': instructor.full_name,
+                'email': instructor.email,
+                'phone': instructor.phone,
+                'is_active': instructor.is_active,
+                'position_id': instructor.position_id,
+            }
+            # Thêm thông tin quan hệ nếu có
+            if instructor.position:
+                instructor_data['position_id'] = instructor.position.id
+                instructor_data['position'] = {
+                    'id': instructor.position.id,
+                    'name': instructor.position.name,
+                }
+            
+            if instructor.department:
+                instructor_data['department_id'] = instructor.department.id
+                instructor_data['department'] = {
+                    'id': instructor.department.id,
+                    'name': instructor.department.name,
+                    'code': instructor.department.code,
+                }
+            
+            if instructor.department_of_teacher_management:
+                instructor_data['department_of_teacher_management_id'] = instructor.department_of_teacher_management.id
+                instructor_data['department_of_teacher_management'] = {
+                    'id': instructor.department_of_teacher_management.id,
+                    'name': instructor.department_of_teacher_management.name,
+                    'code': instructor.department_of_teacher_management.code,
+                }
+            
+            if instructor.subject_group:
+                instructor_data['subject_group_id'] = instructor.subject_group.id
+                instructor_data['subject_group'] = {
+                    'id': instructor.subject_group.id,
+                    'name': instructor.subject_group.name,
+                    'code': instructor.subject_group.code,
+                }
+            instructors_data.append(instructor_data)
+        return JsonResponse(instructors_data, safe=False)
+    except Exception as e:
+        # Trả về lỗi dạng JSON thay vì HTML
+        error_data = {
+            'status': 'error',
+            'message': str(e),
+            'traceback': traceback.format_exc()
         }
-        instructors_data.append(instructor_data)
-    return JsonResponse(instructors_data, safe=False)
+        return JsonResponse(error_data, status=500, safe=False)
 
 @csrf_exempt
 def api_create_class(request):
