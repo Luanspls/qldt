@@ -1221,7 +1221,7 @@ def serialize_curriculum_data(data):
 @csrf_exempt
 def api_all_subjects(request):
     """API lấy tất cả môn học (cho dropdown chọn môn học có sẵn)"""
-    subjects = Subject.objects.all().values('id', 'code', 'name', 'department__name')
+    subjects = Subject.objects.all().values('id', 'code', 'name', 'curriculum__code', 'curriculum__name', 'course__code', 'semester')
     return JsonResponse(list(subjects), safe=False)
 
 @csrf_exempt
