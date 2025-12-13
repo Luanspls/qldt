@@ -553,6 +553,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã GV</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ và tên</th>
 								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đơn vị quản lý GV</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chức vụ</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số điện thoại</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khoa/Đơn vị chuyên môn</th>
@@ -3251,7 +3252,11 @@
             
             fetch(url)
                 .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
+                    if (!response.ok) {
+		                return response.json().then(errorData => {
+		                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+		                });
+		            }
                     return response.json();
 				}) 
                 .then(data => {
@@ -3271,10 +3276,10 @@
                     
                     data.forEach((instructorItem, index) => {
                         const row = document.createElement('tr');
-						const departmentName = getDepartmentName(instructorItem.department || instructorItem.department_id);
-                        const departmentTeacherName = getDepartmentName(instructorItem.department_of_teacher_management || instructorItem.department_of_teacher_management_id);
-						const subjectGroupName = getSubjectGroupName(instructorItem.subject_group || instructorItem.subject_group_id);
-						const positionName = getPositionName(instructorItem.position || instructorItem.position_id);
+						const departmentName = instructorItem.department ? instructorItem.department.name : 'N/A';
+		                const departmentTeacherName = instructorItem.department_of_teacher_management ? instructorItem.department_of_teacher_management.name : 'N/A';
+		                const subjectGroupName = instructorItem.subject_group ? instructorItem.subject_group.name : 'N/A';
+		                const positionName = instructorItem.position ? instructorItem.position.name : 'N/A';
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructorItem.code}</td>
@@ -3298,7 +3303,17 @@
                         tbody.appendChild(row);
                     });
                 })
-                .catch(error => console.error('Error loading instructors:', error));
+                .catch(error => {
+		            console.error('Error loading instructors:', error);
+		            const tbody = document.getElementById('instructors-table-body');
+		            tbody.innerHTML = `
+		                <tr>
+		                    <td colspan="11" class="px-6 py-4 text-center text-red-500">
+		                        Lỗi tải dữ liệu: ${error.message}
+		                    </td>
+		                </tr>
+		            `;
+		        });
         }
 
         function loadTeachingAssignmentsData() {
