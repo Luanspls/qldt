@@ -3,7 +3,7 @@ from django.contrib import admin
 from .models import (
     Department, SubjectGroup, Major, Curriculum, SubjectType, 
     Subject, SemesterAllocation, Instructor, TeachingAssignment, 
-    Course, ImportHistory, Class, CombinedClass
+    Course, ImportHistory, Class, CombinedClass, Position
 )
 
 
@@ -77,6 +77,11 @@ class InstructorAdmin(admin.ModelAdmin):
     list_display = ['code', 'full_name', 'department', 'subject_group', 'is_active']
     search_fields = ['code', 'full_name']
     list_filter = ['department', 'subject_group', 'is_active']
+
+@admin.register(Position)
+class PositionAdmin(admin.ModelAdmin):
+    list_display = ['name', 'description', 'created_at']
+    search_fields = ['name']
 
 @admin.register(Class)
 class ClassAdmin(admin.ModelAdmin):
