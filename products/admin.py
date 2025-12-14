@@ -74,9 +74,9 @@ class SemesterAllocationAdmin(admin.ModelAdmin):
 
 @admin.register(Instructor)
 class InstructorAdmin(admin.ModelAdmin):
-    list_display = ['code', 'full_name', 'department', 'subject_group', 'is_active']
+    list_display = ['code', 'full_name', 'get_department', 'get_position', 'get_subject_group', 'is_active']
     search_fields = ['code', 'full_name']
-    list_filter = ['department', 'subject_group', 'is_active']
+    list_filter = ['department', 'subject_group', 'is_active', 'position']
 
     def get_department(self, obj):
         if obj.department:
@@ -101,7 +101,7 @@ class InstructorAdmin(admin.ModelAdmin):
 
 @admin.register(Position)
 class PositionAdmin(admin.ModelAdmin):
-    list_display = ['name', 'description', 'created_at']
+    list_display = ['name', 'description']
     search_fields = ['name']
 
 @admin.register(Class)
@@ -130,7 +130,7 @@ class TeachingAssignmentAdmin(admin.ModelAdmin):
         'get_class_info', 'academic_year', 'semester', 
         'is_main_instructor', 'student_count'
     ]
-    list_filter = ['academic_year', 'semester', 'is_main_instructor', 'class_obj', 'combined_class']
+    list_filter = ['academic_year', 'semester', 'is_main_instructor']
     search_fields = [
         'instructor__full_name', 
         'curriculum_subject__code', 
