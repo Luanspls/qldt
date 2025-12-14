@@ -519,38 +519,33 @@ class ImportExcelView(View):
             
             # Tạo file trong memory
             output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                workbook= writer.book
                 # Sheet chính với dữ liệu mẫu
                 df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
                 
                 # Format lại sheet dữ liệu mẫu, điều chỉnh độ rộng cột tự động theo nội dung cột
                 # Riêng cột 'Đơn vị chuyên môn' và 'Tổ bộ môn' đặt rộng hơn, nội dung của cột ngắt dòng tự động
                 worksheet_main = writer.sheets['Dữ liệu mẫu']
-                for column_cells in worksheet_main.columns:
-                    max_length = 0
-                    column = column_cells[0].column_letter  # Lấy chữ cái cột
-                    for cell in column_cells:
-                        try:
-                            if cell.value:
-                                max_length = max(max_length, len(str(cell.value)))
-                        except:
-                            pass
-                    adjusted_width = (max_length + 2)
-                    worksheet_main.column_dimensions[column].width = adjusted_width
-                    
-                    if cell.column_letter in ['P', 'Q', 'U']:  # Cột 'Đơn vị chuyên môn', 'Tổ bộ môn' và 'Mô tả môn học'
-                        worksheet_main.column_dimensions[column].width = max(adjusted_width, 30)
-                        for cell in column_cells:
-                            cell.alignment = cell.alignment.copy(wrap_text=True)
+                # Điều chỉnh độ rộng cột
+                for i, col in enumerate(df.columns):
+                    column_len = max(df[col].astype(str).str.len().max(), len(col)) + 2
+                    worksheet_main.set_column(i, i, column_len)
                 
-                # Thiết lập chế độ tự động lọc cho sheet dữ liệu mẫu
-                worksheet_main.auto_filter.ref = worksheet_main.dimensions
+                # Đặt độ rộng lớn hơn cho các cột đặc biệt
+                special_columns = {'P': 30, 'Q': 30, 'U': 40}  # Cột P, Q, U (Đơn vị, Tổ bộ môn, Mô tả)
+                for col_letter, width in special_columns.items():
+                    col_index = list(df.columns).index([col for col in df.columns if col_letter in df.columns][0])
+                    worksheet_main.set_column(col_index, col_index, width)
                 
-                # Thiết lập chế độ đóng băng hàng đầu tiên và cột D cho sheet dữ liệu mẫu
-                worksheet_main.freeze_panes = 'D2'
+                # Thiết lập bộ lọc tự động
+                worksheet_main.autofilter(0, 0, len(df), len(df.columns) - 1)
+                
+                # Đóng băng hàng đầu tiên và cột D
+                worksheet_main.freeze_panes(1, 3)  # Dòng 1, cột D
 
                 # Sheet hướng dẫn nhập liệu
-                workbook = writer.book
+                # workbook = writer.book
                 worksheet = workbook.add_worksheet('Hướng dẫn nhập liệu')
                 
                 # Định dạng
@@ -633,22 +628,72 @@ class ImportExcelView(View):
                 
                 # Thiết lập chế độ lấy danh sách từ sheet hướng dẫn cho các cột tương ứng trong sheet dữ liệu mẫu
                 # Lấy số dòng đã sử dụng trong sheet hướng dẫn
-                used_rows = row
-                worksheet_main.data_validation('P2:P1000', {
-                    'validate': 'list',
-                    'source': f"'Hướng dẫn nhập liệu'!$B$2:$B${used_rows - 8}",
-                    'input_message': 'Chọn đơn vị từ danh sách'
-                })
-                worksheet_main.data_validation('Q2:Q1000', {
-                    'validate': 'list',
-                    'source': f"'Hướng dẫn nhập liệu'!$B${used_rows - 7}:$B${used_rows - 2}",
-                    'input_message': 'Chọn bộ môn từ danh sách'
-                })
-                worksheet_main.data_validation('R2:R1000', {
-                    'validate': 'list',
-                    'source': f"'Hướng dẫn nhập liệu'!$B${used_rows - 5}:$B${used_rows - 1}",
-                    'input_message': 'Chọn loại môn từ danh sách'
-                })
+                # Lấy vị trí cột dựa trên tên cột
+                def get_column_index(column_name):
+                    for i, col in enumerate(df.columns):
+                        if column_name in str(col):
+                            return i
+                    return None
+                
+                # Data validation cho cột Đơn vị (P)
+                dept_col_index = get_column_index('Đơn vị')
+                if dept_col_index is not None:
+                    # Tạo danh sách đơn vị
+                    dept_list = [d['name'] for d in departments]
+                    # Chỉ thêm data validation nếu có dữ liệu
+                    if dept_list:
+                        # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
+                        dept_sheet = workbook.add_worksheet('DeptList')
+                        for i, dept in enumerate(dept_list):
+                            dept_sheet.write(i, 0, dept)
+                        
+                        # Tạo data validation
+                        worksheet.data_validation(1, dept_col_index, 1000, dept_col_index, {
+                            'validate': 'list',
+                            'source': f'=DeptList!$A$1:$A${len(dept_list)}'
+                        })
+                subgr_col_index = get_column_index('Bộ môn')
+                if subgr_col_index is not None:
+                    # Tạo danh sách Bộ môn
+                    subgr_list = [s['name'] for s in subject_groups]
+                    # Chỉ thêm data validation nếu có dữ liệu
+                    if subgr_list:
+                        # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
+                        subgr_sheet = workbook.add_worksheet('SubgrList')
+                        for i, subgr in enumerate(subgr_list):
+                            subgr_sheet.write(i, 0, subgr)
+                        
+                        # Tạo data validation
+                        worksheet.data_validation(1, subgr_col_index, 1000, subgr_col_index, {
+                            'validate': 'list',
+                            'source': f'=SubgrList!$A$1:$A${len(subgr_list)}'
+                        })
+                subtype_col_index = get_column_index('Loại môn')
+                if subtype_col_index is not None:
+                    # Tạo danh sách Bộ môn
+                    subtype_list = [st['name'] for st in subject_types]
+                    # Chỉ thêm data validation nếu có dữ liệu
+                    if subtype_list:
+                        # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
+                        subtype_sheet = workbook.add_worksheet('SubtpeList')
+                        for i, subtpe in enumerate(subtype_list):
+                            subtype_sheet.write(i, 0, subtpe)
+                        
+                        # Tạo data validation
+                        worksheet.data_validation(1, subtype_col_index, 1000, subtype_col_index, {
+                            'validate': 'list',
+                            'source': f'=SubtpeList!$A$1:$A${len(subtype_list)}'
+                        })
+                #worksheet_main.data_validation('Q2:Q1000', {
+                #    'validate': 'list',
+                #    'source': f"'Hướng dẫn nhập liệu'!$B${used_rows - 7}:$B${used_rows - 2}",
+                #    'input_message': 'Chọn bộ môn từ danh sách'
+                #})
+                #worksheet_main.data_validation('R2:R1000', {
+                #    'validate': 'list',
+                #    'source': f"'Hướng dẫn nhập liệu'!$B${used_rows - 5}:$B${used_rows - 1}",
+                #    'input_message': 'Chọn loại môn từ danh sách'
+                #})
                 
             output.seek(0)
             
