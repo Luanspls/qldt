@@ -648,7 +648,7 @@ class ImportExcelView(View):
                             dept_sheet.write(i, 0, dept)
                         
                         # Tạo data validation
-                        worksheet.data_validation(1, dept_col_index, 1000, dept_col_index, {
+                        worksheet_main.data_validation(1, dept_col_index, 1000, dept_col_index, {
                             'validate': 'list',
                             'source': f'=DeptList!$A$1:$A${len(dept_list)}'
                         })
@@ -664,7 +664,7 @@ class ImportExcelView(View):
                             subgr_sheet.write(i, 0, subgr)
                         
                         # Tạo data validation
-                        worksheet.data_validation(1, subgr_col_index, 1000, subgr_col_index, {
+                        worksheet_main.data_validation(1, subgr_col_index, 1000, subgr_col_index, {
                             'validate': 'list',
                             'source': f'=SubgrList!$A$1:$A${len(subgr_list)}'
                         })
@@ -680,7 +680,7 @@ class ImportExcelView(View):
                             subtype_sheet.write(i, 0, subtpe)
                         
                         # Tạo data validation
-                        worksheet.data_validation(1, subtype_col_index, 1000, subtype_col_index, {
+                        worksheet_main.data_validation(1, subtype_col_index, 1000, subtype_col_index, {
                             'validate': 'list',
                             'source': f'=SubtpeList!$A$1:$A${len(subtype_list)}'
                         })
