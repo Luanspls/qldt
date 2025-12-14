@@ -78,6 +78,27 @@ class InstructorAdmin(admin.ModelAdmin):
     search_fields = ['code', 'full_name']
     list_filter = ['department', 'subject_group', 'is_active']
 
+    def get_department(self, obj):
+        if obj.department:
+            return obj.department.name
+        return "N/A"
+    get_department.short_description = 'Khoa'
+    get_department.admin_order_field = 'department__name'
+    
+    def get_position(self, obj):
+        if obj.position:
+            return obj.position.name
+        return "N/A"
+    get_position.short_description = 'Chức vụ'
+    get_position.admin_order_field = 'position__name'
+    
+    def get_subject_group(self, obj):
+        if obj.subject_group:
+            return obj.subject_group.name
+        return "N/A"
+    get_subject_group.short_description = 'Tổ bộ môn'
+    get_subject_group.admin_order_field = 'subject_group__name'
+
 @admin.register(Position)
 class PositionAdmin(admin.ModelAdmin):
     list_display = ['name', 'description', 'created_at']
@@ -112,8 +133,8 @@ class TeachingAssignmentAdmin(admin.ModelAdmin):
     list_filter = ['academic_year', 'semester', 'is_main_instructor', 'class_obj', 'combined_class']
     search_fields = [
         'instructor__full_name', 
-        'curriculum_subject__subject__code', 
-        'curriculum_subject__subject__name',
+        'curriculum_subject__code', 
+        'curriculum_subject__name',
         'class_obj__code',
         'combined_class__code'
     ]
