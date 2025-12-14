@@ -79,23 +79,17 @@ class InstructorAdmin(admin.ModelAdmin):
     list_filter = ['department', 'subject_group', 'is_active', 'position']
 
     def get_department(self, obj):
-        if obj.department:
-            return obj.department.name
-        return "N/A"
+        return obj.department.name if obj.department else "N/A"
     get_department.short_description = 'Khoa'
     get_department.admin_order_field = 'department__name'
     
     def get_position(self, obj):
-        if obj.position:
-            return obj.position.name
-        return "N/A"
+        return obj.position.name if obj.position else "N/A"
     get_position.short_description = 'Chức vụ'
     get_position.admin_order_field = 'position__name'
     
     def get_subject_group(self, obj):
-        if obj.subject_group:
-            return obj.subject_group.name
-        return "N/A"
+        return obj.subject_group.name if obj.subject_group else "N/A"
     get_subject_group.short_description = 'Tổ bộ môn'
     get_subject_group.admin_order_field = 'subject_group__name'
 
