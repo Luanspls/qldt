@@ -388,8 +388,7 @@ class Instructor(models.Model):
         null=True,
         blank=True,
         related_name="instructors",
-        verbose_name="Chức vụ",
-        db_column="position_id"
+        verbose_name="Chức vụ"
     )
     
     subject_group = models.ForeignKey(
