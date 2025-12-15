@@ -1498,6 +1498,7 @@ def api_teaching_assignments(request):
             'combined_class'
         ).prefetch_related(
             'curriculum_subject__curriculum',
+            'instructor__position'
         )
         
         if instructor_id:
@@ -1744,9 +1745,9 @@ def api_instructors(request):
         if department_of_teacher_management_id:
             instructors = instructors.filter(department_of_teacher_management_id=department_of_teacher_management_id)
         
-        position_id = request.GET.get('position_id')
-        if position_id:
-            instructors = instructors.filter(position_id=position_id)
+        # position_id = request.GET.get('position_id')
+        # if position_id:
+        #     instructors = instructors.filter(position_id=position_id)
         
         subject_group_id = request.GET.get('subject_group_id')
         if subject_group_id:
@@ -1769,7 +1770,6 @@ def api_instructors(request):
                 'email': instructor.email,
                 'phone': instructor.phone,
                 'is_active': instructor.is_active,
-                'position_id': instructor.position.id,
             }
             # Thêm thông tin quan hệ nếu có
             if instructor.position:
@@ -1778,6 +1778,9 @@ def api_instructors(request):
                     'id': instructor.position.id,
                     'name': instructor.position.name,
                 }
+            else:
+                instructor_data['position_id'] = None
+                instructor_data['position'] = None
             
             if instructor.department:
                 instructor_data['department_id'] = instructor.department.id
