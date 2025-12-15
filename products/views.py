@@ -1528,7 +1528,7 @@ def api_teaching_assignments(request):
         
         assignments_data = []
         for assignment in teaching_assignments:
-            assignment_data = {
+            assignments_data.append({
                 'id': assignment.id,
                 'instructor_id': assignment.instructor.id,
                 'instructor_name': assignment.instructor.full_name,
@@ -1538,7 +1538,7 @@ def api_teaching_assignments(request):
                 'is_main_instructor': assignment.is_main_instructor,
                 'student_count': assignment.student_count,
                 'teaching_hours': assignment.teaching_hours,
-            }
+            })
             # Thêm thông tin môn học
             if assignment.curriculum_subject:
                 assignment_data.update({
@@ -1763,14 +1763,14 @@ def api_instructors(request):
         # Tạo danh sách dữ liệu với thông tin đầy đủ
         instructors_data = []
         for instructor in instructors:
-            instructor_data = {
+            instructor_data.append{
                 'id': instructor.id,
                 'code': instructor.code,
                 'full_name': instructor.full_name,
                 'email': instructor.email,
                 'phone': instructor.phone,
                 'is_active': instructor.is_active,
-            }
+            })
             # Thêm thông tin quan hệ nếu có
             if instructor.position:
                 instructor_data['position_id'] = instructor.position.id
