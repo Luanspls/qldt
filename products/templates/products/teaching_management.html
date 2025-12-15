@@ -3276,10 +3276,10 @@
                     
                     data.forEach((instructorItem, index) => {
                         const row = document.createElement('tr');
-						const departmentName = instructorItem.department ? instructorItem.department_id : 'N/A';
-		                const departmentTeacherName = instructorItem.department_of_teacher_management ? instructorItem.department_of_teacher_management_id : 'N/A';
-		                const subjectGroupName = instructorItem.subject_group ? instructorItem.subject_group_id : 'N/A';
-		                const positionName = instructorItem.position ? instructorItem.position_id : 'N/A';
+						const departmentName = getDepartmentName(instructorItem.department || instructorItem.department_id);
+		                const departmentTeacherName = getDepartmentName(instructorItem.department_of_teacher_management || instructorItem.department_of_teacher_management_id);
+		                const subjectGroupName = getSubjectGroupName(instructorItem.subject_group || instructorItem.subject_group_id);
+		                const positionName = getPositionName(instructorItem.position || instructorItem.position_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${instructorItem.code}</td>
@@ -3564,13 +3564,13 @@
 		function getPositionName(position) {
 			if (!position) return 'N/A';
     
-			if (typeof position === 'object' && position !== null && position.code) {
-    			return position.name || position.code || 'N/A';
+			if (typeof position === 'object' && position !== null) {
+    			return position.name || 'N/A';
 			}
     
 			if (allPositions && allPositions.length > 0) {
-                const positionObj = allPositions.find(sg => sg.id == position);
-                return positionObj ? (positionObj.name || positionObj.code || 'N/A') : 'N/A';
+                const positionObj = allPositions.find(p => p.id == position);
+                return positionObj ? (positionObj.name || 'N/A') : 'N/A';
             }
             return 'N/A';
 		}
