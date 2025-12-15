@@ -1769,7 +1769,7 @@ def api_instructors(request):
                 'email': instructor.email,
                 'phone': instructor.phone,
                 'is_active': instructor.is_active,
-                'position_id': instructor.position_id,
+                'position_id': instructor.position.id,
             }
             # Thêm thông tin quan hệ nếu có
             if instructor.position:
