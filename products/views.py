@@ -1763,7 +1763,7 @@ def api_instructors(request):
         # Tạo danh sách dữ liệu với thông tin đầy đủ
         instructors_data = []
         for instructor in instructors:
-            instructor_data.append{
+            instructor_data.append({
                 'id': instructor.id,
                 'code': instructor.code,
                 'full_name': instructor.full_name,
