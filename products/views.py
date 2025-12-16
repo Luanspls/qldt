@@ -2116,7 +2116,7 @@ class ImportTeachingDataView(View):
                     
                     # Tạo danh sách chọn cho cột "Mã môn học", "Lớp học thành phần" và có thể nhập từ khóa tìm kiếm
                     try:
-                        subjects = list(Subject.objects.all().values_list('code', flat=True))
+                        subjects = list(Subject.objects.all().values_list('name', flat=True))
                         classes = list(Class.objects.all().values_list('code', flat=True))
                         combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
                         if subjects:
@@ -2222,7 +2222,7 @@ class ImportTeachingDataView(View):
                 else:
                     return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
                 
-            output.seek(0)
+            # output.seek(0)
                 
             # Trả về file để download
             response = HttpResponse(
