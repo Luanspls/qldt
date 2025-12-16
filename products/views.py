@@ -533,11 +533,11 @@ class ImportExcelView(View):
                     column_len = max(df[col].astype(str).str.len().max(), len(col)) + 2
                     worksheet_main.set_column(i, i, column_len)
                 
-                # Đặt độ rộng lớn hơn cho các cột đặc biệt
-                special_columns = {'P': 30, 'Q': 30, 'U': 40}  # Cột P, Q, U (Đơn vị, Tổ bộ môn, Mô tả)
-                for col_letter, width in special_columns.items():
-                    col_index = list(df.columns).index([col for col in df.columns if col_letter in df.columns][0])
-                    worksheet_main.set_column(col_index, col_index, width)
+                # # Đặt độ rộng lớn hơn cho các cột đặc biệt
+                # special_columns = {'P': 30, 'Q': 30, 'U': 40}  # Cột P, Q, U (Đơn vị, Tổ bộ môn, Mô tả)
+                # for col_letter, width in special_columns.items():
+                #     col_index = list(df.columns).index([col for col in df.columns if col_letter in df.columns][0])
+                #     worksheet_main.set_column(col_index, col_index, width)
                 
                 # Thiết lập bộ lọc tự động
                 worksheet_main.autofilter(0, 0, len(df), len(df.columns) - 1)
@@ -637,64 +637,65 @@ class ImportExcelView(View):
                     return None
                 
                 # Data validation cho cột Đơn vị (P)
-                dept_col_index = get_column_index('Đơn vị')
-                if dept_col_index is not None:
+                # dept_col_index = get_column_index('đơn vị')
+                if 'Đơn vị quản lý chuyên môn*' in df.columns:
+                    dept_col_index = list(df.columns).index('Đơn vị quản lý chuyên môn*')
+                    # if dept_col_index is not None:
                     # Tạo danh sách đơn vị
                     dept_list = [d['name'] for d in departments]
                     # Chỉ thêm data validation nếu có dữ liệu
                     if dept_list:
                         # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
                         dept_sheet = workbook.add_worksheet('DeptList')
+                        dept_sheet.hide()
                         for i, dept in enumerate(dept_list):
                             dept_sheet.write(i, 0, dept)
                         
                         # Tạo data validation
                         worksheet_main.data_validation(1, dept_col_index, 1000, dept_col_index, {
                             'validate': 'list',
-                            'source': f'=DeptList!$A$1:$A${len(dept_list)}'
+                            'source': '=DeptList!$A$1:$A${}'.format(len(dept_list))
                         })
-                subgr_col_index = get_column_index('Bộ môn')
-                if subgr_col_index is not None:
+                    
+                # subgr_col_index = get_column_index('Bộ môn')
+                # if subgr_col_index is not None:
+                if 'Tổ bộ môn*' in df.columns:
+                    subgr_col_index = list(df.columns).index('Tổ bộ môn*')
                     # Tạo danh sách Bộ môn
                     subgr_list = [s['name'] for s in subject_groups]
                     # Chỉ thêm data validation nếu có dữ liệu
                     if subgr_list:
                         # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
                         subgr_sheet = workbook.add_worksheet('SubgrList')
+                        subgr_sheet.hide()
                         for i, subgr in enumerate(subgr_list):
                             subgr_sheet.write(i, 0, subgr)
                         
                         # Tạo data validation
                         worksheet_main.data_validation(1, subgr_col_index, 1000, subgr_col_index, {
                             'validate': 'list',
-                            'source': f'=SubgrList!$A$1:$A${len(subgr_list)}'
+                            'source': '=SubgrList!$A$1:$A${}'.format(len(subgr_list))
                         })
-                subtype_col_index = get_column_index('Loại môn')
-                if subtype_col_index is not None:
+                
+                # Data validation cho cột Loại môn (Q)
+                # subtype_col_index = get_column_index('Loại môn')
+                if 'Loại môn' in df.columns:
+                    subtype_col_index = list(df.columns).index('Loại môn')
                     # Tạo danh sách Bộ môn
                     subtype_list = [st['name'] for st in subject_types]
                     # Chỉ thêm data validation nếu có dữ liệu
                     if subtype_list:
                         # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
                         subtype_sheet = workbook.add_worksheet('SubtpeList')
+                        subtype_sheet.hide()
                         for i, subtpe in enumerate(subtype_list):
                             subtype_sheet.write(i, 0, subtpe)
                         
                         # Tạo data validation
                         worksheet_main.data_validation(1, subtype_col_index, 1000, subtype_col_index, {
                             'validate': 'list',
-                            'source': f'=SubtpeList!$A$1:$A${len(subtype_list)}'
+                            'source': '=SubtpeList!$A$1:$A${}'.format(len(subtype_list))
                         })
-                #worksheet_main.data_validation('Q2:Q1000', {
-                #    'validate': 'list',
-                #    'source': f"'Hướng dẫn nhập liệu'!$B${used_rows - 7}:$B${used_rows - 2}",
-                #    'input_message': 'Chọn bộ môn từ danh sách'
-                #})
-                #worksheet_main.data_validation('R2:R1000', {
-                #    'validate': 'list',
-                #    'source': f"'Hướng dẫn nhập liệu'!$B${used_rows - 5}:$B${used_rows - 1}",
-                #    'input_message': 'Chọn loại môn từ danh sách'
-                #})
                 
             output.seek(0)
             
@@ -945,7 +946,6 @@ class ImportExcelView(View):
                             'is_elective': is_elective,
                             'order_number': order_number,
                             'original_code': original_code,
-                            
                         }
                     )
                                         
@@ -2054,170 +2054,164 @@ class ImportTeachingDataView(View):
             output = io.BytesIO()
                 
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                workbook  = writer.book
                 # Tạo sheet dữ liệu mẫu
                 if object_type == 'class':
                     sample_data = self.get_class_template()
                     filename = "mau_import_lop_hoc.xlsx"
                     df = pd.DataFrame(sample_data)
                     df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
-                        
-                    # Tạo sheet hướng dẫn cho lớp học
-                    self.create_class_guide_sheet(writer)
                     
                     # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
-                    workbook  = writer.book
                     sample_worksheet = writer.sheets['Dữ liệu mẫu']
-                    guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
+                    
                     # Điều chỉnh độ rộng các cột vừa với nội dung cột
                     for i, col in enumerate(df.columns):
-                        column_len = df[col].astype(str).str.len().max()
-                        column_len = max(column_len, len(col)) + 2  # Thêm khoảng trống
+                        column_len = max(df[col].astype(str).str.len().max(), len(col)) + 2
                         sample_worksheet.set_column(i, i, column_len)
-                    for i in range(guide_worksheet.dim_rowmax + 1):
-                        guide_worksheet.set_row(i, None, {'hidden': False})
+                    
+                    # Tạo sheet hướng dẫn cho lớp học
+                    self.create_class_guide_sheet(writer)
+                    # guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
+                    
                     # Tạo danh sách chọn cho cột "Mã chương trình" và "Mã khóa học"
-                    curricula = Curriculum.objects.all().values_list('code', flat=True)
-                    courses = Course.objects.all().values_list('code', flat=True)
-                    curriculum_str = ",".join(curricula)
-                    course_str = ",".join(courses)
-                    sample_worksheet.data_validation(1, 2, 1000, 2, {
-                        'validate': 'list',
-                        'source': curricula,
-                        'input_message': 'Chọn mã chương trình từ danh sách'
-                    })
-                    sample_worksheet.data_validation(1, 3, 1000, 3, {
-                        'validate': 'list',
-                        'source': courses,
-                        'input_message': 'Chọn mã khóa học từ danh sách'
-                    })
+                    try:
+                        curricula = list(Curriculum.objects.all().values_list('code', flat=True))
+                        courses = list(Course.objects.all().values_list('code', flat=True))
                         
+                        if curricula:
+                            sample_worksheet.data_validation(1, 2, 1000, 2, {
+                                'validate': 'list',
+                                'source': curricula
+                            })
+                        if courses:
+                            sample_worksheet.data_validation(1, 3, 1000, 3, {
+                                'validate': 'list',
+                                'source': courses
+                            })
+                    except:
+                        pass
                 elif object_type == 'combined-class':
                     sample_data = self.get_combined_class_template()
                     filename = "mau_import_lop_hoc_ghep.xlsx"
                     df = pd.DataFrame(sample_data)
                     df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
-                        
+                    
+                    # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
+                    sample_worksheet = writer.sheets['Dữ liệu mẫu']
+                    # Điều chỉnh độ rộng các cột vừa với nội dung cột
+                    for i, col in enumerate(df.columns):
+                        column_len = max(df[col].astype(str).str.len().max(), len(col)) + 2
+                        sample_worksheet.set_column(i, i, column_len)
+                    
                     # Tạo sheet hướng dẫn cho lớp học ghép
                     self.create_combined_class_guide_sheet(writer)
                     
-                    # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
-                    workbook  = writer.book
-                    sample_worksheet = writer.sheets['Dữ liệu mẫu']
-                    guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
-                    # Điều chỉnh độ rộng các cột vừa với nội dung cột
-                    for i, col in enumerate(df.columns):
-                        column_len = df[col].astype(str).str.len().max()
-                        column_len = max(column_len, len(col)) + 2  # Thêm khoảng trống
-                        sample_worksheet.set_column(i, i, column_len)
-                    for i in range(guide_worksheet.dim_rowmax + 1):
-                        guide_worksheet.set_row(i, None, {'hidden': False})
-                    
                     # Tạo danh sách chọn cho cột "Mã môn học", "Lớp học thành phần" và có thể nhập từ khóa tìm kiếm
-                    subjects = Subject.objects.all().values_list('code', flat=True)
-                    classes = Class.objects.all().values_list('code', flat=True)
-                    sample_worksheet.data_validation(1, 2, 1000, 2, {
-                        'validate': 'list',
-                        'source': subjects,
-                        'input_message': 'Chọn mã môn học từ danh sách'
-                    })
-                    sample_worksheet.data_validation(1, 4, 1000, 4, {
-                        'validate': 'list',
-                        'source': classes,
-                        'input_message': 'Chọn mã lớp học thành phần từ danh sách (có thể chọn nhiều lớp, cách nhau bằng dấu chấm phẩy ";")'
-                    })
-                
+                    try:
+                        subjects = list(Subject.objects.all().values_list('code', flat=True))
+                        classes = list(Class.objects.all().values_list('code', flat=True))
+                        combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
+                        if subjects:
+                            sample_worksheet.data_validation(1, 2, 1000, 2, {
+                                'validate': 'list',
+                                'source': subjects,
+                            })
+                        if classes:
+                            sample_worksheet.data_validation(1, 4, 1000, 4, {
+                                'validate': 'list',
+                                'source': classes,
+                            })
+                    except:
+                        pass
                 elif object_type == 'instructor':
                     sample_data = self.get_instructor_template()
                     filename = "mau_import_giang_vien.xlsx"
                     df = pd.DataFrame(sample_data)
                     df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
-                        
+                                        
+                    # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
+                    sample_worksheet = writer.sheets['Dữ liệu mẫu']
+                    # Điều chỉnh độ rộng các cột vừa với nội dung cột
+                    for i, col in enumerate(df.columns):
+                        column_len = max(df[col].astype(str).str.len().max(), len(col)) + 2
+                        sample_worksheet.set_column(i, i, column_len)
+                    
                     # Tạo sheet hướng dẫn cho giảng viên
                     self.create_instructor_guide_sheet(writer)
                     
-                    # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
-                    workbook  = writer.book
-                    sample_worksheet = writer.sheets['Dữ liệu mẫu']
-                    guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
-                    # Điều chỉnh độ rộng các cột vừa với nội dung cột
-                    for i, col in enumerate(df.columns):
-                        column_len = df[col].astype(str).str.len().max()
-                        column_len = max(column_len, len(col)) + 2  # Thêm khoảng trống
-                        sample_worksheet.set_column(i, i, column_len)
-                    for i in range(guide_worksheet.dim_rowmax + 1):
-                        guide_worksheet.set_row(i, None, {'hidden': False})
                     # Tạo danh sách chọn cho cột "Mã đơn vị", "Mã đơn vị quản lý giáo viên", "Mã chức vụ", "Mã nhóm môn học"
-                    departments = Department.objects.all().values_list('code', flat=True)
-                    positions = Position.objects.all().values_list('code', flat=True)
-                    subject_groups = SubjectGroup.objects.all().values_list('code', flat=True)
-                    sample_worksheet.data_validation(1, 4, 1000, 4, {
-                        'validate': 'list',
-                        'source': departments,
-                        'input_message': 'Chọn mã đơn vị từ danh sách'
-                    })
-                    sample_worksheet.data_validation(1, 5, 1000, 5, {
-                        'validate': 'list',
-                        'source': departments,
-                        'input_message': 'Chọn mã đơn vị quản lý giáo viên từ danh sách'
-                    })
-                    sample_worksheet.data_validation(1, 6, 1000, 6, {
-                        'validate': 'list',
-                        'source': positions,
-                        'input_message': 'Chọn mã chức vụ từ danh sách'
-                    })
-                    sample_worksheet.data_validation(1, 7, 1000, 7, {
-                        'validate': 'list',
-                        'source': subject_groups,
-                        'input_message': 'Chọn mã nhóm môn học từ danh sách'
-                    })
-                        
+                    try:
+                        departments = list(Department.objects.all().values_list('code', flat=True))
+                        positions = list(Position.objects.all().values_list('code', flat=True))
+                        subject_groups = list(SubjectGroup.objects.all().values_list('code', flat=True))
+                        if departments:
+                            sample_worksheet.data_validation(1, 4, 1000, 4, {
+                                'validate': 'list',
+                                'source': departments,
+                            })
+                            sample_worksheet.data_validation(1, 5, 1000, 5, {
+                                'validate': 'list',
+                                'source': departments,
+                            })
+                        if positions:
+                            sample_worksheet.data_validation(1, 6, 1000, 6, {
+                                'validate': 'list',
+                                'source': positions,
+                            })
+                        if subject_groups:
+                            sample_worksheet.data_validation(1, 7, 1000, 7, {
+                                'validate': 'list',
+                                'source': subject_groups,
+                            })
+                    except:
+                        pass
                 elif object_type == 'teaching-assignment':
                     sample_data = self.get_teaching_assignment_template()
                     filename = "mau_import_phan_cong_giang_day.xlsx"
                     df = pd.DataFrame(sample_data)
                     df.to_excel(writer, index=False, sheet_name='Dữ liệu mẫu')
-                        
+                    
+                    # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
+                    sample_worksheet = writer.sheets['Dữ liệu mẫu']
+                    # guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
+                    # Điều chỉnh độ rộng các cột vừa với nội dung cột
+                    for i, col in enumerate(df.columns):
+                        column_len = max(df[col].astype(str).str.len().max(), len(col)) + 2
+                        sample_worksheet.set_column(i, i, column_len)
+                    
                     # Tạo sheet hướng dẫn cho phân công giảng dạy
                     self.create_teaching_assignment_guide_sheet(writer)
                     
-                    # Định dạng cho sheet Dữ liệu mẫu và Hướng dẫn nhập liệu
-                    workbook  = writer.book
-                    sample_worksheet = writer.sheets['Dữ liệu mẫu']
-                    guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
-                    # Điều chỉnh độ rộng các cột vừa với nội dung cột
-                    for i, col in enumerate(df.columns):
-                        column_len = df[col].astype(str).str.len().max()
-                        column_len = max(column_len, len(col)) + 2  # Thêm khoảng trống
-                        sample_worksheet.set_column(i, i, column_len)
-                    for i in range(guide_worksheet.dim_rowmax + 1):
-                        guide_worksheet.set_row(i, None, {'hidden': False})
                     # Tạo danh sách chọn cho cột "Mã giảng viên", "Mã chương trình", "Mã môn học", "Mã lớp học", "Mã lớp học ghép"
-                    instructors = Instructor.objects.all().values_list('code', flat=True)
-                    curricula = Curriculum.objects.all().values_list('code', flat=True)
-                    subjects = Subject.objects.all().values_list('code', flat=True)
-                    classes = Class.objects.all().values_list('code', flat=True)
-                    combined_classes = CombinedClass.objects.all().values_list('code', flat=True)
-                    sample_worksheet.data_validation(1, 0, 1000, 0, {
-                        'validate': 'list',
-                        'source': instructors,
-                        'input_message': 'Chọn mã giảng viên từ danh sách'
-                    })
-                    sample_worksheet.data_validation(1, 2, 1000, 2, {
-                        'validate': 'list',
-                        'source': curricula,
-                        'input_message': 'Chọn mã chương trình từ danh sách'
-                    })
-                    sample_worksheet.data_validation(1, 3, 1000, 3, {
-                        'validate': 'list',
-                        'source': subjects,
-                        'input_message': 'Chọn mã môn học từ danh sách'
-                    })
-                    sample_worksheet.data_validation(1, 5, 1000, 5, {
-                        'validate': 'list',
-                        'source': classes,
-                        'input_message': 'Chọn mã lớp học từ danh sách'
-                    })
-                        
+                    try:
+                        instructors = list(Instructor.objects.all().values_list('code', flat=True))
+                        curricula = list(Curriculum.objects.all().values_list('code', flat=True))
+                        subjects = list(Subject.objects.all().values_list('code', flat=True))
+                        classes = list(Class.objects.all().values_list('code', flat=True))
+                        combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
+                        if instructors:
+                            sample_worksheet.data_validation(1, 0, 1000, 0, {
+                                'validate': 'list',
+                                'source': instructors,
+                            })
+                        if curricula:
+                            sample_worksheet.data_validation(1, 2, 1000, 2, {
+                                'validate': 'list',
+                                'source': curricula,
+                            })
+                        if subjects:
+                            sample_worksheet.data_validation(1, 3, 1000, 3, {
+                                'validate': 'list',
+                                'source': subjects,
+                            })
+                        if classes:
+                            sample_worksheet.data_validation(1, 5, 1000, 5, {
+                                'validate': 'list',
+                                'source': classes,
+                            })
+                    except:
+                        pass
                 else:
                     return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
                 
@@ -2328,7 +2322,14 @@ class ImportTeachingDataView(View):
             for note in notes:
                 worksheet.write(row, 0, note, italic_format)
                 row += 1
-                
+            
+            # Điều chỉnh độ rộng cột tự động
+            worksheet.set_column(0, 0, 10)
+            worksheet.set_column(1, 1, 20)
+            worksheet.set_column(2, 2, 30)
+            worksheet.set_column(3, 3, 15)
+            worksheet.set_column(4, 4, 20)
+            
         except Exception as e:
             print(f"Error creating guide sheet: {str(e)}")
 
@@ -2510,6 +2511,12 @@ class ImportTeachingDataView(View):
             for note in notes:
                 worksheet.write(row, 0, note, italic_format)
                 row += 1
+            
+            # Điều chỉnh độ rộng cột tự động
+            worksheet.set_column(0, 0, 10)
+            worksheet.set_column(1, 1, 20)
+            worksheet.set_column(2, 2, 30)
+            worksheet.set_column(3, 3, 20)
                 
         except Exception as e:
             print(f"Error creating instructor guide sheet: {str(e)}")
@@ -2586,7 +2593,13 @@ class ImportTeachingDataView(View):
             for note in notes:
                 worksheet.write(row, 0, note, italic_format)
                 row += 1
-                
+            
+            # Điều chỉnh độ rộng cột tự động
+            worksheet.set_column(0, 0, 10)
+            worksheet.set_column(1, 1, 20)
+            worksheet.set_column(2, 2, 30)
+            worksheet.set_column(3, 3, 20)
+            
         except Exception as e:
             print(f"Error creating teaching assignment guide sheet: {str(e)}")
         
