@@ -2548,9 +2548,9 @@ class ImportTeachingDataView(View):
             
             # Lấy dữ liệu
             instructors = Instructor.objects.all().values('code', 'full_name', 'department__name')
-            curriculum_subjects = Subject.objects.select_related('curriculum').all()
+            curriculum_subjects = Subject.objects.all().values('code', 'name', 'curriculum__code')
             classes = Class.objects.all().values('code', 'name', 'curriculum__code')
-            combined_classes = CombinedClass.objects.all().values('code', 'name', 'curriculum__code')
+            combined_classes = CombinedClass.objects.all().values('code', 'name', 'subject__code')
             
             row = 0
             
@@ -2583,9 +2583,9 @@ class ImportTeachingDataView(View):
             tt_subject=1
             for subject in curriculum_subjects:
                 worksheet.write(row, 0, tt_subject)
-                worksheet.write(row, 1, subject.code)
-                worksheet.write(row, 2, subject.name)
-                worksheet.write(row, 3, subject.curriculum.code if subject.curriculum else '')
+                worksheet.write(row, 1, subject['code'] 
+                worksheet.write(row, 2, subject['name'] 
+                worksheet.write(row, 3, subject['curriculum__code'] or '')
                 row += 1
                 tt_subject += 1
             row += 2
