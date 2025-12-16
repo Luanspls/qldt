@@ -1538,32 +1538,40 @@ def api_teaching_assignments(request):
                 'is_main_instructor': assignment.is_main_instructor,
                 'student_count': assignment.student_count,
                 'teaching_hours': assignment.teaching_hours,
+                'subject_id': assignment.curriculum_subject.id if assignment.curriculum_subject else None,
+                'subject_code': assignment.curriculum_subject.code if assignment.curriculum_subject else '',
+                'subject_name': assignment.curriculum_subject.name if assignment.curriculum_subject else '',
+                
+                'class_type': 'regular' if assignment.class_obj else 'combined' if assignment.combined_class else '',
+                'class_name': assignment.class_obj.name if assignment.class_obj else (assignment.combined_class.name if assignment.combined_class else ''),
+                'class_code': assignment.class_obj.code if assignment.class_obj else (assignment.combined_class.code if assignment.combined_class else ''),
+                'class_obj_id': assignment.class_obj.id if assignment.class_obj else None,
             })
-            # Thêm thông tin môn học
-            if assignment.curriculum_subject:
-                assignment_data.update({
-                    'subject_id': assignment.curriculum_subject.id,
-                    'subject_code': assignment.curriculum_subject.code,
-                    'subject_name': assignment.curriculum_subject.name,
-                })
+            # # Thêm thông tin môn học
+            # if assignment.curriculum_subject:
+            #     assignments_data.update({
+            #         'subject_id': assignment.curriculum_subject.id,
+            #         'subject_code': assignment.curriculum_subject.code,
+            #         'subject_name': assignment.curriculum_subject.name,
+            #     })
             
             # Thêm thông tin lớp học
-            if assignment.class_obj:
-                assignment_data.update({
-                    'class_type': 'regular',
-                    'class_name': assignment.class_obj.name,
-                    'class_code': assignment.class_obj.code,
-                    'class_obj_id': assignment.class_obj.id,
-                })
-            elif assignment.combined_class:
-                assignment_data.update({
-                    'class_type': 'combined',
-                    'class_name': assignment.combined_class.name,
-                    'class_code': assignment.combined_class.code,
-                    'combined_class_id': assignment.combined_class.id,
-                })
+            # if assignment.class_obj:
+            #     assignments_data.update({
+            #         'class_type': 'regular',
+            #         'class_name': assignment.class_obj.name,
+            #         'class_code': assignment.class_obj.code,
+            #         'class_obj_id': assignment.class_obj.id,
+            #     })
+            # elif assignment.combined_class:
+            #     assignments_data.update({
+            #         'class_type': 'combined',
+            #         'class_name': assignment.combined_class.name,
+            #         'class_code': assignment.combined_class.code,
+            #         'combined_class_id': assignment.combined_class.id,
+            #     })
             
-            assignments_data.append(assignment_data)
+            # assignments_data.append(assignments_data)
         return JsonResponse(assignments_data, safe=False)
     except Exception as e:
         # Trả về lỗi dạng JSON thay vì HTML
@@ -1763,49 +1771,75 @@ def api_instructors(request):
         # Tạo danh sách dữ liệu với thông tin đầy đủ
         instructors_data = []
         for instructor in instructors:
-            instructor_data.append({
+            instructors_data.append({
                 'id': instructor.id,
                 'code': instructor.code,
                 'full_name': instructor.full_name,
                 'email': instructor.email,
                 'phone': instructor.phone,
                 'is_active': instructor.is_active,
-            })
-            # Thêm thông tin quan hệ nếu có
-            if instructor.position:
-                instructor_data['position_id'] = instructor.position.id
-                instructor_data['position'] = {
+                
+                'position_id': instructor.position.id if instructor.position else None,
+                'department_id': instructor.department.id if instructor.department else None,
+                'department_of_teacher_management_id': instructor.department_of_teacher_management.id if instructor.department_of_teacher_management else None,
+                'subject_group_id': instructor.subject_group.id if instructor.subject_group else None,
+                
+                'position': {
                     'id': instructor.position.id,
                     'name': instructor.position.name,
-                }
-            else:
-                instructor_data['position_id'] = None
-                instructor_data['position'] = None
-            
-            if instructor.department:
-                instructor_data['department_id'] = instructor.department.id
-                instructor_data['department'] = {
+                } if instructor.position else None,
+                'department': {
                     'id': instructor.department.id,
                     'name': instructor.department.name,
                     'code': instructor.department.code,
-                }
-            
-            if instructor.department_of_teacher_management:
-                instructor_data['department_of_teacher_management_id'] = instructor.department_of_teacher_management.id
-                instructor_data['department_of_teacher_management'] = {
+                } if instructor.department else None,
+                'department_of_teacher_management': {
                     'id': instructor.department_of_teacher_management.id,
                     'name': instructor.department_of_teacher_management.name,
                     'code': instructor.department_of_teacher_management.code,
-                }
-            
-            if instructor.subject_group:
-                instructor_data['subject_group_id'] = instructor.subject_group.id
-                instructor_data['subject_group'] = {
+                } if instructor.department_of_teacher_management else None,
+                'subject_group': {
                     'id': instructor.subject_group.id,
                     'name': instructor.subject_group.name,
                     'code': instructor.subject_group.code,
-                }
-            instructors_data.append(instructor_data)
+                } if instructor.subject_group else None,
+                
+            })
+            # # Thêm thông tin quan hệ nếu có
+            # if instructor.position:
+            #     instructors_data['position_id'] = instructor.position.id
+            #     instructors_data['position'] = {
+            #         'id': instructor.position.id,
+            #         'name': instructor.position.name,
+            #     }
+            # else:
+            #     instructors_data['position_id'] = None
+            #     instructors_data['position'] = None
+            
+            # if instructor.department:
+            #     instructors_data['department_id'] = instructor.department.id
+            #     instructors_data['department'] = {
+            #         'id': instructor.department.id,
+            #         'name': instructor.department.name,
+            #         'code': instructor.department.code,
+            #     }
+            
+            # if instructor.department_of_teacher_management:
+            #     instructors_data['department_of_teacher_management_id'] = instructor.department_of_teacher_management.id
+            #     instructors_data['department_of_teacher_management'] = {
+            #         'id': instructor.department_of_teacher_management.id,
+            #         'name': instructor.department_of_teacher_management.name,
+            #         'code': instructor.department_of_teacher_management.code,
+            #     }
+            
+            # if instructor.subject_group:
+            #     instructors_data['subject_group_id'] = instructor.subject_group.id
+            #     instructors_data['subject_group'] = {
+            #         'id': instructor.subject_group.id,
+            #         'name': instructor.subject_group.name,
+            #         'code': instructor.subject_group.code,
+            #     }
+            # instructors_data.append(instructors_data)
         return JsonResponse(instructors_data, safe=False)
     except Exception as e:
         # Trả về lỗi dạng JSON thay vì HTML
