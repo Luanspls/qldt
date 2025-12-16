@@ -608,9 +608,9 @@ class ImportExcelView(View):
                 row += 2
                 
                 # Điều chỉnh độ rộng cột tự động vừa với nội dung
-                worksheet.set_columns(0, 0, 10)
-                worksheet.set_columns(1, 1, 20)
-                worksheet.set_columns(2, 2, 30)
+                worksheet.set_column(0, 0, 10)
+                worksheet.set_column(1, 1, 20)
+                worksheet.set_column(2, 2, 30)
                 
                 # Thêm ghi chú
                 worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format1)
