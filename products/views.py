@@ -608,7 +608,9 @@ class ImportExcelView(View):
                 row += 2
                 
                 # Điều chỉnh độ rộng cột tự động vừa với nội dung
-                worksheet.column[0:3].width.auto = 'auto'
+                worksheet.set_columns(0, 0, 10)
+                worksheet.set_columns(1, 1, 20)
+                worksheet.set_columns(2, 2, 30)
                 
                 # Thêm ghi chú
                 worksheet.write(row, 0, "LƯU Ý QUAN TRỌNG:", bold_format1)
@@ -2078,7 +2080,7 @@ class ImportTeachingDataView(View):
                     try:
                         curricula = list(Curriculum.objects.all().values_list('code', flat=True))
                         courses = list(Course.objects.all().values_list('code', flat=True))
-                        
+                        combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
                         if curricula:
                             sample_worksheet.data_validation(1, 2, 1000, 2, {
                                 'validate': 'list',
@@ -2088,6 +2090,11 @@ class ImportTeachingDataView(View):
                             sample_worksheet.data_validation(1, 3, 1000, 3, {
                                 'validate': 'list',
                                 'source': courses
+                            })
+                        if combined_classes:
+                            sample_worksheet.data_validation(1, 7, 1000, 7, {
+                                'validate': 'list',
+                                'source': combined_classes
                             })
                     except:
                         pass
@@ -2146,16 +2153,16 @@ class ImportTeachingDataView(View):
                         positions = list(Position.objects.all().values_list('code', flat=True))
                         subject_groups = list(SubjectGroup.objects.all().values_list('code', flat=True))
                         if departments:
-                            sample_worksheet.data_validation(1, 4, 1000, 4, {
+                            sample_worksheet.data_validation(1, 2, 1000, 2, {
                                 'validate': 'list',
                                 'source': departments,
                             })
-                            sample_worksheet.data_validation(1, 5, 1000, 5, {
+                            sample_worksheet.data_validation(1, 6, 1000, 6, {
                                 'validate': 'list',
                                 'source': departments,
                             })
                         if positions:
-                            sample_worksheet.data_validation(1, 6, 1000, 6, {
+                            sample_worksheet.data_validation(1, 3, 1000, 3, {
                                 'validate': 'list',
                                 'source': positions,
                             })
@@ -2185,9 +2192,9 @@ class ImportTeachingDataView(View):
                     
                     # Tạo danh sách chọn cho cột "Mã giảng viên", "Mã chương trình", "Mã môn học", "Mã lớp học", "Mã lớp học ghép"
                     try:
-                        instructors = list(Instructor.objects.all().values_list('code', flat=True))
+                        instructors = list(Instructor.objects.all().values_list('full_name', flat=True))
                         curricula = list(Curriculum.objects.all().values_list('code', flat=True))
-                        subjects = list(Subject.objects.all().values_list('code', flat=True))
+                        subjects = list(Subject.objects.all().values_list('name', flat=True))
                         classes = list(Class.objects.all().values_list('code', flat=True))
                         combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
                         if instructors:
@@ -2195,18 +2202,18 @@ class ImportTeachingDataView(View):
                                 'validate': 'list',
                                 'source': instructors,
                             })
-                        if curricula:
-                            sample_worksheet.data_validation(1, 2, 1000, 2, {
-                                'validate': 'list',
-                                'source': curricula,
-                            })
+                        # if curricula:
+                        #     sample_worksheet.data_validation(1, 2, 1000, 2, {
+                        #         'validate': 'list',
+                        #         'source': curricula,
+                        #     })
                         if subjects:
-                            sample_worksheet.data_validation(1, 3, 1000, 3, {
+                            sample_worksheet.data_validation(1, 1, 1000, 1, {
                                 'validate': 'list',
                                 'source': subjects,
                             })
                         if classes:
-                            sample_worksheet.data_validation(1, 5, 1000, 5, {
+                            sample_worksheet.data_validation(1, 2, 1000, 2, {
                                 'validate': 'list',
                                 'source': classes,
                             })
@@ -2348,7 +2355,7 @@ class ImportTeachingDataView(View):
             # curricula = Curriculum.objects.all().values('code', 'name', 'academic_year')
             subjects = Subject.objects.all().values('code', 'name', 'department__code', 'curriculum__code')
             classes = Class.objects.filter(is_combined=False).values('code', 'name', 'curriculum__code')
-            combined_classes = CombinedClass.objects.all().values('code', 'name', 'curriculum__code')
+            combined_classes = CombinedClass.objects.all().values('code', 'name', 'subject__code')
             
             row = 0
             
@@ -2402,7 +2409,7 @@ class ImportTeachingDataView(View):
                 worksheet.write(row, 0, tt_combined_class)
                 worksheet.write(row, 1, combined_class['code'])
                 worksheet.write(row, 2, combined_class['name'])
-                worksheet.write(row, 3, combined_class['curriculum__code'] or '')
+                worksheet.write(row, 3, combined_class['subject__code'] or '')
                 row += 1
                 tt_combined_class += 1
             row += 2
@@ -2423,6 +2430,13 @@ class ImportTeachingDataView(View):
             for note in notes:
                 worksheet.write(row, 0, note, italic_format)
                 row += 1
+        
+            # Điều chỉnh độ rộng cột tự động
+            worksheet.set_column(0, 0, 10)
+            worksheet.set_column(1, 1, 20)
+            worksheet.set_column(2, 2, 30)
+            worksheet.set_column(3, 3, 15)
+            worksheet.set_column(4, 4, 20)
                 
         except Exception as e:
             print(f"Error creating combined class guide sheet: {str(e)}")
