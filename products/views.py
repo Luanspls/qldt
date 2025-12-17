@@ -2200,16 +2200,16 @@ class ImportTeachingDataView(View):
                     # Tạo danh sách chọn cho cột "Mã đơn vị", "Mã đơn vị quản lý giáo viên", "Mã chức vụ", "Mã nhóm môn học"
                     try:
                         departments_code = list(Department.objects.all().values_list('code', flat=True))
-						departments_name = list(Department.objects.all().values_list('name', flat=True))
+                        departments_name = list(Department.objects.all().values_list('name', flat=True))
                         positions = list(Position.objects.all().values_list('name', flat=True))
                         subject_groups = list(SubjectGroup.objects.all().values_list('code', flat=True))
-						instructors_code = list(Instructor.objects.all().values_list('code', flat=True))
-						instructors_name = list(Instructor.objects.all().values_list('full_name', flat=True))
+                        instructors_code = list(Instructor.objects.all().values_list('code', flat=True))
+                        instructors_name = list(Instructor.objects.all().values_list('full_name', flat=True))
                         
                         instructors_code_list = [inst['code'] for inst in instructors_code]
-						instructors_name_list = [instn['name'] for instn in instructors_name]
-						department_code_list = [dc['code'] for dc in departments_code]
-						department_name_list = [dn['name'] for dn in departments_name]
+                        instructors_name_list = [instn['name'] for instn in instructors_name]
+                        department_code_list = [dc['code'] for dc in departments_code]
+                        department_name_list = [dn['name'] for dn in departments_name]
                         position_list = [p['name'] for p in positions]
                         subj_grp_list = [sg['code'] for sg in subject_groups]
 
@@ -2223,10 +2223,10 @@ class ImportTeachingDataView(View):
                                 dataInstructor_sheet.write(i, 0, instructor_code)
                             for i, instructor_name in enumerate(instructors_name_list):
                                 dataInstructor_sheet.write(i, 1, instructor_name)
-						if department_code_list:
+                        if department_code_list:
                             for i, depart_code in enumerate(department_code_list):
                                 dataInstructor_sheet.write(i, 2, depart_code)
-							for i, depart_name in enumerate(department_name_list):
+                            for i, depart_name in enumerate(department_name_list):
                                 dataInstructor_sheet.write(i, 3, depart_name)
                         if position_list:
                             for i, position in enumerate(position_list):
@@ -2241,7 +2241,7 @@ class ImportTeachingDataView(View):
                                 'validate': 'list',
                                 'source': '=dataInstructor!$A$1:$A${}'.format(len(instructors_code_list))
                             })
-						if instructors_name_list:
+                        if instructors_name_list:
                             sample_worksheet.data_validation(1, 1, 1000, 1, {
                                 'validate': 'list',
                                 'source': '=dataInstructor!$B$1:$B${}'.format(len(instructors_name_list))
@@ -2251,7 +2251,7 @@ class ImportTeachingDataView(View):
                                 'validate': 'list',
                                 'source': '=dataInstructor!$D$1:$D${}'.format(len(department_name_list))
                             })
-							sample_worksheet.data_validation(1, 6, 1000, 6, {
+                            sample_worksheet.data_validation(1, 6, 1000, 6, {
                                 'validate': 'list',
                                 'source': '=dataInstructor!$D$1:$D${}'.format(len(department_name_list))
                             })
@@ -2286,17 +2286,18 @@ class ImportTeachingDataView(View):
                     
                     # Tạo danh sách chọn cho cột "Mã giảng viên", "Mã chương trình", "Mã môn học", "Mã lớp học", "Mã lớp học ghép"
                     try:
-                        instructors = list(Instructor.objects.all().values_list('full_name', flat=True))
+                        instructors_code = list(Instructor.objects.all().values_list('code', flat=True))
+                        instructors_name = list(Instructor.objects.all().values_list('full_name', flat=True))
                         curricula = list(Curriculum.objects.all().values_list('code', flat=True))
-						subjects_code = list(Subject.objects.all().values_list('code', flat=True))
+                        subjects_code = list(Subject.objects.all().values_list('code', flat=True))
                         subjects_name = list(Subject.objects.all().values_list('name', flat=True))
                         classes = list(Class.objects.all().values_list('code', flat=True))
                         combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
                         
-						instructors_code_list = [inst['code'] for inst in instructors_code]
-						instructors_name_list = [instn['name'] for instn in instructors_name]
-						subjects_code_list = [sc['code'] for sc in subjects_code]
-						subjects_name_list = [sn['name'] for sn in subjects_name]
+                        instructors_code_list = [inst['code'] for inst in instructors_code]
+                        instructors_name_list = [instn['name'] for instn in instructors_name]
+                        subjects_code_list = [sc['code'] for sc in subjects_code]
+                        subjects_name_list = [sn['name'] for sn in subjects_name]
                         classes_list = [cl['code'] for cl in classes]
                         combined_classes_list = [ccl['code'] for ccl in combined_classes]
 
@@ -2310,10 +2311,10 @@ class ImportTeachingDataView(View):
                                 dataAssignment_sheet.write(i, 0, instructor_code)
                             for i, instructor_name in enumerate(instructors_name_list):
                                 dataAssignment_sheet.write(i, 1, instructor_name)
-						if subjects_code_list:
+                        if subjects_code_list:
                             for i, subjects_code in enumerate(subjects_code_list):
                                 dataAssignment_sheet.write(i, 2, subjects_code)
-							for i, subjects_name in enumerate(subjects_name_list):
+                            for i, subjects_name in enumerate(subjects_name_list):
                                 dataAssignment_sheet.write(i, 3, subjects_name)
                         if classes_list:
                             for i, class_item in enumerate(classes_list):
@@ -2328,7 +2329,7 @@ class ImportTeachingDataView(View):
                                 'validate': 'list',
                                 'source': '=dataAssignment!$A$1:$A${}'.format(len(instructors_code_list))
                             })
-						if instructors_name_list:
+                        if instructors_name_list:
                             sample_worksheet.data_validation(1, 1, 1000, 1, {
                                 'validate': 'list',
                                 'source': '=dataAssignment!$B$1:$B${}'.format(len(instructors_name_list))
@@ -2338,7 +2339,7 @@ class ImportTeachingDataView(View):
                                 'validate': 'list',
                                 'source': '=dataAssignment!$C$1:$C${}'.format(len(subjects_code_list))
                             })
-							
+                            
                         if classes_list:
                             sample_worksheet.data_validation(1, 3, 1000, 3, {
                                 'validate': 'list',
@@ -2716,8 +2717,8 @@ class ImportTeachingDataView(View):
             tt_subject=1
             for subject in curriculum_subjects:
                 worksheet.write(row, 0, tt_subject)
-                worksheet.write(row, 1, subject['code'] 
-                worksheet.write(row, 2, subject['name'] 
+                worksheet.write(row, 1, subject['code'])
+                worksheet.write(row, 2, subject['name'])
                 worksheet.write(row, 3, subject['curriculum__code'] or '')
                 row += 1
                 tt_subject += 1
@@ -3046,7 +3047,7 @@ class ImportTeachingDataView(View):
                         continue
                         
                     # Xử lý các lớp thành phần
-                    class_codes = [c.strip() for c in classes_codes_str.split(',' || ';')]
+                    class_codes = [c.strip() for c in classes_codes_str.split(',')]
                     classes = []
                     for class_code in class_codes:
                         try:
@@ -3283,14 +3284,14 @@ class ImportTeachingDataView(View):
                         
                     # Chuẩn hóa dữ liệu
                     instructor_code = str(row.get('Mã giảng viên*')).strip()
-					instructor_name = str(row.get('Họ và tên*')).strip()
+                    instructor_name = str(row.get('Họ và tên*')).strip()
                     subject_code = str(row.get('Mã môn học*')).strip()
                     class_code = str(row.get('Mã lớp*')).strip()
                     class_type = str(row.get('Loại lớp*')).strip()
                     academic_year = str(row.get('Năm học*')).strip()
                     semester = str(row.get('Học kỳ*')).strip()
                         
-                    if not instructor_code not instructor_name or not subject_code or not class_code or not class_type or not academic_year or not semester:
+                    if not instructor_code or not instructor_name or not subject_code or not class_code or not class_type or not academic_year or not semester:
                         errors.append(f"Dòng {index + 2}: Thiếu thông tin bắt buộc")
                         continue
                         
