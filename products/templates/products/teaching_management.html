@@ -3522,7 +3522,7 @@
 			}
 			// Nếu curriculum là ID, tìm trong allCurricula
 			if (allSubjects && allSubjects.length > 0) {
-				const subjectObjsubjectObj = allSubjects.find(s => s.id == subject);
+				const subjectObj = allSubjects.find(s => s.id == subject);
 				return subjectObj ? (subjectObj.name || subjectObj.code || 'N/A') : 'N/A';
 			}
             return 'N/A';
