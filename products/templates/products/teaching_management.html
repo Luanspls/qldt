@@ -3515,6 +3515,19 @@
             return 'N/A';
 		}
 
+		function getSubjectName(subject) {
+			if (!subject) return 'N/A';
+			if (typeof subject === 'object' && subject !== null) {
+    			return subject.name || subject.code || 'N/A';
+			}
+			// Nếu curriculum là ID, tìm trong allCurricula
+			if (allSubjects && allSubjects.length > 0) {
+				const curriculumObj = allSubjects.find(s => s.id == subject);
+				return subjectObj ? (subjectObj.name || subjectObj.code || 'N/A') : 'N/A';
+			}
+            return 'N/A';
+		}
+
 		function getCourseName(course) {
 			if (!course) return 'N/A';
     
