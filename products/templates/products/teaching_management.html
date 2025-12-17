@@ -482,7 +482,6 @@
 								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TT</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã lớp ghép</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên lớp ghép</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chương trình</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Môn học</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lớp ghép</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Các lớp thành phần</th>
@@ -3208,13 +3207,11 @@
                     
                     data.forEach((combinedClass, index) => {
                         const row = document.createElement('tr');
-                        const curriculumName = getCurriculumName(combinedClass.subject.curriculum || combinedClass.subject.curriculum_id);
                         const subjectName = getSubjectName(combinedClass.subject || combinedClass.subject_id);
                         row.innerHTML = `
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${combinedClass.code}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${combinedClass.name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${curriculumName}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${subjectName}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${combinedClass.classes_count} lớp</td>
                             <td class="px-6 py-4 text-sm text-gray-500">
