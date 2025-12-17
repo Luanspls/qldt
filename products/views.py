@@ -632,11 +632,11 @@ class ImportExcelView(View):
                 # Thiết lập chế độ lấy danh sách từ sheet hướng dẫn cho các cột tương ứng trong sheet dữ liệu mẫu
                 # Lấy số dòng đã sử dụng trong sheet hướng dẫn
                 # Lấy vị trí cột dựa trên tên cột
-                def get_column_index(column_name):
-                    for i, col in enumerate(df.columns):
-                        if column_name in str(col):
-                            return i
-                    return None
+                # def get_column_index(column_name):
+                #     for i, col in enumerate(df.columns):
+                #         if column_name in str(col):
+                #             return i
+                #     return None
                 
                 # Data validation cho cột Đơn vị (P)
                 # dept_col_index = get_column_index('đơn vị')
@@ -2077,48 +2077,45 @@ class ImportTeachingDataView(View):
                     # guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
                     
                     # Tạo danh sách chọn cho cột "Mã chương trình" và "Mã khóa học"
-                    try:
-                        curricula = list(Curriculum.objects.all().values_list('code', flat=True))
-                        courses = list(Course.objects.all().values_list('code', flat=True))
-                        combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
+                    curricula = list(Curriculum.objects.all().values_list('code', flat=True))
+                    courses = list(Course.objects.all().values_list('code', flat=True))
+                    combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
 
-                        curriculum_list = [cu['code'] for cu in curricula]
-                        course_list = [co['code'] for co in courses]
-                        comb_class_list = [cc['code'] for cc in combined_classes]
+                    curriculum_list = [cu['code'] for cu in curricula]
+                    course_list = [co['code'] for co in courses]
+                    comb_class_list = [cc['code'] for cc in combined_classes]
 
-                        # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
-                        dataClass_sheet = workbook.add_worksheet('dataClass')
-                        dataClass_sheet.hide()
+                    # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
+                    dataClass_sheet = workbook.add_worksheet('dataClass')
+                    dataClass_sheet.hide()
+                    
+                    # Chỉ thêm data validation nếu có dữ liệu
+                    if curriculum_list:
+                        for i, curr in enumerate(curriculum_list):
+                            dataClass_sheet.write(i, 0, curr)
+                    if course_list:
+                        for i, course in enumerate(course_list):
+                            dataClass_sheet.write(i, 1, course)
+                    if comb_class_list:
+                        for i, comb_class in enumerate(comb_class_list):
+                            dataClass_sheet.write(i, 2, comb_class)
                         
-                        # Chỉ thêm data validation nếu có dữ liệu
-                        if curriculum_list:
-                            for i, curr in enumerate(curriculum_list):
-                                dataClass_sheet.write(i, 0, curr)
-                        if course_list:
-                            for i, course in enumerate(course_list):
-                                dataClass_sheet.write(i, 1, course)
-                        if comb_class_list:
-                            for i, comb_class in enumerate(comb_class_list):
-                                dataClass_sheet.write(i, 2, comb_class)
-                            
-                        # Tạo data validation
-                        if curricula:
-                            sample_worksheet.data_validation(1, 2, 1000, 2, {
-                                'validate': 'list',
-                                'source': '=dataClass!$A$1:$A${}'.format(len(curriculum_list))
-                            })
-                        if courses:
-                            sample_worksheet.data_validation(1, 3, 1000, 3, {
-                                'validate': 'list',
-                                'source': '=dataClass!$B$1:$B${}'.format(len(course_list))
-                            })
-                        if combined_classes:
-                            sample_worksheet.data_validation(1, 7, 1000, 7, {
-                                'validate': 'list',
-                                'source': '=dataClass!$C$1:$C${}'.format(len(comb_class_list))
-                            })
-                    except:
-                        pass
+                    # Tạo data validation
+                    if curricula:
+                        sample_worksheet.data_validation(1, 2, 1000, 2, {
+                            'validate': 'list',
+                            'source': '=dataClass!$A$1:$A${}'.format(len(curriculum_list))
+                        })
+                    if courses:
+                        sample_worksheet.data_validation(1, 3, 1000, 3, {
+                            'validate': 'list',
+                            'source': '=dataClass!$B$1:$B${}'.format(len(course_list))
+                        })
+                    if combined_classes:
+                        sample_worksheet.data_validation(1, 7, 1000, 7, {
+                            'validate': 'list',
+                            'source': '=dataClass!$C$1:$C${}'.format(len(comb_class_list))
+                        })
                 elif object_type == 'combined-class':
                     sample_data = self.get_combined_class_template()
                     filename = "mau_import_lop_hoc_ghep.xlsx"
@@ -2136,51 +2133,48 @@ class ImportTeachingDataView(View):
                     self.create_combined_class_guide_sheet(writer)
                     
                     # Tạo danh sách chọn cho cột "Mã môn học", "Lớp học thành phần" và có thể nhập từ khóa tìm kiếm
-                    try:
-                        subjects = list(Subject.objects.all().values_list('name', flat=True))
-                        classes = list(Class.objects.all().values_list('code', flat=True))
-                        combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
+                    subjects = list(Subject.objects.all().values_list(['code', 'name'], flat=False))
+                    classes = list(Class.objects.all().values_list('code', flat=True))
+                    combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
 
-                        subject_code_list = [s['code'] for s in subjects]
-                        subject_name_list = [sn['name'] for sn in subjects]
-                        class_list = [cl['code'] for cl in classes]
-                        comb_class_list = [cc['code'] for cc in combined_classes]
+                    subject_code_list = [s['code'] for s in subjects]
+                    subject_name_list = [sn['name'] for sn in subjects]
+                    class_list = [cl['code'] for cl in classes]
+                    comb_class_list = [cc['code'] for cc in combined_classes]
 
-                        # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
-                        dataCombClass_sheet = workbook.add_worksheet('dataCombClass')
-                        dataCombClass_sheet.hide()
+                    # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
+                    dataCombClass_sheet = workbook.add_worksheet('dataCombClass')
+                    dataCombClass_sheet.hide()
+                    
+                    # Chỉ thêm data validation nếu có dữ liệu
+                    if subject_code_list:
+                        for i, subj_code in enumerate(subject_code_list):
+                            dataCombClass_sheet.write(i, 0, subj_code)
+                        for i, subj_name in enumerate(subject_name_list):
+                            dataCombClass_sheet.write(i, 1, subj_name)
+                    if class_list:
+                        for i, class_item in enumerate(class_list):
+                            dataCombClass_sheet.write(i, 2, class_item)
+                    if comb_class_list:
+                        for i, comb_class in enumerate(comb_class_list):
+                            dataCombClass_sheet.write(i, 3, comb_class)
                         
-                        # Chỉ thêm data validation nếu có dữ liệu
-                        if subject_code_list:
-                            for i, subj_code in enumerate(subject_code_list):
-                                dataCombClass_sheet.write(i, 0, subj_code)
-                            for i, subj_name in enumerate(subject_name_list):
-                                dataCombClass_sheet.write(i, 1, subj_name)
-                        if class_list:
-                            for i, class_item in enumerate(class_list):
-                                dataCombClass_sheet.write(i, 2, class_item)
-                        if comb_class_list:
-                            for i, comb_class in enumerate(comb_class_list):
-                                dataCombClass_sheet.write(i, 3, comb_class)
-                            
-                        # Tạo data validation
-                        if subjects:
-                            sample_worksheet.data_validation(1, 2, 1000, 2, {
-                                'validate': 'list',
-                                'source': '=dataCombClass!$B$1:$B${}'.format(len(subject_name_list))
-                            })
-                        if classes:
-                            sample_worksheet.data_validation(1, 3, 1000, 3, {
-                                'validate': 'list',
-                                'source': '=dataCombClass!$C$1:$C${}'.format(len(class_list))
-                            })
-                        if combined_classes:
-                            sample_worksheet.data_validation(1, 0, 1000, 0, {
-                                'validate': 'list',
-                                'source': '=dataCombClass!$D$1:$D${}'.format(len(comb_class_list))
-                            })
-                    except:
-                        pass
+                    # Tạo data validation
+                    if subjects:
+                        sample_worksheet.data_validation(1, 2, 1000, 2, {
+                            'validate': 'list',
+                            'source': '=dataCombClass!$A$1:$B${}'.format(len(subject_code_list))
+                        })
+                    if classes:
+                        sample_worksheet.data_validation(1, 3, 1000, 3, {
+                            'validate': 'list',
+                            'source': '=dataCombClass!$C$1:$C${}'.format(len(class_list))
+                        })
+                    if combined_classes:
+                        sample_worksheet.data_validation(1, 0, 1000, 0, {
+                            'validate': 'list',
+                            'source': '=dataCombClass!$D$1:$D${}'.format(len(comb_class_list))
+                        })
                 elif object_type == 'instructor':
                     sample_data = self.get_instructor_template()
                     filename = "mau_import_giang_vien.xlsx"
@@ -2198,75 +2192,72 @@ class ImportTeachingDataView(View):
                     self.create_instructor_guide_sheet(writer)
                     
                     # Tạo danh sách chọn cho cột "Mã đơn vị", "Mã đơn vị quản lý giáo viên", "Mã chức vụ", "Mã nhóm môn học"
-                    try:
-                        departments_code = list(Department.objects.all().values_list('code', flat=True))
-                        departments_name = list(Department.objects.all().values_list('name', flat=True))
-                        positions = list(Position.objects.all().values_list('name', flat=True))
-                        subject_groups = list(SubjectGroup.objects.all().values_list('code', flat=True))
-                        instructors_code = list(Instructor.objects.all().values_list('code', flat=True))
-                        instructors_name = list(Instructor.objects.all().values_list('full_name', flat=True))
-                        
-                        instructors_code_list = [inst['code'] for inst in instructors_code]
-                        instructors_name_list = [instn['name'] for instn in instructors_name]
-                        department_code_list = [dc['code'] for dc in departments_code]
-                        department_name_list = [dn['name'] for dn in departments_name]
-                        position_list = [p['name'] for p in positions]
-                        subj_grp_list = [sg['code'] for sg in subject_groups]
+                    departments_code = list(Department.objects.all().values_list('code', flat=True))
+                    departments_name = list(Department.objects.all().values_list('name', flat=True))
+                    positions = list(Position.objects.all().values_list('name', flat=True))
+                    subject_groups = list(SubjectGroup.objects.all().values_list('code', flat=True))
+                    instructors_code = list(Instructor.objects.all().values_list('code', flat=True))
+                    instructors_name = list(Instructor.objects.all().values_list('full_name', flat=True))
+                    
+                    instructors_code_list = [inst['code'] for inst in instructors_code]
+                    instructors_name_list = [instn['name'] for instn in instructors_name]
+                    department_code_list = [dc['code'] for dc in departments_code]
+                    department_name_list = [dn['name'] for dn in departments_name]
+                    position_list = [p['name'] for p in positions]
+                    subj_grp_list = [sg['code'] for sg in subject_groups]
 
-                        # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
-                        dataInstructor_sheet = workbook.add_worksheet('dataInstructor')
-                        dataInstructor_sheet.hide()
+                    # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
+                    dataInstructor_sheet = workbook.add_worksheet('dataInstructor')
+                    dataInstructor_sheet.hide()
+                    
+                    # Chỉ thêm data validation nếu có dữ liệu
+                    if instructors_code_list:
+                        for i, instructor_code in enumerate(instructors_code_list):
+                            dataInstructor_sheet.write(i, 0, instructor_code)
+                        for i, instructor_name in enumerate(instructors_name_list):
+                            dataInstructor_sheet.write(i, 1, instructor_name)
+                    if department_code_list:
+                        for i, depart_code in enumerate(department_code_list):
+                            dataInstructor_sheet.write(i, 2, depart_code)
+                        for i, depart_name in enumerate(department_name_list):
+                            dataInstructor_sheet.write(i, 3, depart_name)
+                    if position_list:
+                        for i, position in enumerate(position_list):
+                            dataInstructor_sheet.write(i, 4, position)
+                    if subj_grp_list:
+                        for i, sub_grp in enumerate(subj_grp_list):
+                            dataInstructor_sheet.write(i, 5, sub_grp)
                         
-                        # Chỉ thêm data validation nếu có dữ liệu
-                        if instructors_code_list:
-                            for i, instructor_code in enumerate(instructors_code_list):
-                                dataInstructor_sheet.write(i, 0, instructor_code)
-                            for i, instructor_name in enumerate(instructors_name_list):
-                                dataInstructor_sheet.write(i, 1, instructor_name)
-                        if department_code_list:
-                            for i, depart_code in enumerate(department_code_list):
-                                dataInstructor_sheet.write(i, 2, depart_code)
-                            for i, depart_name in enumerate(department_name_list):
-                                dataInstructor_sheet.write(i, 3, depart_name)
-                        if position_list:
-                            for i, position in enumerate(position_list):
-                                dataInstructor_sheet.write(i, 4, position)
-                        if subj_grp_list:
-                            for i, sub_grp in enumerate(subj_grp_list):
-                                dataInstructor_sheet.write(i, 5, sub_grp)
-                            
-                        # Tạo data validation
-                        if instructors_code_list:
-                            sample_worksheet.data_validation(1, 0, 1000, 0, {
-                                'validate': 'list',
-                                'source': '=dataInstructor!$A$1:$A${}'.format(len(instructors_code_list))
-                            })
-                        if instructors_name_list:
-                            sample_worksheet.data_validation(1, 1, 1000, 1, {
-                                'validate': 'list',
-                                'source': '=dataInstructor!$B$1:$B${}'.format(len(instructors_name_list))
-                            })
-                        if department_name_list:
-                            sample_worksheet.data_validation(1, 2, 1000, 2, {
-                                'validate': 'list',
-                                'source': '=dataInstructor!$D$1:$D${}'.format(len(department_name_list))
-                            })
-                            sample_worksheet.data_validation(1, 6, 1000, 6, {
-                                'validate': 'list',
-                                'source': '=dataInstructor!$D$1:$D${}'.format(len(department_name_list))
-                            })
-                        if position_list:
-                            sample_worksheet.data_validation(1, 3, 1000, 3, {
-                                'validate': 'list',
-                                'source': '=dataInstructor!$E$1:$E${}'.format(len(position_list))
-                            })
-                        if subj_grp_list:
-                            sample_worksheet.data_validation(1, 7, 1000, 7, {
-                                'validate': 'list',
-                                'source': '=dataInstructor!$F$1:$F${}'.format(len(subj_grp_list))
-                            })
-                    except:
-                        pass
+                    # Tạo data validation
+                    if instructors_code_list:
+                        sample_worksheet.data_validation(1, 0, 1000, 0, {
+                            'validate': 'list',
+                            'source': '=dataInstructor!$A$1:$A${}'.format(len(instructors_code_list))
+                        })
+                    if instructors_name_list:
+                        sample_worksheet.data_validation(1, 1, 1000, 1, {
+                            'validate': 'list',
+                            'source': '=dataInstructor!$B$1:$B${}'.format(len(instructors_name_list))
+                        })
+                    if department_name_list:
+                        sample_worksheet.data_validation(1, 2, 1000, 2, {
+                            'validate': 'list',
+                            'source': '=dataInstructor!$D$1:$D${}'.format(len(department_name_list))
+                        })
+                        sample_worksheet.data_validation(1, 6, 1000, 6, {
+                            'validate': 'list',
+                            'source': '=dataInstructor!$D$1:$D${}'.format(len(department_name_list))
+                        })
+                    if position_list:
+                        sample_worksheet.data_validation(1, 3, 1000, 3, {
+                            'validate': 'list',
+                            'source': '=dataInstructor!$E$1:$E${}'.format(len(position_list))
+                        })
+                    if subj_grp_list:
+                        sample_worksheet.data_validation(1, 7, 1000, 7, {
+                            'validate': 'list',
+                            'source': '=dataInstructor!$F$1:$F${}'.format(len(subj_grp_list))
+                        })
                 elif object_type == 'teaching-assignment':
                     sample_data = self.get_teaching_assignment_template()
                     filename = "mau_import_phan_cong_giang_day.xlsx"
@@ -2285,74 +2276,71 @@ class ImportTeachingDataView(View):
                     self.create_teaching_assignment_guide_sheet(writer)
                     
                     # Tạo danh sách chọn cho cột "Mã giảng viên", "Mã chương trình", "Mã môn học", "Mã lớp học", "Mã lớp học ghép"
-                    try:
-                        instructors_code = list(Instructor.objects.all().values_list('code', flat=True))
-                        instructors_name = list(Instructor.objects.all().values_list('full_name', flat=True))
-                        curricula = list(Curriculum.objects.all().values_list('code', flat=True))
-                        subjects_code = list(Subject.objects.all().values_list('code', flat=True))
-                        subjects_name = list(Subject.objects.all().values_list('name', flat=True))
-                        classes = list(Class.objects.all().values_list('code', flat=True))
-                        combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
-                        
-                        instructors_code_list = [inst['code'] for inst in instructors_code]
-                        instructors_name_list = [instn['name'] for instn in instructors_name]
-                        subjects_code_list = [sc['code'] for sc in subjects_code]
-                        subjects_name_list = [sn['name'] for sn in subjects_name]
-                        classes_list = [cl['code'] for cl in classes]
-                        combined_classes_list = [ccl['code'] for ccl in combined_classes]
+                    instructors_code = list(Instructor.objects.all().values_list('code', flat=True))
+                    instructors_name = list(Instructor.objects.all().values_list('full_name', flat=True))
+                    curricula = list(Curriculum.objects.all().values_list('code', flat=True))
+                    subjects_code = list(Subject.objects.all().values_list('code', flat=True))
+                    subjects_name = list(Subject.objects.all().values_list('name', flat=True))
+                    classes = list(Class.objects.all().values_list('code', flat=True))
+                    combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
+                    
+                    instructors_code_list = [inst['code'] for inst in instructors_code]
+                    instructors_name_list = [instn['name'] for instn in instructors_name]
+                    subjects_code_list = [sc['code'] for sc in subjects_code]
+                    subjects_name_list = [sn['name'] for sn in subjects_name]
+                    classes_list = [cl['code'] for cl in classes]
+                    combined_classes_list = [ccl['code'] for ccl in combined_classes]
 
-                        # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
-                        dataAssignment_sheet = workbook.add_worksheet('dataAssignment')
-                        dataAssignment_sheet.hide()
+                    # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
+                    dataAssignment_sheet = workbook.add_worksheet('dataAssignment')
+                    dataAssignment_sheet.hide()
+                    
+                    # Chỉ thêm data validation nếu có dữ liệu
+                    if instructors_code_list:
+                        for i, instructor_code in enumerate(instructors_code_list):
+                            dataAssignment_sheet.write(i, 0, instructor_code)
+                        for i, instructor_name in enumerate(instructors_name_list):
+                            dataAssignment_sheet.write(i, 1, instructor_name)
+                    if subjects_code_list:
+                        for i, subjects_code in enumerate(subjects_code_list):
+                            dataAssignment_sheet.write(i, 2, subjects_code)
+                        for i, subjects_name in enumerate(subjects_name_list):
+                            dataAssignment_sheet.write(i, 3, subjects_name)
+                    if classes_list:
+                        for i, class_item in enumerate(classes_list):
+                            dataAssignment_sheet.write(i, 4, class_item)
+                    if combined_classes_list:
+                        for i, combined_class in enumerate(combined_classes_list):
+                            dataAssignment_sheet.write(i, 5, combined_class)
                         
-                        # Chỉ thêm data validation nếu có dữ liệu
-                        if instructors_code_list:
-                            for i, instructor_code in enumerate(instructors_code_list):
-                                dataAssignment_sheet.write(i, 0, instructor_code)
-                            for i, instructor_name in enumerate(instructors_name_list):
-                                dataAssignment_sheet.write(i, 1, instructor_name)
-                        if subjects_code_list:
-                            for i, subjects_code in enumerate(subjects_code_list):
-                                dataAssignment_sheet.write(i, 2, subjects_code)
-                            for i, subjects_name in enumerate(subjects_name_list):
-                                dataAssignment_sheet.write(i, 3, subjects_name)
-                        if classes_list:
-                            for i, class_item in enumerate(classes_list):
-                                dataAssignment_sheet.write(i, 4, class_item)
-                        if combined_classes_list:
-                            for i, combined_class in enumerate(combined_classes_list):
-                                dataAssignment_sheet.write(i, 5, combined_class)
-                            
-                        # Tạo data validation
-                        if instructors_code_list:
-                            sample_worksheet.data_validation(1, 0, 1000, 0, {
-                                'validate': 'list',
-                                'source': '=dataAssignment!$A$1:$A${}'.format(len(instructors_code_list))
-                            })
-                        if instructors_name_list:
-                            sample_worksheet.data_validation(1, 1, 1000, 1, {
-                                'validate': 'list',
-                                'source': '=dataAssignment!$B$1:$B${}'.format(len(instructors_name_list))
-                            })
-                        if subjects_code_list:
-                            sample_worksheet.data_validation(1, 2, 1000, 2, {
-                                'validate': 'list',
-                                'source': '=dataAssignment!$C$1:$C${}'.format(len(subjects_code_list))
-                            })
-                            
-                        if classes_list:
-                            sample_worksheet.data_validation(1, 3, 1000, 3, {
-                                'validate': 'list',
-                                'source': '=dataAssignment!$E$1:$E${}'.format(len(classes_list))
-                            })
-                        # if combined_classes_list:
-                        #     sample_worksheet.data_validation(1, 4, 1000, 4, {
-                        #         'validate': 'list',
-                        #         'source': '=dataAssignment!$F$1:$F${}'.format(len(combined_classes_list))
-                        #     })
+                    # Tạo data validation
+                    if instructors_code_list:
+                        sample_worksheet.data_validation(1, 0, 1000, 0, {
+                            'validate': 'list',
+                            'source': '=dataAssignment!$A$1:$A${}'.format(len(instructors_code_list))
+                        })
+                    if instructors_name_list:
+                        sample_worksheet.data_validation(1, 1, 1000, 1, {
+                            'validate': 'list',
+                            'source': '=dataAssignment!$B$1:$B${}'.format(len(instructors_name_list))
+                        })
+                    if subjects_code_list:
+                        sample_worksheet.data_validation(1, 2, 1000, 2, {
+                            'validate': 'list',
+                            'source': '=dataAssignment!$C$1:$C${}'.format(len(subjects_code_list))
+                        })
+                        
+                    if classes_list:
+                        sample_worksheet.data_validation(1, 3, 1000, 3, {
+                            'validate': 'list',
+                            'source': '=dataAssignment!$E$1:$E${}'.format(len(classes_list))
+                        })
+                    # if combined_classes_list:
+                    #     sample_worksheet.data_validation(1, 4, 1000, 4, {
+                    #         'validate': 'list',
+                    #         'source': '=dataAssignment!$F$1:$F${}'.format(len(combined_classes_list))
+                    #     })
 						
-                    except:
-                        pass
                 else:
                     return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
                 
