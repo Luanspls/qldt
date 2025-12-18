@@ -6,6 +6,7 @@
     <title>Quản lý Chương trình Đào tạo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
     <style>
         .editable:focus {
@@ -557,6 +558,10 @@
                     <select id="select-existing-subject" class="w-full">
                         <option value="">-- Tìm kiếm môn học có sẵn --</option>
                     </select>
+                    <button type="button" id="btn-use-existing" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-check mr-1"></i> Chọn
+                    </button>
                 </div>
                 <p class="text-xs text-blue-600">Chọn môn học từ danh sách có sẵn để tự động điền thông tin</p>
             </div>
@@ -959,7 +964,12 @@
         // Hàm tải danh sách môn học có sẵn với đầy đủ thông tin
         function loadExistingSubjects() {
             fetch('/api/all-subjects/')  // Cần tạo endpoint mới trả về đầy đủ thông tin
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(subjects => {
                     const select = $('#select-existing-subject');
                     select.empty();
@@ -987,14 +997,36 @@
                 })
                 .catch(error => {
                     console.error('Error loading existing subjects:', error);
+                    // Fallback: sử dụng endpoint cũ
+                    fetch('/api/all-subjects/')
+                        .then(response => response.json())
+                        .then(subjects => {
+                            const select = $('#select-existing-subject');
+                            select.empty();
+                            select.append($('<option>', {
+                                value: '',
+                                text: '-- Tìm kiếm môn học có sẵn --'
+                            }));
+                            
+                            subjects.forEach(subject => {
+                                select.append($('<option>', {
+                                    value: subject.id,
+                                    text: `${subject.code} - ${subject.name}`
+                                }));
+                            });
+                            
+                            window.existingSubjects = subjects;
+                            select.trigger('change');
+                        });
                 });
         }
 
         // Cập nhật hàm handleUseExistingSubject
         function handleUseExistingSubject() {
             const select = document.getElementById('select-existing-subject');
-            const selectedOption = select.options[select.selectedIndex];
+            if (!select) return;
             
+            const selectedOption = select.options[select.selectedIndex];
             if (!selectedOption.value) {
                 alert('Vui lòng chọn một môn học');
                 return;
@@ -1003,11 +1035,17 @@
             // Lấy thông tin môn học từ data attribute
             const subjectData = selectedOption.getAttribute('data-subject');
             if (subjectData) {
-                const subject = JSON.parse(subjectData);
-                fillSubjectFormFromExisting(subject);
+                try {
+                    const subject = JSON.parse(subjectData);
+                    fillSubjectFormFromExisting(subject);
+                } catch (e) {
+                    console.error('Error parsing subject data:', e);
+                    alert('Không thể tải thông tin môn học. Vui lòng thử lại.');
+                }
             } else {
                 // Fallback: tìm trong mảng existingSubjects
-                const subject = window.existingSubjects?.find(s => s.id == selectedOption.value);
+                const subjectId = selectedOption.value;
+                const subject = window.existingSubjects?.find(s => s.id == subjectId);
                 if (subject) {
                     fillSubjectFormFromExisting(subject);
                 } else {
@@ -1022,9 +1060,15 @@
             $('#select-existing-subject').val('').trigger('change');
             
             const $form = $('#form-them-mon-hoc');
-            $form.find('input[name="code"], input[name="name"]').prop('readonly', false);
-            $form[0].reset();
-            $form.find('select').val('').trigger('change');
+            if (form) {
+                form.querySelector('input[name="code"]').readOnly = false;
+                form.querySelector('input[name="name"]').readOnly = false;
+                form.reset();
+                
+                // Reset các select2
+                $('#them-mon-hoc-curriculum, #them-mon-hoc-course').val('').trigger('change');
+                $('select[name="department_id"], select[name="subject_type_id"], select[name="subject_group_id"], select[name="semester"]').val('').trigger('change');
+            }
         }
         
         // Khởi tạo dropdowns
@@ -1052,6 +1096,11 @@
                 }
                 dropdown.appendChild(option);
             });
+            
+            // Cập nhật Select2 nếu đã được khởi tạo
+            if ($(dropdown).hasClass('select2-hidden-accessible')) {
+                $(dropdown).trigger('change');
+            }
         }
         
         // Render bảng dữ liệu
@@ -2195,6 +2244,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeDropdowns();
             renderTable();
+            
+            // Khởi tạo Select2 sau khi DOM đã sẵn sàng
+            setTimeout(() => {
+                initializeSelect2();
+            }, 100);
+            
             // Pre-load danh sách môn học nhưng không block render
 			setTimeout(() => {
     			loadAllSubjects();
