@@ -781,7 +781,7 @@ class ImportExcelView(View):
             errors = []
             
             # Kiểm tra cấu trúc file
-            required_columns = ['Mã môn học', 'Tên học phần', 'Số tín chỉ']
+            required_columns = ['Mã môn học*', 'Tên học phần*', 'Số tín chỉ*']
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 return {
@@ -792,12 +792,12 @@ class ImportExcelView(View):
             for index, row in df.iterrows():
                 try:
                     # Bỏ qua các dòng trống hoặc dòng tiêu đề
-                    if pd.isna(row.get('Mã môn học')) or str(row.get('Mã môn học')).strip() in ['', 'Mã môn học', 'nan']:
+                    if pd.isna(row.get('Mã môn học*')) or str(row.get('Mã môn học*')).strip() in ['', 'Mã môn học*', 'nan']:
                         continue
                     
                     # Chuẩn hóa dữ liệu
-                    original_code = str(row.get('Mã môn học')).strip()
-                    ten_mon_hoc = str(row.get('Tên học phần')).strip()
+                    original_code = str(row.get('Mã môn học*')).strip()
+                    ten_mon_hoc = str(row.get('Tên học phần*')).strip()
                     
                     if not original_code or not ten_mon_hoc:
                         errors.append(f"Dòng {index + 2}: Mã môn học và Tên học phần không được để trống")
@@ -805,28 +805,28 @@ class ImportExcelView(View):
                     
                     # Xử lý số tín chỉ
                     try:
-                        so_tin_chi = float(row.get('Số tín chỉ', 0))
+                        so_tin_chi = float(row.get('Số tín chỉ*', 0))
                     except (ValueError, TypeError):
                         so_tin_chi = 0
                     
                     # Xử lý số giờ
                     try:
-                        tong_so_gio = int(float(row.get('Tổng số giờ', 0)))
+                        tong_so_gio = int(float(row.get('Tổng số giờ*', 0)))
                     except (ValueError, TypeError):
                         tong_so_gio = 0
                     
                     try:
-                        ly_thuyet = int(float(row.get('Lý thuyết', 0)))
+                        ly_thuyet = int(float(row.get('Lý thuyết*', 0)))
                     except (ValueError, TypeError):
                         ly_thuyet = 0
                     
                     try:
-                        thuc_hanh = int(float(row.get('Thực hành', 0)))
+                        thuc_hanh = int(float(row.get('Thực hành*', 0)))
                     except (ValueError, TypeError):
                         thuc_hanh = 0
                     
                     try:
-                        kiem_tra = int(float(row.get('Kiểm tra', 0)))
+                        kiem_tra = int(float(row.get('Kiểm tra*', 0)))
                     except (ValueError, TypeError):
                         kiem_tra = 0
                     
@@ -846,7 +846,7 @@ class ImportExcelView(View):
                                 break
                     
                     # Lấy hoặc tạo department - sử dụng giá trị chính xác từ database
-                    department_name = str(row.get('Đơn vị', '')).strip()
+                    department_name = str(row.get('Đơn vị quản lý chuyên môn*', '')).strip()
                     department = None
                     if department_name and department_name not in ['', 'nan']:
                         try:
@@ -881,7 +881,7 @@ class ImportExcelView(View):
                     
                     # Lấy hoặc tạo subject_group nếu có
                     subject_group = None
-                    subject_group_name = str(row.get('Tổ bộ môn', '')).strip()
+                    subject_group_name = str(row.get('Tổ bộ môn*', '')).strip()
                     if subject_group_name and subject_group_name not in ['', 'nan']:
                         subject_group, _ = SubjectGroup.objects.get_or_create(
                             department=department,
