@@ -2223,24 +2223,42 @@
                 });
             });
 
+            // Khởi tạo Select2
+            setTimeout(() => {
+                initializeSelect2();
+            }, 100);
+
             // Xử lý sự kiện thay đổi dropdown
             document.getElementById('khoa-dao-tao').addEventListener('change', function() {
                 const departmentId = this.value;
                 
                 // Reset các dropdown phía sau
-                document.getElementById('to-bo-mon').value = '';
-                document.getElementById('chuong-trinh-dao-tao').value = '';
-                document.getElementById('khoa-hoc').value = '';
+                $('#to-bo-mon').val('').trigger('change');
+                $('#chuong-trinh-dao-tao').val('').trigger('change');
+                $('#khoa-hoc').val('').trigger('change');
                 
                 // Load subject groups theo department
                 if (departmentId) {
                     fetch(`/api/subject-groups/?department_id=${departmentId}`)
                         .then(response => response.json())
                         .then(data => {
-                            populateDropdown('to-bo-mon', data, 'name');
+                            // Cập nhật dropdown tổ bộ môn
+                            const select = $('#to-bo-mon');
+                            select.empty();
+                            select.append($('<option>', {
+                                value: '',
+                                text: '-- Chọn tổ bộ môn --'
+                            }));
+                            
+                            data.forEach(item => {
+                                select.append($('<option>', {
+                                    value: item.id,
+                                    text: item.name
+                                }));
+                            });
+                            
+                            select.trigger('change');
                         });
-                } else {
-                    populateDropdown('to-bo-mon', allSubjectGroups, 'name');
                 }
                 
                 loadFilteredData();
@@ -2254,16 +2272,28 @@
             
             document.getElementById('chuong-trinh-dao-tao').addEventListener('change', function() {
                 const curriculumId = this.value;
-                document.getElementById('khoa-hoc').value = '';
+                $('#khoa-hoc').val('').trigger('change');
                 
                 if (curriculumId) {
                     fetch(`/api/courses/?curriculum_id=${curriculumId}`)
                         .then(response => response.json())
                         .then(data => {
-                            populateDropdown('khoa-hoc', data, 'name');
+                            const select = $('#khoa-hoc');
+                            select.empty();
+                            select.append($('<option>', {
+                                value: '',
+                                text: '-- Chọn khóa học --'
+                            }));
+                            
+                            data.forEach(item => {
+                                select.append($('<option>', {
+                                    value: item.id,
+                                    text: `${item.name} (${item.code || ''})`
+                                }));
+                            });
+                            
+                            select.trigger('change');
                         });
-                } else {
-                    populateDropdown('khoa-hoc', allCourses, 'name');
                 }
                 
                 loadFilteredData();
@@ -2364,76 +2394,6 @@
                 }
             });
 
-            // Khởi tạo Select2
-            setTimeout(() => {
-                initializeSelect2();
-            }, 100);
-            
-            // Cập nhật sự kiện cho dropdown chính
-            $('#khoa-dao-tao').on('change', function() {
-                const departmentId = this.value;
-                
-                // Reset các dropdown phía sau
-                $('#to-bo-mon').val('').trigger('change');
-                $('#chuong-trinh-dao-tao').val('').trigger('change');
-                $('#khoa-hoc').val('').trigger('change');
-                
-                // Load subject groups theo department
-                if (departmentId) {
-                    fetch(`/api/subject-groups/?department_id=${departmentId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            // Cập nhật dropdown tổ bộ môn
-                            const select = $('#to-bo-mon');
-                            select.empty();
-                            select.append($('<option>', {
-                                value: '',
-                                text: '-- Chọn tổ bộ môn --'
-                            }));
-                            
-                            data.forEach(item => {
-                                select.append($('<option>', {
-                                    value: item.id,
-                                    text: item.name
-                                }));
-                            });
-                            
-                            select.trigger('change');
-                        });
-                }
-                
-                loadFilteredData();
-            });
-            
-            $('#chuong-trinh-dao-tao').on('change', function() {
-                const curriculumId = this.value;
-                $('#khoa-hoc').val('').trigger('change');
-                
-                if (curriculumId) {
-                    fetch(`/api/courses/?curriculum_id=${curriculumId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            const select = $('#khoa-hoc');
-                            select.empty();
-                            select.append($('<option>', {
-                                value: '',
-                                text: '-- Chọn khóa học --'
-                            }));
-                            
-                            data.forEach(item => {
-                                select.append($('<option>', {
-                                    value: item.id,
-                                    text: `${item.name} (${item.code || ''})`
-                                }));
-                            });
-                            
-                            select.trigger('change');
-                        });
-                }
-                
-                loadFilteredData();
-            });
-            
             // Cập nhật sự kiện cho modal thêm môn học
             $('#btn-them-mon-hoc').on('click', function() {
                 setTimeout(() => {
