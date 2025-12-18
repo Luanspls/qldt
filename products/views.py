@@ -2167,16 +2167,20 @@ class ImportTeachingDataView(View):
                             'validate': 'list',
                             'source': '=dataCombClass!$A$1:$B${}'.format(len(subject_code_list))
                         })
-                    if classes:
-                        sample_worksheet.data_validation(1, 3, 1000, 3, {
-                            'validate': 'list',
-                            'source': '=dataCombClass!$C$1:$C${}'.format(len(class_list))
-                        })
-                    if combined_classes:
-                        sample_worksheet.data_validation(1, 0, 1000, 0, {
-                            'validate': 'list',
-                            'source': '=dataCombClass!$D$1:$D${}'.format(len(comb_class_list))
-                        })
+                    # if classes:
+                    #     sample_worksheet.data_validation(1, 3, 1000, 3, {
+                    #         'validate': 'list',
+                    #         'source': '=dataCombClass!$C$1:$C${}'.format(len(class_list))
+                    #     })
+                    # if combined_classes:
+                    #     sample_worksheet.data_validation(1, 0, 1000, 0, {
+                    #         'validate': 'list',
+                    #         'source': '=dataCombClass!$D$1:$D${}'.format(len(comb_class_list))
+                    #     })
+                    note_format = workbook.add_format({'italic': True, 'font_color': 'blue', 'font_size': 9})
+                    sample_worksheet.write(1, 3, "CNOT5,DTD5,DCN5", note_format)
+                    comment_text = "Nhập nhiều mã lớp phân cách bằng dấu phẩy\nVí dụ: CNOT5,DTD5,DCN5\nDanh sách lớp có sẵn xem ở sheet 'Hướng dẫn nhập liệu'"
+                    sample_worksheet.write_comment(0, 3, comment_text, {'x_scale': 1.5, 'y_scale': 2})
                 elif object_type == 'instructor':
                     sample_data = self.get_instructor_template()
                     filename = "mau_import_giang_vien.xlsx"
@@ -2270,11 +2274,13 @@ class ImportTeachingDataView(View):
                     self.create_teaching_assignment_guide_sheet(writer)
                     
                     instructors_code_list = [inst['code'] for inst in instructors]
-                    instructors_name_list = [instn['name'] for instn in instructors]
+                    instructors_name_list = [instn['full_name'] for instn in instructors]
                     subjects_code_list = [sc['code'] for sc in subjects]
                     subjects_name_list = [sn['name'] for sn in subjects]
-                    classes_list = [cl['code'] for cl in classes]
+                    regular_classes_list = [cl['code'] for cl in classes]
                     combined_classes_list = [ccl['code'] for ccl in combined_classes]
+                    all_class_list = regular_classes_list + combined_classes_list
+                    subject_type = ['Thường', 'Ghép']
 
                     # Viết danh sách vào một sheet ẩn hoặc sử dụng named range
                     dataAssignment_sheet = workbook.add_worksheet('dataAssignment')
@@ -2291,12 +2297,12 @@ class ImportTeachingDataView(View):
                             dataAssignment_sheet.write(i, 2, subjects_code)
                         for i, subjects_name in enumerate(subjects_name_list):
                             dataAssignment_sheet.write(i, 3, subjects_name)
-                    if classes_list:
-                        for i, class_item in enumerate(classes_list):
+                    if all_class_list:
+                        for i, class_item in enumerate(all_class_list):
                             dataAssignment_sheet.write(i, 4, class_item)
-                    if combined_classes_list:
-                        for i, combined_class in enumerate(combined_classes_list):
-                            dataAssignment_sheet.write(i, 5, combined_class)
+                    # if combined_classes_list:
+                    #     for i, combined_class in enumerate(combined_classes_list):
+                    #         dataAssignment_sheet.write(i, 5, combined_class)
                         
                     # Tạo data validation
                     if instructors_code_list:
@@ -2315,16 +2321,15 @@ class ImportTeachingDataView(View):
                             'source': '=dataAssignment!$C$1:$C${}'.format(len(subjects_code_list))
                         })
                         
-                    if classes_list:
+                    if all_class_list:
                         sample_worksheet.data_validation(1, 3, 1000, 3, {
                             'validate': 'list',
-                            'source': '=dataAssignment!$E$1:$E${}'.format(len(classes_list))
+                            'source': '=dataAssignment!$E$1:$E${}'.format(len(all_class_list))
                         })
-                    # if combined_classes_list:
-                    #     sample_worksheet.data_validation(1, 4, 1000, 4, {
-                    #         'validate': 'list',
-                    #         'source': '=dataAssignment!$F$1:$F${}'.format(len(combined_classes_list))
-                    #     })
+                    sample_worksheet.data_validation(1, 4, 1000, 4, {
+                            'validate': 'list',
+                            'source': subject_type
+                        })
 						
                 else:
                     return JsonResponse({'status': 'error', 'message': 'Loại đối tượng không hợp lệ'})
@@ -2484,7 +2489,16 @@ class ImportTeachingDataView(View):
                 tt_sub += 1
             row += 2
             
-            # Section Lớp học có thể ghép
+            # Section Lớp học có thể ghép - HIỂN THỊ DẠNG DỄ COPY
+            worksheet.write(row, 0, "CHUỖI LỚP HỌC CÓ SẴN (COPY LỚP ĐỂ NHẬP)", bold_format1)
+            row += 1
+            
+            # Tạo một dòng với tất cả mã lớp, phân cách bằng dấu phẩy
+            all_class_codes = ",".join([c['code'] for c in classes])
+            worksheet.write(row, 0, "Tất cả mã lớp có thể ghép:", bold_format)
+            worksheet.write(row, 1, all_class_codes, italic_format)
+            row += 2
+            # Bảng chi tiết các lớp học có sẵn
             worksheet.write(row, 0, "DANH SÁCH LỚP HỌC CÓ THỂ GHÉP", bold_format)
             row += 1
             worksheet.write(row, 0, "TT", header_format)
@@ -2504,7 +2518,7 @@ class ImportTeachingDataView(View):
             row += 2
             
             # Section Lớp học ghép hiện có
-            worksheet.write(row, 0, "DANH SÁCH LỚP HỌC GHÉP HIỆN CÓ", bold_format)
+            worksheet.write(row, 0, "DANH SÁCH LỚP GHÉP HIỆN CÓ", bold_format)
             row += 1
             worksheet.write(row, 0, "TT", header_format)
             worksheet.write(row, 1, "Mã lớp ghép", header_format)
@@ -2825,12 +2839,12 @@ class ImportTeachingDataView(View):
         return {
             'Mã giảng viên*': ['GV001', 'GV002', 'GV003'],
             'Họ và tên*': ['Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C'],
-            'Mã đơn vị quản lý GV': ['DCNTT', 'QLCL', 'QLDT'],
-            'Chức vụ': ['Trưởng Khoa', '', 'Phó Khoa'],
+            'Đơn vị quản lý GV*': ['Khoa Kinh tế - Nông, Lâm nghiệp', 'Khoa Khoa học cơ bản', 'Phòng Quản lý chất lượng'],
+            'Chức vụ*': ['Trưởng Khoa', 'Giảng viên', 'Phó Trưởng phòng'],
             'Email': ['nva@example.com', 'ttb@example.com', 'lvc@example.com'],
             'Số điện thoại': ['0123456789', '0987654321', '0912345678'],
-            'Mã khoa': ['DCNTT', 'DCNTT', 'KTNLN'],
-            'Mã tổ bộ môn': ['BM_HTTT', 'BM_MMT', 'BM_QTKD'],
+            'Khoa chuyên môn*': ['Khoa Kinh tế - Nông, Lâm nghiệp', 'Khoa Khoa học cơ bản', 'Khoa Sư phạm'],
+            'Mã tổ bộ môn*': ['BM_HTTT', 'BM_MMT', 'BM_QTKD'],
             'Trạng thái': ['Đang hoạt động', 'Đang hoạt động', 'Ngừng hoạt động']
         }
 
@@ -3099,7 +3113,7 @@ class ImportTeachingDataView(View):
             processed_data = []
                 
             # Kiểm tra cấu trúc file
-            required_columns = ['Mã giảng viên*', 'Họ và tên*']
+            required_columns = ['Mã giảng viên*', 'Họ và tên*', 'Đơn vị quản lý GV*', 'Chức vụ*', 'Khoa chuyên môn*', 'Mã tổ bộ môn*']
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 return {
@@ -3116,23 +3130,25 @@ class ImportTeachingDataView(View):
                     # Chuẩn hóa dữ liệu
                     code = str(row.get('Mã giảng viên*')).strip()
                     full_name = str(row.get('Họ và tên*')).strip()
+                    department_teacher = str(row.get('Đơn vị quản lý GV*')).strip()
+                    department = str(row.get('Khoa chuyên môn*')).strip()
+                    position = str(row.get('Chức vụ*')).strip()
+                    subject_group = str(row.get('Mã tổ bộ môn*')).strip()
                         
-                    if not code or not full_name:
+                    if not code or not full_name or not department_teacher or not department or not position or not subject_group:
                         errors.append(f"Dòng {index + 2}: Thiếu thông tin bắt buộc")
                         continue
 
                     # Xử lý Đơn vị quản lý giảng viên
-                    department_teacher_code = str(row.get('Mã đơn vị quản lý GV', '')).strip()
-                    department_teacher = None
-                    if department_teacher_code and department_teacher_code not in ['', 'nan']:
+                    department_teacher_obj = None
+                    if department_teacher and department_teacher not in ['', 'nan']:
                         try:
-                            department_teacher = Department.objects.get(code=department_teacher_code)
+                            department_teacher_obj = Department.objects.get(name=department_teacher)
                         except Department.DoesNotExist:
-                            errors.append(f"Dòng {index + 2}: Không tìm thấy khoa với mã '{department_teacher_code}'")
+                            errors.append(f"Dòng {index + 2}: Không tìm thấy khoa với mã '{department_teacher}'")
                             continue
                     
                     # Xử lý chức vụ
-                    position = str(row.get('Chức vụ', '')).strip()
                     position_obj = None
                     if position in ['', 'nan']:
                         try:
@@ -3152,23 +3168,21 @@ class ImportTeachingDataView(View):
                         phone = None
 
                     # Xử lý khoa
-                    department_code = str(row.get('Mã khoa', '')).strip()
-                    department = None
-                    if department_code and department_code not in ['', 'nan']:
+                    department_obj = None
+                    if department and department not in ['', 'nan']:
                         try:
-                            department = Department.objects.get(code=department_code)
+                            department_obj = Department.objects.get(name=department)
                         except Department.DoesNotExist:
-                            errors.append(f"Dòng {index + 2}: Không tìm thấy khoa với mã '{department_code}'")
+                            errors.append(f"Dòng {index + 2}: Không tìm thấy khoa với mã '{department}'")
                             continue
 
                     # Xử lý tổ bộ môn
-                    subject_group_code = str(row.get('Mã tổ bộ môn', '')).strip()
-                    subject_group = None
-                    if subject_group_code and subject_group_code not in ['', 'nan']:
+                    subject_group_obj = None
+                    if subject_group and subject_group not in ['', 'nan']:
                         try:
-                            subject_group = SubjectGroup.objects.get(code=subject_group_code)
+                            subject_group_obj = SubjectGroup.objects.get(code=subject_group)
                         except SubjectGroup.DoesNotExist:
-                            errors.append(f"Dòng {index + 2}: Không tìm thấy tổ bộ môn với mã '{subject_group_code}'")
+                            errors.append(f"Dòng {index + 2}: Không tìm thấy tổ bộ môn với mã '{subject_group}'")
                             continue
 
                     # Xử lý trạng thái
@@ -3182,10 +3196,10 @@ class ImportTeachingDataView(View):
                             'full_name': full_name,
                             'email': email,
                             'phone': phone,
-                            'department': department,
-                            'department_teacher': department_teacher,
+                            'department': department_obj,
+                            'department_teacher': department_teacher_obj,
                             'position': position_obj,
-                            'subject_group': subject_group,
+                            'subject_group': subject_group_obj,
                             'is_active': is_active
                         }
                     )
@@ -3273,6 +3287,13 @@ class ImportTeachingDataView(View):
                         instructor = Instructor.objects.get(code=instructor_code)
                     except Instructor.DoesNotExist:
                         errors.append(f"Dòng {index + 2}: Không tìm thấy giảng viên với mã '{instructor_code}'")
+                        continue
+                    
+                    # Tìm giảng viên
+                    try:
+                        instructor_name = Instructor.objects.get(full_name=instructor_name)
+                    except Instructor.DoesNotExist:
+                        errors.append(f"Dòng {index + 2}: Không tìm thấy giảng viên với tên '{instructor_name}'")
                         continue
                         
                     # Tìm môn học (CurriculumSubject)
