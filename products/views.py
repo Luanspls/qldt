@@ -2057,6 +2057,17 @@ class ImportTeachingDataView(View):
                 
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 workbook  = writer.book
+                
+                curricula = Curriculum.objects.all().values('code')
+                courses = Course.objects.all().values('code')
+                classes = Class.objects.all().values('code')
+                combined_classes = CombinedClass.objects.all().values('code')
+                subjects = Subject.objects.all().values('code', 'name')
+                departments = Department.objects.all().values('code', 'name')
+                positions = Position.objects.all().values('name')
+                subject_groups = SubjectGroup.objects.all().values('code')
+                instructors = Instructor.objects.all().values('code', 'full_name')
+
                 # Tạo sheet dữ liệu mẫu
                 if object_type == 'class':
                     sample_data = self.get_class_template()
@@ -2076,11 +2087,7 @@ class ImportTeachingDataView(View):
                     self.create_class_guide_sheet(writer)
                     # guide_worksheet = writer.sheets['Hướng dẫn nhập liệu']
                     
-                    # Tạo danh sách chọn cho cột "Mã chương trình" và "Mã khóa học"
-                    curricula = list(Curriculum.objects.all().values_list('code', flat=True))
-                    courses = list(Course.objects.all().values_list('code', flat=True))
-                    combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
-
+                    
                     curriculum_list = [cu['code'] for cu in curricula]
                     course_list = [co['code'] for co in courses]
                     comb_class_list = [cc['code'] for cc in combined_classes]
@@ -2131,11 +2138,6 @@ class ImportTeachingDataView(View):
                     
                     # Tạo sheet hướng dẫn cho lớp học ghép
                     self.create_combined_class_guide_sheet(writer)
-                    
-                    # Tạo danh sách chọn cho cột "Mã môn học", "Lớp học thành phần" và có thể nhập từ khóa tìm kiếm
-                    subjects = list(Subject.objects.all().values_list(['code', 'name'], flat=False))
-                    classes = list(Class.objects.all().values_list('code', flat=True))
-                    combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
 
                     subject_code_list = [s['code'] for s in subjects]
                     subject_name_list = [sn['name'] for sn in subjects]
@@ -2191,18 +2193,10 @@ class ImportTeachingDataView(View):
                     # Tạo sheet hướng dẫn cho giảng viên
                     self.create_instructor_guide_sheet(writer)
                     
-                    # Tạo danh sách chọn cho cột "Mã đơn vị", "Mã đơn vị quản lý giáo viên", "Mã chức vụ", "Mã nhóm môn học"
-                    departments_code = list(Department.objects.all().values_list('code', flat=True))
-                    departments_name = list(Department.objects.all().values_list('name', flat=True))
-                    positions = list(Position.objects.all().values_list('name', flat=True))
-                    subject_groups = list(SubjectGroup.objects.all().values_list('code', flat=True))
-                    instructors_code = list(Instructor.objects.all().values_list('code', flat=True))
-                    instructors_name = list(Instructor.objects.all().values_list('full_name', flat=True))
-                    
-                    instructors_code_list = [inst['code'] for inst in instructors_code]
-                    instructors_name_list = [instn['name'] for instn in instructors_name]
-                    department_code_list = [dc['code'] for dc in departments_code]
-                    department_name_list = [dn['name'] for dn in departments_name]
+                    instructors_code_list = [inst['code'] for inst in instructors]
+                    instructors_name_list = [instn['full_name'] for instn in instructors]
+                    department_code_list = [dc['code'] for dc in departments]
+                    department_name_list = [dn['name'] for dn in departments]
                     position_list = [p['name'] for p in positions]
                     subj_grp_list = [sg['code'] for sg in subject_groups]
 
@@ -2275,19 +2269,10 @@ class ImportTeachingDataView(View):
                     # Tạo sheet hướng dẫn cho phân công giảng dạy
                     self.create_teaching_assignment_guide_sheet(writer)
                     
-                    # Tạo danh sách chọn cho cột "Mã giảng viên", "Mã chương trình", "Mã môn học", "Mã lớp học", "Mã lớp học ghép"
-                    instructors_code = list(Instructor.objects.all().values_list('code', flat=True))
-                    instructors_name = list(Instructor.objects.all().values_list('full_name', flat=True))
-                    curricula = list(Curriculum.objects.all().values_list('code', flat=True))
-                    subjects_code = list(Subject.objects.all().values_list('code', flat=True))
-                    subjects_name = list(Subject.objects.all().values_list('name', flat=True))
-                    classes = list(Class.objects.all().values_list('code', flat=True))
-                    combined_classes = list(CombinedClass.objects.all().values_list('code', flat=True))
-                    
-                    instructors_code_list = [inst['code'] for inst in instructors_code]
-                    instructors_name_list = [instn['name'] for instn in instructors_name]
-                    subjects_code_list = [sc['code'] for sc in subjects_code]
-                    subjects_name_list = [sn['name'] for sn in subjects_name]
+                    instructors_code_list = [inst['code'] for inst in instructors]
+                    instructors_name_list = [instn['name'] for instn in instructors]
+                    subjects_code_list = [sc['code'] for sc in subjects]
+                    subjects_name_list = [sn['name'] for sn in subjects]
                     classes_list = [cl['code'] for cl in classes]
                     combined_classes_list = [ccl['code'] for ccl in combined_classes]
 
