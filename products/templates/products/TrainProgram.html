@@ -10,12 +10,20 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
     <style>
         .modal {
-            z-index: 1050 !important; /*99990 !important;*/
+            z-index: 1049 !important; /*99990 !important;*/
         }
 		/* Đảm bảo backdrop của modal không bị ảnh hưởng */
 		.modal-backdrop {
     		z-index: 1040 !important; /* 99989 !important; */
 		}
+		#modal-them-mon-hoc {
+		    display: none !important;
+		}
+		
+		#modal-them-mon-hoc:not(.hidden) {
+		    display: flex !important;
+		}
+		
 		#modal-them-mon-hoc > div {
 		    z-index: 1051 !important;
 		    position: relative;
@@ -74,6 +82,11 @@
 		/* Select2 when open */
 		.select2-container--open {
 		    z-index: 100000 !important;
+		}
+
+		/* Select2 dropdown fix */
+		.select2-container--open .select2-dropdown {
+		    z-index: 99999 !important;
 		}
 		
 		/* Ensure dropdown is visible */
