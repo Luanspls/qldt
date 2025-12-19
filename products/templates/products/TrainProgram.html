@@ -48,6 +48,10 @@
 		.modal-backdrop {
     		z-index: 1040 !important; /* 99989 !important; */
 		}
+		#modal-them-mon-hoc > div {
+		    z-index: 1050 !important;
+		    position: relative;
+		}
 		/* Hiển thị tất cả Select2 trong modal */
         .modal select {
             display: block !important;
@@ -67,6 +71,8 @@
 		    outline: none !important;
 		    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
 		    transition: box-shadow 0.2s ease;
+			z-index: 1080 !important;
+    		position: relative;
 		}
 		
 		.select2-search__field:focus {
@@ -169,10 +175,14 @@
 		
 		/* Đảm bảo Select2 container không bị ẩn */
 		#modal-them-mon-hoc .select2-container {
-		    display: block !important;
-		    visibility: visible !important;
-		    opacity: 1 !important;
-		    z-index: auto !important;
+		    z-index: 1060 !important;
+		}
+
+		#modal-them-mon-hoc .select2-dropdown {
+		    z-index: 1070 !important;
+		    position: fixed !important;
+		    top: auto !important;
+		    left: auto !important;
 		}
 		
 		/* Fix chiều cao và scroll cho modal */
@@ -326,6 +336,7 @@
             background-color: white !important;
             cursor: text !important;
             pointer-events: auto !important;
+			
         }
         
         /* Xóa mọi style có thể chặn input */
@@ -362,6 +373,8 @@
             -moz-user-select: text !important;
             -ms-user-select: text !important;
             user-select: text !important;
+			position: relative;
+    		z-index: 1;
         }
 
 		/* Đặc biệt fix cho select trong modal */
@@ -1326,6 +1339,14 @@
 		            '#select-existing-subject'
 		        ];
 
+				// Destroy any existing Select2 instances first
+		        selectors.forEach(selector => {
+		            const $el = $(selector);
+		            if ($el.length && $el.hasClass('select2-hidden-accessible')) {
+		                $el.select2('destroy');
+		            }
+		        });
+				
 				// Khởi tạo Select2 cho từng phần tử (chỉ nếu chưa có)
 		        selectors.forEach(selector => {
 		            const $el = $(selector);
@@ -1462,39 +1483,42 @@
 
         // Hàm tải danh sách môn học có sẵn với đầy đủ thông tin
         function loadExistingSubjects() {
-			// Sử dụng dữ liệu hiện có nếu đã load, hoặc sử dụng fallback
-		    if (window.existingSubjects && window.existingSubjects.length > 0) {
-		        populateSubjectSelect(window.existingSubjects);
-		        return;
-		    }
+			const select = $('#select-existing-subject');
+    		const endpoint = '/api/all-subjects/';
+			
+			// Hiển thị loading
+		    select.empty();
+		    select.append($('<option>', {
+		        value: '',
+		        text: 'Đang tải danh sách môn học...'
+		    }));
 		    
-		    // Thử tải từ API nếu có, nếu không dùng fallback
-		    const endpoint = '/api/all-subjects/';
-		    
-            fetch(endpoint)
-                .then(response => {
-                    if (!response.ok) {
-						console.warn('API returned error status:', response.status);
-		                // Trả về mảng rỗng thay vì throw error
-		                return [];
-					}
-                    return response.json();
-                })
-                .then(subjects => {
-                    // Lưu mảng subjects toàn cục
-                    window.existingSubjects = subjects || [];
-            		populateSubjectSelect(window.existingSubjects);
-                })
-                .catch(error => {
-                    console.error('Error loading existing subjects:', error);
-                    const select = $('#select-existing-subject');
-                    select.empty();
-                    select.append($('<option>', {
-                        value: '',
-                        text: '-- Không thể tải danh sách môn học --'
-                    }));
-                    select.trigger('change.select2');
-                });
+		    fetch(endpoint)
+		        .then(response => {
+		            if (!response.ok) {
+		                console.warn('API không khả dụng, sử dụng dữ liệu cục bộ');
+		                throw new Error('API không khả dụng');
+		            }
+		            return response.json();
+		        })
+		        .then(subjects => {
+		            window.existingSubjects = subjects || [];
+		            populateSubjectSelect(window.existingSubjects);
+		        })
+		        .catch(error => {
+		            console.error('Error loading existing subjects:', error);
+		            // Sử dụng dữ liệu từ biến toàn cục allSubjects nếu có
+		            if (allSubjects && allSubjects.length > 0) {
+		                populateSubjectSelect(allSubjects);
+		            } else {
+		                select.empty();
+		                select.append($('<option>', {
+		                    value: '',
+		                    text: '-- Không có môn học nào --'
+		                }));
+		            }
+		            select.trigger('change.select2');
+		        });
         }
 
 		// Hàm hiển thị dữ liệu trong dropdown
@@ -1515,9 +1539,12 @@
 		        text: '-- Tìm kiếm môn học có sẵn --'
 		    }));
 		    
+			// Sử dụng subjects được truyền vào, nếu không có thì dùng allSubjects
+    		const subjectList = subjects && subjects.length > 0 ? subjects : (allSubjects || []);
+			
 		    // Thêm các môn học
-			if (Array.isArray(subjects) && subjects.length > 0) {
-			    subjects.forEach(subject => {
+			if (subjectList.length > 0) {
+			    subjectList.forEach(subject => {
 			        select.append($('<option>', {
 			            value: subject.id,
 			            text: `${subject.code || ''} - ${subject.name || ''}`,
@@ -2483,21 +2510,24 @@
                 console.error('Modal them mon hoc not found');
                 return;
             }
+
+			// Reset form
+			const form = document.getElementById('form-them-mon-hoc');
+			if (form) {
+				form.reset();
+				clearSubjectSelection();
+			}
 			
 			// Hiển thị modal
 		    modal.classList.remove('hidden');
 		    document.body.classList.add('overflow-hidden');
 			document.body.classList.add('modal-open');
+
+			// Close any open select2 dropdowns from main page
+    		$('.select2-container--open').select2('close');
 			
 			// Khởi tạo Select2 cho modal
 		    setTimeout(() => {
-				// Reset form
-			    const form = document.getElementById('form-them-mon-hoc');
-			    if (form) {
-			        form.reset();
-			        clearSubjectSelection();
-			    }
-				
 		        initializeSelect2ForSubjectModal();
 
 				const selectedCurriculumId = document.getElementById('chuong-trinh-dao-tao').value || '';
@@ -2512,7 +2542,7 @@
 		                    // Cập nhật thông tin ngành đào tạo
 		                    updateMajorInfo(selectedCurriculumId);
 		                }
-					}, 200);
+					}, 100);
 	            }
 	
 	            // Nếu đã chọn khóa học từ dropdown, set giá trị mặc định
@@ -2522,13 +2552,13 @@
 		                if (courseSelect.length) {
 		                    courseSelect.val(selectedCourseId).trigger('change');
 		                }
-		            }, 200);
+		            }, 100);
 	            }
 
 				// Tải danh sách môn học có sẵn
         		setTimeout(() => {
 					loadExistingSubjects();
-				}, 300);
+				}, 200);
 
                 // Đảm bảo các input có thể nhập
 				const inputs = modal.querySelectorAll('input, select, textarea');
@@ -2552,8 +2582,8 @@
 						firstInput.focus();
 						firstInput.select();
 		            }
-		        }, 400);
-			}, 100);
+		        }, 300);
+			}, 50);
         }
 
         // Đóng modal thêm môn học
@@ -2565,29 +2595,15 @@
             document.body.classList.remove('overflow-hidden');
 			document.body.classList.remove('modal-open');
 
-			// Chỉ destroy nếu đã được khởi tạo
-		    const selectors = [
-		        '#them-mon-hoc-curriculum',
-		        '#them-mon-hoc-course',
-		        '#them-mon-hoc-major',
-		        '#them-mon-hoc-department',
-		        '#them-mon-hoc-subject-type',
-		        '#them-mon-hoc-subject-group',
-		        '#them-mon-hoc-semester',
-		        '#select-existing-subject'
-		    ];
-			
-			selectors.forEach(selector => {
-		        const $el = $(selector);
-		        if ($el.length && $el.hasClass('select2-hidden-accessible')) {
-		            try {
-		                $el.select2('destroy');
-		            } catch (e) {
-		                // Bỏ qua lỗi nếu không thể destroy
-		                console.log('Cannot destroy Select2 for', selector, e.message);
-		            }
-		        }
-		    });
+			// Reset form
+		    const form = document.getElementById('form-them-mon-hoc');
+		    if (form) {
+		        form.reset();
+		        clearSubjectSelection();
+		    }
+		    
+		    // Close any open select2 dropdowns in modal
+		    $('#modal-them-mon-hoc .select2-container--open').select2('close');
         }
 
         // Cập nhật thông tin ngành đào tạo khi chọn chương trình
@@ -2782,26 +2798,27 @@
                 });
             });
         }
-		
+
+		let allSubjects = {{ subjects|safe }} || [];
         // Hàm load tất cả môn học để populate dropdowns
         function loadAllSubjects() {
-            if (isSubjectsLoaded) {
+            if (allSubjects.length > 0) {
     			return Promise.resolve(allSubjects);
 			}
     
 			return fetch('/api/all-subjects/')
     			.then(response => {
 					if (!response.ok) {
-		                console.warn('API not available, using fallback');
+		                console.warn('API not available, using empty array');
 		                return [];
 		            }
 					return response.json();
         		})
     			.then(data => {
-        			allSubjects = data;
+        			allSubjects = data || [];
         			isSubjectsLoaded = true;
         			console.log('Loaded all subjects:', allSubjects.length);
-        			return data;
+        			return allSubjects;
     			})
     			.catch(error => {
         			console.error('Error loading all subjects:', error);
