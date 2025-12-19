@@ -1269,15 +1269,31 @@ def serialize_curriculum_data(data):
 @csrf_exempt
 def api_all_subjects(request):
     """API lấy tất cả môn học (cho dropdown chọn môn học có sẵn)"""
-    subjects = Subject.objects.all().values(
-        'id', 'code', 'name', 'credits', 'total_hours',
-        'theory_hours', 'practice_hours', 'tests_hours', 'exam_hours',
-        'order_number', 'department_id', 'subject_type_id',
-        'subject_group_id', 'semester', 'description', 'prerequisites', 
-        'learning_outcomes', 'is_elective', 'elective_group',
-        'curriculum__code', 'curriculum__name', 'course__code'
-        )
-    return JsonResponse(list(subjects), safe=False)
+    subjects = Subject.objects.all().select_related('curriculum', 'course', 'department', 'subject_type', 'subject_group')
+    subjects_data = []
+    for subject in subjects:
+        subjects_data.append({
+            'id': subject.id,
+            'code': subject.code,
+            'name': subject.name,
+            'credits': subject.credits,
+            'total_hours': subject.total_hours,
+            'theory_hours': subject.theory_hours,
+            'practice_hours': subject.practice_hours,
+            'tests_hours': subject.tests_hours,
+            'exam_hours': subject.exam_hours,
+            'order_number': subject.order_number,
+            'department_id': subject.department.id,
+            'subject_type_id': subject.subject_type.id,
+            'subject_group_id': subject.subject_group.id,
+            'semester': subject.semester,
+            'description': subject.description,
+            'prerequisites': subject.prerequisites,
+            'learning_outcomes': subject.learning_outcomes,
+            'is_elective': subject.is_elective,
+            'elective_group': subject.elective_group,
+        })
+    return JsonResponse(subjects_data, safe=False)
 
 @csrf_exempt
 def api_positions(request):
