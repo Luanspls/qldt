@@ -843,11 +843,12 @@
                         <div>
                             <label class="block text-gray-700 text-sm font-bold mb-2">Ngành đào tạo</label>
                             <select id="them-mon-hoc-major" name="major_id"
-                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">-- Chọn ngành --</option>
+                            		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        		<option value="">-- Chọn ngành --</option>
                                 {% for major in majors %}
                                 <option value="{{ major.id }}">{{ major.name }} ({{ major.code }})</option>
                                 {% endfor %}
+							</select>
                         </div>
                     </div>
                 </div>
@@ -949,7 +950,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Đơn vị quản lý</label>
-                        <select name="department_id" 
+                        <select id="them-mon-hoc-department" name="department_id" 
                                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">-- Chọn đơn vị --</option>
                             {% for department in departments %}
@@ -959,7 +960,7 @@
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Loại môn *</label>
-                        <select name="subject_type_id" 
+                        <select id="them-mon-hoc-subject-type" name="subject_type_id" 
                                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                 required>
                             <option value="">-- Chọn loại môn --</option>
@@ -973,7 +974,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Tổ bộ môn</label>
-                        <select name="subject_group_id" 
+                        <select id="them-mon-hoc-subject-group" name="subject_group_id" 
                                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">-- Chọn tổ bộ môn --</option>
                             {% for subject_group in subject_groups %}
@@ -983,7 +984,7 @@
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Học kỳ mặc định</label>
-                        <select name="semester" 
+                        <select id="them-mon-hoc-semester" name="semester" 
                                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">-- Chọn học kỳ --</option>
                             {% for i in "123456" %}
@@ -1178,7 +1179,7 @@
                     dropdownCssClass: 'modal-select2'
                 });
                 
-                $('select[name="department_id"]').select2({
+                $('#them-mon-hoc-department').select2({
                     width: '100%',
                     placeholder: '-- Chọn đơn vị --',
                     allowClear: true,
@@ -1187,7 +1188,7 @@
                     dropdownCssClass: 'modal-select2'
                 });
 
-                $('select[name="subject_type_id"], select[name="subject_group_id"], select[name="semester"]').select2({
+                $('#them-mon-hoc-subject-type').select2({
                     width: '100%',
                     placeholder: '-- Chọn loại môn --',
                     allowClear: true,
@@ -1196,18 +1197,18 @@
                     dropdownCssClass: 'modal-select2'
                 });
 
-                $('select[name="subject_group_id"], select[name="semester"]').select2({
+				$('#them-mon-hoc-semester').select2({
                     width: '100%',
-                    placeholder: '-- Chọn tổ bộ môn --',
+                    placeholder: '-- Chọn HK --',
                     allowClear: true,
                     language: 'vi',
                     dropdownParent: modal,
                     dropdownCssClass: 'modal-select2'
                 });
 
-                $('select[name="semester"]').select2({
+                $('#them-mon-hoc-subject-group').select2({
                     width: '100%',
-                    placeholder: '-- Chọn học kỳ --',
+                    placeholder: '-- Chọn bộ môn --',
                     allowClear: true,
                     language: 'vi',
                     dropdownParent: modal,
