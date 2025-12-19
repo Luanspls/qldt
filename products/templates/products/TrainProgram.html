@@ -2349,7 +2349,7 @@
             
             const selectedCurriculumId = document.getElementById('chuong-trinh-dao-tao').value || '';
             const selectedCourseId = document.getElementById('khoa-hoc').value || '';
-			const selectedMajorId = document.getElementById('nganh-hoc').value || '';
+			// const selectedMajorId = document.getElementById('nganh-hoc').value || '';
             
             // Reset form trước
             const form = document.getElementById('form-them-mon-hoc');
@@ -2867,15 +2867,6 @@
                         deleteMonHoc(id);
                     }
                 }
-            });
-
-            // Cập nhật sự kiện cho modal thêm môn học
-            $('#btn-them-mon-hoc').on('click', function() {
-                setTimeout(() => {
-                    loadExistingSubjects();
-                    // Reset form
-                    clearSubjectSelection();
-                }, 100);
             });
 
             // Xử lý thêm chương trình đào tạo
