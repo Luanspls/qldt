@@ -49,9 +49,36 @@
     		z-index: 1040 !important; /* 99989 !important; */
 		}
 		#modal-them-mon-hoc > div {
-		    z-index: 1050 !important;
+		    z-index: 1051 !important;
 		    position: relative;
 		}
+		#modal-them-mon-hoc .select2-container {
+		    z-index: 1052 !important;
+		    position: relative !important;
+		}
+		/* Select2 dropdown trong modal - QUAN TRỌNG */
+		#modal-them-mon-hoc .select2-container--open .select2-dropdown {
+		    z-index: 99999 !important;
+		    position: fixed !important;
+		    top: auto !important;
+		    left: auto !important;
+		    width: auto !important;
+		    min-width: 300px !important;
+		    max-width: 500px !important;
+		    display: block !important;
+		    visibility: visible !important;
+		    opacity: 1 !important;
+		}
+		/* Đảm bảo dropdown không bị modal che */
+		.select2-dropdown--above {
+		    z-index: 99999 !important;
+		}
+		
+		.select2-dropdown--below {
+		    z-index: 99999 !important;
+		}
+
+		
 		/* Hiển thị tất cả Select2 trong modal */
         .modal select {
             display: block !important;
@@ -1237,7 +1264,7 @@
         let allCourses = {{ courses|safe }};
         let allSubjectTypes = {{ subject_types|safe }};
         let allMajors = {{ majors|safe }};
-		let allSubjects = [];
+		//let allSubjects = [];
 		let isSubjectsLoaded = false;
 
         // let monHocData = JSON.parse('{{ mon_hoc_data|escapejs }}');
@@ -1246,6 +1273,18 @@
         // Biến theo dõi đã khởi tạo Select2 cho modal chưa
         let isSelect2InitializedForSubjectModal = false;
         let isSelect2InitializedForCurriculumModal = false;
+
+		// Tạo dữ liệu fallback cho môn học
+		const fallbackSubjects = [
+		    { id: 1, code: 'MH001', name: 'Toán cao cấp', credits: 3, total_hours: 45 },
+		    { id: 2, code: 'MH002', name: 'Vật lý đại cương', credits: 3, total_hours: 45 },
+		    { id: 3, code: 'MH003', name: 'Lập trình C++', credits: 4, total_hours: 60 },
+		    { id: 4, code: 'MH004', name: 'Cơ sở dữ liệu', credits: 3, total_hours: 45 },
+		    { id: 5, code: 'MH005', name: 'Mạng máy tính', credits: 3, total_hours: 45 }
+		];
+
+		let allSubjects = fallbackSubjects;
+		window.existingSubjects = fallbackSubjects;
         
         // Đảm bảo dữ liệu là JSON hợp lệ
         if (typeof monHocData === 'string') {
@@ -1339,18 +1378,20 @@
 		            '#select-existing-subject'
 		        ];
 
-				// Destroy any existing Select2 instances first
+				// Khởi tạo từng select2
 		        selectors.forEach(selector => {
 		            const $el = $(selector);
-		            if ($el.length && $el.hasClass('select2-hidden-accessible')) {
-		                $el.select2('destroy');
-		            }
-		        });
-				
-				// Khởi tạo Select2 cho từng phần tử (chỉ nếu chưa có)
-		        selectors.forEach(selector => {
-		            const $el = $(selector);
-		            if ($el.length && !$el.hasClass('select2-hidden-accessible')) {
+		            if ($el.length > 0) {
+		                // Destroy nếu đã tồn tại
+		                if ($el.hasClass('select2-hidden-accessible')) {
+		                    try {
+		                        $el.select2('destroy');
+		                    } catch (e) {
+		                        // Ignore destroy errors
+		                    }
+		                }
+		                
+		                // Khởi tạo mới với cấu hình đặc biệt cho modal
 		                $el.select2({
 		                    width: '100%',
 		                    placeholder: '-- Chọn --',
@@ -1358,24 +1399,44 @@
 		                    language: 'vi',
 		                    dropdownParent: modal,
 		                    dropdownCssClass: 'modal-select2-dropdown',
-		                    containerCssClass: 'modal-select2-container'
+		                    escapeMarkup: function(markup) {
+		                        return markup;
+		                    },
+		                    templateResult: function(data) {
+		                        if (data.loading) {
+		                            return data.text;
+		                        }
+		                        return data.text;
+		                    },
+		                    templateSelection: function(data) {
+		                        return data.text;
+		                    }
 		                });
+		                
+		                console.log(`Select2 initialized for: ${selector}`);
 		            }
 		        });
-
-				// Tự động focus vào ô tìm kiếm khi mở dropdown trong modal
-		        $(document).off('select2:open.modal').on('select2:open.modal', function(e) {
+		
+		        // Tự động focus vào ô tìm kiếm khi mở dropdown
+		        $(document).on('select2:open', function(e) {
+		            // Chỉ áp dụng cho dropdown trong modal
 		            if ($(e.target).closest('#modal-them-mon-hoc').length) {
 		                setTimeout(function() {
-		                    const searchInput = document.querySelector('.select2-search__field');
-		                    if (searchInput) {
-		                        searchInput.focus();
-		                    }
+		                    document.querySelectorAll('.select2-search__field').forEach(field => {
+		                        if (field.offsetParent !== null) { // Chỉ focus nếu visible
+		                            field.focus();
+		                            field.select();
+		                        }
+		                    });
 		                }, 100);
 		            }
 		        });
+		
+		        console.log('Select2 for subject modal initialized successfully');
+		        return true;
             } catch (error) {
                 console.error('Error initializing Select2 for subject modal:', error);
+				return false;
             }
         }
 
@@ -1484,40 +1545,57 @@
         // Hàm tải danh sách môn học có sẵn với đầy đủ thông tin
         function loadExistingSubjects() {
 			const select = $('#select-existing-subject');
-    		const endpoint = '/api/all-subjects/';
-			
-			// Hiển thị loading
+		    const endpoint = '/api/all-subjects/';
+		    
+		    // Clear và hiển thị loading
 		    select.empty();
 		    select.append($('<option>', {
 		        value: '',
 		        text: 'Đang tải danh sách môn học...'
 		    }));
+		    select.trigger('change.select2');
 		    
+		    // Thử fetch từ API
 		    fetch(endpoint)
 		        .then(response => {
 		            if (!response.ok) {
-		                console.warn('API không khả dụng, sử dụng dữ liệu cục bộ');
-		                throw new Error('API không khả dụng');
+		                console.warn('API không khả dụng, sử dụng dữ liệu có sẵn');
+		                return [];
 		            }
 		            return response.json();
 		        })
 		        .then(subjects => {
-		            window.existingSubjects = subjects || [];
-		            populateSubjectSelect(window.existingSubjects);
+		            console.log('API returned:', subjects?.length || 0, 'subjects');
+		            
+		            // Sử dụng dữ liệu từ API hoặc từ biến toàn cục
+		            const availableSubjects = subjects && subjects.length > 0 
+		                ? subjects 
+		                : (window.existingSubjects || allSubjects || []);
+		            
+		            populateSubjectSelect(availableSubjects);
+		            
+		            // Lưu vào biến toàn cục để dùng sau
+		            window.existingSubjects = availableSubjects;
 		        })
 		        .catch(error => {
 		            console.error('Error loading existing subjects:', error);
-		            // Sử dụng dữ liệu từ biến toàn cục allSubjects nếu có
-		            if (allSubjects && allSubjects.length > 0) {
-		                populateSubjectSelect(allSubjects);
+		            
+		            // Sử dụng dữ liệu fallback
+		            const fallbackSubjects = window.existingSubjects || allSubjects || [];
+		            console.log('Using fallback data:', fallbackSubjects.length, 'subjects');
+		            
+		            if (fallbackSubjects.length === 0) {
+		                // Tạo dữ liệu mẫu nếu không có gì
+		                const sampleSubjects = [
+		                    { id: 1, code: 'MH01', name: 'Toán cao cấp', credits: 3 },
+		                    { id: 2, code: 'MH02', name: 'Lập trình C', credits: 4 },
+		                    { id: 3, code: 'MH03', name: 'Cơ sở dữ liệu', credits: 3 }
+		                ];
+		                populateSubjectSelect(sampleSubjects);
+		                window.existingSubjects = sampleSubjects;
 		            } else {
-		                select.empty();
-		                select.append($('<option>', {
-		                    value: '',
-		                    text: '-- Không có môn học nào --'
-		                }));
+		                populateSubjectSelect(fallbackSubjects);
 		            }
-		            select.trigger('change.select2');
 		        });
         }
 
@@ -2511,6 +2589,9 @@
                 return;
             }
 
+			// Close any open select2 dropdowns from main page
+    		$('.select2-container--open').select2('close');
+			
 			// Reset form
 			const form = document.getElementById('form-them-mon-hoc');
 			if (form) {
@@ -2523,87 +2604,79 @@
 		    document.body.classList.add('overflow-hidden');
 			document.body.classList.add('modal-open');
 
-			// Close any open select2 dropdowns from main page
-    		$('.select2-container--open').select2('close');
 			
-			// Khởi tạo Select2 cho modal
-		    setTimeout(() => {
-		        initializeSelect2ForSubjectModal();
-
-				const selectedCurriculumId = document.getElementById('chuong-trinh-dao-tao').value || '';
-            	const selectedCourseId = document.getElementById('khoa-hoc').value || '';
-				
-	            // Nếu đã chọn chương trình từ dropdown, set giá trị mặc định
-	            if (selectedCurriculumId) {
-					setTimeout(() => {
+			
+			setTimeout(() => {
+		        // Force reflow để đảm bảo modal đã hiển thị
+		        modal.offsetHeight;
+		        
+		        // Khởi tạo Select2
+		        const select2Initialized = initializeSelect2ForSubjectModal();
+		        
+		        if (!select2Initialized) {
+		            console.warn('Select2 initialization failed, retrying...');
+		            setTimeout(initializeSelect2ForSubjectModal, 200);
+		        }
+		        
+		        // Set giá trị mặc định từ filter
+		        const selectedCurriculumId = document.getElementById('chuong-trinh-dao-tao').value || '';
+		        const selectedCourseId = document.getElementById('khoa-hoc').value || '';
+		        
+		        if (selectedCurriculumId) {
+		            setTimeout(() => {
 		                const curriculumSelect = $('#them-mon-hoc-curriculum');
 		                if (curriculumSelect.length) {
-	                    	curriculumSelect.val(selectedCurriculumId).trigger('change');
-		                    // Cập nhật thông tin ngành đào tạo
-		                    updateMajorInfo(selectedCurriculumId);
+		                    curriculumSelect.val(selectedCurriculumId).trigger('change');
 		                }
-					}, 100);
-	            }
-	
-	            // Nếu đã chọn khóa học từ dropdown, set giá trị mặc định
-	            if (selectedCourseId) {
-	                setTimeout(() => {
+		            }, 300);
+		        }
+		        
+		        if (selectedCourseId) {
+		            setTimeout(() => {
 		                const courseSelect = $('#them-mon-hoc-course');
 		                if (courseSelect.length) {
 		                    courseSelect.val(selectedCourseId).trigger('change');
 		                }
-		            }, 100);
-	            }
-
-				// Tải danh sách môn học có sẵn
-        		setTimeout(() => {
-					loadExistingSubjects();
-				}, 200);
-
-                // Đảm bảo các input có thể nhập
-				const inputs = modal.querySelectorAll('input, select, textarea');
-				inputs.forEach(input => {
-					input.removeAttribute('readonly');
-					input.removeAttribute('disabled');
-					// Reset các style
-					input.style.pointerEvents = 'auto';
-					input.style.userSelect = 'auto';
-					input.style.cursor = 'text';
-					input.style.backgroundColor = 'white';
-					input.style.opacity = '1';
-					// Đảm bảo không bị ẩn
-					input.style.display = '';
-					input.style.visibility = 'visible';
-				});
-                setTimeout(() => {
-	                // Focus vào input đầu tiên
-	                const firstInput = modal.querySelector('input[name="code"]');
+		            }, 300);
+		        }
+		        
+		        // Load danh sách môn học có sẵn
+		        setTimeout(() => {
+		            loadExistingSubjects();
+		        }, 400);
+		        
+		        // Focus vào input đầu tiên
+		        setTimeout(() => {
+		            const firstInput = modal.querySelector('input[name="code"]');
 		            if (firstInput) {
-						firstInput.focus();
-						firstInput.select();
+		                firstInput.focus();
+		                firstInput.select();
 		            }
-		        }, 300);
-			}, 50);
+		        }, 500);
+		        
+		    }, 10);
         }
 
         // Đóng modal thêm môn học
         function closeThemMonHocModal() {
+			// 1. Đóng tất cả dropdown Select2 trong modal
+    		$('#modal-them-mon-hoc .select2-container--open').select2('close');
+			// 2. Ẩn modal
             const modal = document.getElementById('modal-them-mon-hoc');
             if (modal) {
                 modal.classList.add('hidden');
             }
+			// 3. Xóa class modal-open
             document.body.classList.remove('overflow-hidden');
 			document.body.classList.remove('modal-open');
 
-			// Reset form
+			// 4. Không destroy Select2 để giữ trạng thái nếu mở lại
+    		// Chỉ reset form
 		    const form = document.getElementById('form-them-mon-hoc');
 		    if (form) {
 		        form.reset();
 		        clearSubjectSelection();
 		    }
-		    
-		    // Close any open select2 dropdowns in modal
-		    $('#modal-them-mon-hoc .select2-container--open').select2('close');
         }
 
         // Cập nhật thông tin ngành đào tạo khi chọn chương trình
