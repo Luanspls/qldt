@@ -1269,31 +1269,83 @@ def serialize_curriculum_data(data):
 @csrf_exempt
 def api_all_subjects(request):
     """API lấy tất cả môn học (cho dropdown chọn môn học có sẵn)"""
-    subjects = Subject.objects.all().select_related('curriculum', 'course', 'department', 'subject_type', 'subject_group')
-    subjects_data = []
-    for subject in subjects:
-        subjects_data.append({
-            'id': subject.id,
-            'code': subject.code,
-            'name': subject.name,
-            'credits': subject.credits,
-            'total_hours': subject.total_hours,
-            'theory_hours': subject.theory_hours,
-            'practice_hours': subject.practice_hours,
-            'tests_hours': subject.tests_hours,
-            'exam_hours': subject.exam_hours,
-            'order_number': subject.order_number,
-            'department_id': subject.department.id,
-            'subject_type_id': subject.subject_type.id,
-            'subject_group_id': subject.subject_group.id,
-            'semester': subject.semester,
-            'description': subject.description,
-            'prerequisites': subject.prerequisites,
-            'learning_outcomes': subject.learning_outcomes,
-            'is_elective': subject.is_elective,
-            'elective_group': subject.elective_group,
-        })
-    return JsonResponse(subjects_data, safe=False)
+    try:
+        # Chỉ lấy các trường cần thiết, không cần select_related tất cả
+        subjects = Subject.objects.all().only(
+            'id', 'code', 'name', 'credits', 'total_hours', 
+            'theory_hours', 'practice_hours', 'tests_hours', 
+            'exam_hours', 'order_number', 'department', 
+            'subject_type', 'subject_group', 'semester',
+            'description', 'prerequisites', 'learning_outcomes',
+            'is_elective', 'elective_group'
+        ).order_by('code')
+        
+        subjects_data = []
+        for subject in subjects:
+            try:
+                # Sử dụng .__dict__ để tránh lỗi None
+                subject_dict = {
+                    'id': subject.id,
+                    'code': subject.code or '',
+                    'name': subject.name or '',
+                    'credits': float(subject.credits) if subject.credits else 0,
+                    'total_hours': subject.total_hours or 0,
+                    'theory_hours': subject.theory_hours or 0,
+                    'practice_hours': subject.practice_hours or 0,
+                    'tests_hours': subject.tests_hours or 0,
+                    'exam_hours': subject.exam_hours or 0,
+                    'order_number': subject.order_number or 0,
+                    'semester': str(subject.semester) if subject.semester else '',
+                    'description': subject.description or '',
+                    'prerequisites': subject.prerequisites or '',
+                    'learning_outcomes': subject.learning_outcomes or '',
+                    'is_elective': bool(subject.is_elective),
+                    'elective_group': subject.elective_group or '',
+                }
+                
+                # Xử lý các foreign key có thể None
+                if subject.department:
+                    subject_dict['department_id'] = subject.department.id
+                    subject_dict['department_name'] = subject.department.name
+                else:
+                    subject_dict['department_id'] = None
+                    subject_dict['department_name'] = ''
+                
+                if subject.subject_type:
+                    subject_dict['subject_type_id'] = subject.subject_type.id
+                    subject_dict['subject_type_name'] = subject.subject_type.name
+                else:
+                    subject_dict['subject_type_id'] = None
+                    subject_dict['subject_type_name'] = ''
+                
+                if subject.subject_group:
+                    subject_dict['subject_group_id'] = subject.subject_group.id
+                    subject_dict['subject_group_name'] = subject.subject_group.name
+                else:
+                    subject_dict['subject_group_id'] = None
+                    subject_dict['subject_group_name'] = ''
+                
+                subjects_data.append(subject_dict)
+                
+            except Exception as e:
+                print(f"Error processing subject {subject.id}: {e}")
+                continue
+        
+        return JsonResponse({
+            'status': 'success',
+            'count': len(subjects_data),
+            'data': subjects_data
+        }, safe=False)
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error in api_all_subjects: {e}\n{error_details}")
+        
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Lỗi khi lấy danh sách môn học: {str(e)}'
+        }, status=500)
 
 @csrf_exempt
 def api_positions(request):
