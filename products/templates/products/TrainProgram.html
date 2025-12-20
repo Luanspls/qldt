@@ -205,7 +205,8 @@
         .col-gio { width: 80px; min-width: 80px; }
         .col-lythuyet { width: 64px; min-width: 64px; }
         .col-thuchanh { width: 64px; min-width: 64px; }
-        .col-kiemtra { width: 80px; min-width: 80px; }
+        .col-kiemtra { width: 50px; min-width: 50px; }
+        .col-thi { width: 40px; min-width: 40px; }
         .col-hk { width: 48px; min-width: 48px; }
         .col-donvi { width: 180px; min-width: 180px; }
         .col-giangvien { width: 200px; min-width: 200px; }
@@ -461,7 +462,7 @@
             }
             
             /* Hide some less important columns on very small screens */
-            .col-lythuyet, .col-thuchanh, .col-kiemtra {
+            .col-lythuyet, .col-thuchanh, .col-kiemtra .col-thi {
                 display: none;
             }
             
@@ -1942,7 +1943,7 @@
                             data-field="tests_hours" data-id="${monHoc.id}" readonly min="0"
                             data-original-value="${monHoc.kiem_tra || 0}">
                     </td>
-                    <td class="px-2 py-2 text-center col-kiemtra">
+                    <td class="px-2 py-2 text-center col-thi">
                         <input type="number" value="${monHoc.thi || 0}" 
                             class="editable w-full bg-transparent border-none text-sm text-center" 
                             data-field="exam_hours" data-id="${monHoc.id}" readonly min="0"
@@ -2074,61 +2075,81 @@
 
 		// Cập nhật môn học
         function updateMonHoc(id, field, value) {
-            const csrfToken = getCSRFToken();
-            if (!csrfToken) {
-                console.error('CSRF token not found');
-                alert('Lỗi bảo mật: Không tìm thấy CSRF token');
-                return;
-            }
-            
-            const data = {
-                id: id,
-                field: field,
-                value: value
-            };
-            
-            fetch(`/train-program/${id}/`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(`HTTP ${response.status}: ${text}`);
-                    });
+            try {
+                const csrfToken = getCSRFToken();
+                if (!csrfToken) {
+                    console.error('CSRF token not found');
+                    alert('Lỗi bảo mật: Không tìm thấy CSRF token');
+                    return;
                 }
-                return response.json();
-            })
-            .then(data => {
-                if (data.status !== 'success') {
-                    console.error('Update error:', data.message);
-                    alert(data.message);
-                    // Reload data to reset values
+                
+                const data = {
+                    id: id,
+                    field: field,
+                    value: value
+                };
+                console.log('Sending update:', data);
+
+                fetch(`/train-program/${id}/`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`HTTP ${response.status}: ${text}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status !== 'success') {
+                        console.error('Update error:', data.message);
+                        alert(data.message);
+                        // Reload data to reset values
+                        loadFilteredData();
+                    } else {
+                        console.log('Update success:', data.message);
+                        //updateOriginalValue(id, field, value);
+                        loadFilteredData();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi cập nhật: ' + error.message);
                     loadFilteredData();
-                } else {
-                    console.log('Update success:', data.message);
-                    //updateOriginalValue(id, field, value);
-					loadFilteredData();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Có lỗi xảy ra khi cập nhật: ' + error.message);
-                loadFilteredData();
-            });
+                });
+            } catch (error) {
+                console.error('Error in updateMonHoc:', error);
+                alert('Lỗi trong hàm updateMonHoc: ' + error.message);
+            }
         }
 
         function getCSRFToken() {
-            const metaTag = document.querySelector('meta[name="csrf-token"]');
-            if (metaTag) {
-                return metaTag.getAttribute('content');
+            try {
+                // Thử tìm meta tag trước
+                const metaTag = document.querySelector('meta[name="csrf-token"]');
+                if (metaTag) {
+                    return metaTag.getAttribute('content');
+                }
+                
+                // Thử tìm trong {% csrf_token %}
+                const csrfTokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (csrfTokenInput) {
+                    return csrfTokenInput.value;
+                }
+                
+                // Thử lấy từ cookie
+                return getCookie('csrftoken');
+            } catch (error) {
+                console.error('Error getting CSRF token:', error);
+                return null;
             }
-            return getCookie('csrftoken');
         }
 
         // Hàm cập nhật giá trị gốc sau khi thành công
@@ -3092,18 +3113,23 @@
 
         // Hàm lấy CSRF token
         function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
+            try {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
                     }
                 }
+                return cookieValue;
+            } catch (error) {
+                console.error('Error getting cookie:', error);
+                return null;
             }
-            return cookieValue;
         }
         
         // Xử lý sự kiện khi trang tải xong
