@@ -1488,7 +1488,7 @@
 		
 		// Hàm fetch an toàn với xử lý lỗi
 		async function safeFetch(url, options = {}) {
-			const timeout = 8000; // 8 seconds
+			const timeout = 5000; // 5 seconds
 		    
 		    const controller = new AbortController();
 		    const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -1501,50 +1501,30 @@
 		        
 		        clearTimeout(timeoutId);
 
-		        // Kiểm tra nếu response trả về HTML (lỗi 404/500)
-		        const contentType = response.headers.get('content-type') || '';
-		        if (contentType.includes('text/html') && !response.ok) {
-		            console.warn(`Endpoint ${url} returned HTML error page. Status: ${response.status}`);
-		            return { 
-		                success: false, 
-		                data: [], 
-		                message: `Server error (${response.status})` 
+				if (!response.ok) {
+		            // Không throw error, chỉ trả về object lỗi
+		            return {
+		                success: false,
+		                data: [],
+		                message: `HTTP ${response.status}: ${response.statusText}`
 		            };
 		        }
-		        
-		        // Kiểm tra nếu response không phải JSON
-		        if (!contentType.includes('application/json')) {
-		            console.warn(`Endpoint ${url} returned non-JSON: ${contentType}`);
-		            // Thử parse như text
-		            const text = await response.text();
-		            console.log('Response text:', text.substring(0, 200));
-		            return { 
-		                success: false, 
-		                data: [], 
-		                message: 'Response is not JSON format' 
+
+		        try {
+		            const data = await response.json();
+		            return {
+		                success: true,
+		                data: data,
+		                message: 'Success'
+		            };
+		        } catch (jsonError) {
+		            console.error('JSON parse error:', jsonError);
+		            return {
+		                success: false,
+		                data: [],
+		                message: 'Invalid JSON response'
 		            };
 		        }
-		        
-		        if (!response.ok) {
-		            // Thử đọc lỗi từ JSON
-		            try {
-		                const errorData = await response.json();
-		                return { 
-		                    success: false, 
-		                    data: [], 
-		                    message: errorData.message || `HTTP ${response.status}: ${response.statusText}` 
-		                };
-		            } catch (jsonError) {
-		                return { 
-		                    success: false, 
-		                    data: [], 
-		                    message: `HTTP ${response.status}: ${response.statusText}` 
-		                };
-		            }
-		        }
-		        
-		        const data = await response.json();
-		        return { success: true, data: data, message: 'Success' };
 		    } catch (error) {
 				clearTimeout(timeoutId);
 				if (error.name === 'AbortError') {
@@ -1552,7 +1532,7 @@
 		            return { 
 		                success: false, 
 		                data: [], 
-		                message: 'Request timeout' 
+		                message: 'Request timeout (server is slow)' 
 		            };
 		        }
 		        console.error(`Fetch error for ${url}:`, error);
@@ -3424,59 +3404,100 @@
             });
             
             $(document).on('change', '#chuong-trinh-dao-tao', function() {
-                const curriculumId = this.value;
-                $('#khoa-hoc').val('').trigger('change');
-                
-                if (curriculumId) {
-					// Hiển thị loading
+			    const curriculumId = this.value;
+			    $('#khoa-hoc').val('').trigger('change');
+			    
+			    if (curriculumId) {
+			        // 1. Đầu tiên, thử filter từ dữ liệu đã có (allCourses từ template)
+			        const localCourses = allCourses.filter(course => {
+			            // Kiểm tra cả số và chuỗi để đảm bảo matching
+			            return course.curriculum_id == curriculumId || 
+			                   (course.curriculum && course.curriculum.id == curriculumId) ||
+			                   (typeof course.curriculum_id !== 'undefined' && course.curriculum_id == curriculumId);
+			        });
+			        
 			        const courseSelect = $('#khoa-hoc');
 			        courseSelect.empty();
-			        courseSelect.append($('<option>', {
-			            value: '',
-			            text: 'Đang tải khóa học...'
-			        }));
-			        courseSelect.prop('disabled', true);
-
-                    safeFetch(`/api/courses/?curriculum_id=${curriculumId}`)
-                        .then(result => {
-                            courseSelect.empty();
+			        
+			        if (localCourses.length > 0) {
+			            console.log('Using local courses data:', localCourses.length);
+			            
+			            courseSelect.append($('<option>', {
+			                value: '',
+			                text: '-- Chọn khóa học --'
+			            }));
+			            
+			            localCourses.forEach(item => {
+			                const displayText = item.code ? 
+			                    `${item.name} (${item.code})` : 
+			                    item.name;
+			                
 			                courseSelect.append($('<option>', {
-			                    value: '',
-			                    text: '-- Chọn khóa học --'
+			                    value: item.id,
+			                    text: displayText
 			                }));
-                            
-                            if (result.success && Array.isArray(result.data)) {
-			                    result.data.forEach(item => {
-			                        courseSelect.append($('<option>', {
-			                            value: item.id,
-			                            text: `${item.name} (${item.code || ''})`
-			                        }));
-			                    });
-			                } else {
-			                    console.warn('No courses found or API error:', result.message);
-			                    courseSelect.append($('<option>', {
-			                        value: '',
-			                        text: '-- Không có khóa học --'
-			                    }));
-			                }
-                            //select.trigger('change');
-                        })
-						.catch(error => {
-			                console.error('Error loading courses:', error);
-			                courseSelect.empty();
-			                courseSelect.append($('<option>', {
-			                    value: '',
-			                    text: '-- Lỗi tải dữ liệu --'
-			                }));
-			            })
-			            .finally(() => {
-			                courseSelect.prop('disabled', false);
-			                courseSelect.trigger('change');
 			            });
-                }
-                
-                loadFilteredData();
-            });
+			            
+			            courseSelect.trigger('change');
+			        } else {
+			            // 2. Nếu không có dữ liệu cục bộ, mới gọi API
+			            console.log('No local courses, fetching from API...');
+			            
+			            courseSelect.append($('<option>', {
+			                value: '',
+			                text: 'Đang tải...'
+			            }));
+			            courseSelect.prop('disabled', true);
+			            
+			            // Gọi API với timeout ngắn hơn
+			            setTimeout(() => {
+			                safeFetch(`/api/courses/?curriculum_id=${curriculumId}`)
+			                    .then(result => {
+			                        courseSelect.empty();
+			                        courseSelect.append($('<option>', {
+			                            value: '',
+			                            text: '-- Chọn khóa học --'
+			                        }));
+			                        
+			                        if (result.success && Array.isArray(result.data)) {
+			                            result.data.forEach(item => {
+			                                const displayText = item.code ? 
+			                                    `${item.name} (${item.code})` : 
+			                                    item.name;
+			                                
+			                                courseSelect.append($('<option>', {
+			                                    value: item.id,
+			                                    text: displayText
+			                                }));
+			                            });
+			                        } else {
+			                            console.warn('No courses from API:', result.message);
+			                            courseSelect.append($('<option>', {
+			                                value: '',
+			                                text: '-- Không có khóa học --',
+			                                disabled: true
+			                            }));
+			                        }
+			                    })
+			                    .catch(error => {
+			                        console.error('Error loading courses:', error);
+			                        courseSelect.empty();
+			                        courseSelect.append($('<option>', {
+			                            value: '',
+			                            text: '-- Lỗi tải dữ liệu --',
+			                            disabled: true
+			                        }));
+			                    })
+			                    .finally(() => {
+			                        courseSelect.prop('disabled', false);
+			                        courseSelect.trigger('change');
+			                    });
+			            }, 100);
+			        }
+			    }
+			    
+			    loadFilteredData();
+			});
             
             $(document).on('change', '#khoa-hoc', loadFilteredData);
             
