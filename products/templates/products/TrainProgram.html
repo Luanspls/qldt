@@ -1595,10 +1595,6 @@
 
         // Khởi tạo Select2 cho modal thêm môn học
         function initializeSelect2ForSubjectModal() {
-            //if (isSelect2InitializedForSubjectModal) {
-            //    return;
-            //}
-            
             console.log('Initializing Select2 for subject modal...');
             
             try {
@@ -1612,56 +1608,56 @@
 		            placeholder: '-- Tìm kiếm môn học có sẵn --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: $modal
+		            dropdownParent: modal
 		        });
 		        
 		        $('#them-mon-hoc-curriculum').select2({
 		            placeholder: '-- Chọn chương trình --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: $modal
+		            dropdownParent: modal
 		        });
 		        
 		        $('#them-mon-hoc-course').select2({
 		            placeholder: '-- Chọn khóa học --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: $modal
+		            dropdownParent: modal
 		        });
 
 				$('#them-mon-hoc-major').select2({
 		            placeholder: '-- Chọn ngành --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: $modal
+		            dropdownParent: modal
 		        });
 		        
 		        $('select[name="department_id"]').select2({
 		            placeholder: '-- Chọn đơn vị --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: $modal
+		            dropdownParent: modal
 		        });
 		        
 		        $('select[name="subject_type_id"]').select2({
 		            placeholder: '-- Chọn loại môn --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: $modal
+		            dropdownParent: modal
 		        });
 		        
 		        $('select[name="subject_group_id"]').select2({
 		            placeholder: '-- Chọn tổ bộ môn --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: $modal
+		            dropdownParent: modal
 		        });
 		        
 		        $('select[name="semester"]').select2({
 		            placeholder: '-- Chọn học kỳ --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: $modal
+		            dropdownParent: modal
 		        });
 		
 		        console.log('Select2 initialized for subject modal');
