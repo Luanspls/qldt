@@ -1650,10 +1650,8 @@
             console.log('Initializing Select2 for subject modal...');
             
             try {
-				const modalElement = document.getElementById('modal-them-mon-hoc');
-        		if (!modalElement) return;
-				
-                const modal = $('#modal-them-mon-hoc');
+				const monHocModal = document.getElementById('modal-them-mon-hoc');
+        		if (!monHocModal) return;
 
 				// Đóng tất cả Select2 đang mở trước
         		closeAllOpenSelect2();
@@ -1663,56 +1661,56 @@
 		            placeholder: '-- Tìm kiếm môn học có sẵn --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: modal
+		            dropdownParent: monHocModal
 		        });
 		        
 		        $('#them-mon-hoc-curriculum').select2({
 		            placeholder: '-- Chọn chương trình --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: modal
+		            dropdownParent: monHocModal
 		        });
 		        
 		        $('#them-mon-hoc-course').select2({
 		            placeholder: '-- Chọn khóa học --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: modal
+		            dropdownParent: monHocModal
 		        });
 
 				$('#them-mon-hoc-major').select2({
 		            placeholder: '-- Chọn ngành --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: modal
+		            dropdownParent: monHocModal
 		        });
 		        
 		        $('select[name="department_id"]').select2({
 		            placeholder: '-- Chọn đơn vị --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: modal
+		            dropdownParent: monHocModal
 		        });
 		        
 		        $('select[name="subject_type_id"]').select2({
 		            placeholder: '-- Chọn loại môn --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: modal
+		            dropdownParent: monHocModal
 		        });
 		        
 		        $('select[name="subject_group_id"]').select2({
 		            placeholder: '-- Chọn tổ bộ môn --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: modal
+		            dropdownParent: monHocModal
 		        });
 		        
 		        $('select[name="semester"]').select2({
 		            placeholder: '-- Chọn học kỳ --',
 		            allowClear: true,
 		            width: '100%',
-		            dropdownParent: modal
+		            dropdownParent: monHocModal
 		        });
 		
 		        console.log('Select2 initialized for subject modal');
@@ -1726,14 +1724,14 @@
             console.log('Initializing Select2 for curriculum modal...');
             
             try {
-                const modal = $('#modal-them-chuong-trinh');
+                const chuongTrinhModal = $('#modal-them-chuong-trinh');
                 
                 $('select[name="major_id"]').select2({
                     width: '100%',
                     placeholder: '-- Chọn ngành --',
                     allowClear: true,
                     language: 'vi',
-                    dropdownParent: modal,
+                    dropdownParent: chuongTrinhModal,
                     //dropdownCssClass: 'modal-select2'
                 });
 
@@ -2620,9 +2618,9 @@
 
         // Đóng modal import Excel
         function closeImportModal() {
-            const modal = document.getElementById('modal-import');
-		    if (modal) {
-		        modal.classList.add('hidden');
+            const importmodal = document.getElementById('modal-import');
+		    if (importmodal) {
+		        importmodal.classList.add('hidden');
 		    }
 		    document.body.classList.remove('overflow-hidden');
         }
@@ -2806,9 +2804,9 @@
         function openThemChuongTrinhModal() {
 			closeAllOpenSelect2();
             console.log('Opening curriculum modal...');
-            const modal = document.getElementById('modal-them-chuong-trinh');
-            if (modal) {
-                modal.classList.remove('hidden');
+            const chuongTrinhModal = document.getElementById('modal-them-chuong-trinh');
+            if (chuongTrinhModal) {
+                chuongTrinhModal.classList.remove('hidden');
                 document.body.classList.add('overflow-hidden');
             
                 // Đảm bảo các input có thể nhập
@@ -2816,7 +2814,7 @@
                     initializeSelect2ForCurriculumModal();
             
                     // Đảm bảo các input có thể nhập
-                    const inputs = modal.querySelectorAll('input, select, textarea');
+                    const inputs = chuongTrinhModal.querySelectorAll('input, select, textarea');
                     inputs.forEach(input => {
                         input.removeAttribute('readonly');
                         input.removeAttribute('disabled');
@@ -2825,7 +2823,7 @@
                     });
                     
                     // Focus vào input đầu tiên
-                    const firstInput = modal.querySelector('input[name="code"]');
+                    const firstInput = chuongTrinhModal.querySelector('input[name="code"]');
                     if (firstInput) {
                         firstInput.focus();
                     }
@@ -2835,9 +2833,9 @@
 
         // Đóng modal thêm chương trình
         function closeThemChuongTrinhModal() {
-            const modal = document.getElementById('modal-them-chuong-trinh');
-            if (modal) {
-                modal.classList.add('hidden');
+            const chuongTrinhModal = document.getElementById('modal-them-chuong-trinh');
+            if (chuongTrinhModal) {
+                chuongTrinhModal.classList.add('hidden');
             }
 
 			if (!document.querySelector('.modal:not(.hidden)')) {
@@ -2854,10 +2852,10 @@
 
         // Hàm kiểm tra và sửa lỗi input trong modal
         function fixModalInputs() {
-            const modal = document.getElementById('modal-them-chuong-trinh');
-            if (!modal) return;
+            const chuongTrinhModal = document.getElementById('modal-them-chuong-trinh');
+            if (!chuongTrinhModal) return;
             
-            const inputs = modal.querySelectorAll('input, select, textarea');
+            const inputs = chuongTrinhModal.querySelectorAll('input, select, textarea');
             inputs.forEach(input => {
                 // Xóa các attribute chặn input
                 input.removeAttribute('readonly');
@@ -2980,16 +2978,11 @@
 			// Đóng tất cả Select2 đang mở trước
     		closeAllOpenSelect2();
 			
-            const modal = document.getElementById('modal-them-mon-hoc');
-            if (!modal) {
+            const monHocModal = document.getElementById('modal-them-mon-hoc');
+            if (!monHocModal) {
                 console.error('Modal them mon hoc not found');
                 return;
             }
-			
-			// Hiển thị modal
-		    //modal.classList.remove('hidden');
-		    //document.body.classList.add('overflow-hidden');
-			//document.body.classList.add('modal-open');
 
 			// Đóng các modal khác nếu đang mở
 		    closeThemChuongTrinhModal();
@@ -3018,7 +3011,7 @@
 		    }
 		    
 		    // Hiển thị modal
-		    modal.classList.remove('hidden');
+		    monHocModal.classList.remove('hidden');
 		    document.body.classList.add('overflow-hidden');
 			
 			setTimeout(() => {
@@ -3072,9 +3065,9 @@
 		        'pointer-events': 'auto'
 		    });
 			
-			const modal = document.getElementById('modal-them-mon-hoc');
-		    if (modal) {
-		        modal.classList.add('hidden');
+			const monHocModal = document.getElementById('modal-them-mon-hoc');
+		    if (monHocModal) {
+		        monHocModal.classList.add('hidden');
 		    }
 			// Chỉ xóa modal-open nếu không còn modal nào mở
 		    if (!document.querySelector('.modal:not(.hidden)')) {
@@ -3336,10 +3329,10 @@
         }
 
 		function enableModalInputs() {
-		    const modal = document.getElementById('modal-them-mon-hoc');
-		    if (!modal) return;
+		    const monHocModal = document.getElementById('modal-them-mon-hoc');
+		    if (!monHocModal) return;
 		    
-		    const allInputs = modal.querySelectorAll('input, select, textarea');
+		    const allInputs = monHocModal.querySelectorAll('input, select, textarea');
 		    allInputs.forEach(input => {
 		        // Remove any blocking attributes
 		        input.removeAttribute('disabled');
@@ -3835,8 +3828,8 @@
             });
 
 			// Ngăn sự kiện click trong modal lan ra ngoài
-		    document.querySelectorAll('.modal').forEach(modal => {
-		        modal.addEventListener('click', function(e) {
+		    document.querySelectorAll('.modal').forEach(modalEl => {
+		        modalEl.addEventListener('click', function(e) {
 		            if (e.target === this) {
 		                // Nếu click vào backdrop, đóng modal
 		                if (this.id === 'modal-them-mon-hoc') closeThemMonHocModal();
@@ -3860,8 +3853,8 @@
 		    const modalObserver = new MutationObserver(function(mutations) {
 		        mutations.forEach(function(mutation) {
 		            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-		                const modal = document.getElementById('modal-them-mon-hoc');
-		                if (modal && !modal.classList.contains('hidden')) {
+		                const monHocModal = document.getElementById('modal-them-mon-hoc');
+		                if (monHocModal && !monHocModal.classList.contains('hidden')) {
 		                    console.log('Modal opened, enabling inputs...');
 		                    
 		                    // Small delay to ensure DOM is ready
@@ -3879,9 +3872,9 @@
 		    });
 		    
 		    // Start observing the modal
-		    const modal = document.getElementById('modal-them-mon-hoc');
-		    if (modal) {
-		        modalObserver.observe(modal, { attributes: true });
+		    const monHocModal = document.getElementById('modal-them-mon-hoc');
+		    if (monHocModal) {
+		        modalObserver.observe(monHocModal, { attributes: true });
 		    }
 			
             
