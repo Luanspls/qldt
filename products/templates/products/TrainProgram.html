@@ -67,6 +67,17 @@
             max-width: 1200px !important;
         }
 
+		.modal {
+		    position: fixed;
+		    top: 0;
+		    left: 0;
+		    width: 100%;
+		    height: 100%;
+		    display: flex;
+		    align-items: center;
+		    justify-content: center;
+		}
+
         /* Modal backdrop */
         .modal-backdrop {
             z-index: 1040 !important;
@@ -97,11 +108,15 @@
 
         /* Ẩn Select2 bên ngoài khi modal mở */
         body.modal-open .select2-container:not(.modal .select2-container) {
-            z-index: -1 !important;
+            z-index: 1030 !important;
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
         }
+
+		body.modal-open .select2-container--open:not(.modal .select2-container--open) {
+		    z-index: 1031 !important;
+		}
 
         body.modal-open .select2-dropdown:not(.modal .select2-dropdown) {
             display: none !important;
@@ -136,6 +151,13 @@
         }
 
         /* ===== INPUT & FORM STYLES ===== */
+		#modal-them-mon-hoc, 
+		#modal-them-chuong-trinh,
+		#modal-import,
+		#modal-import-errors {
+		    backdrop-filter: blur(4px);
+		    background-color: rgba(0, 0, 0, 0.5) !important;
+		}
         /* Input trong modal */
         #modal-them-mon-hoc input:not([type="checkbox"]),
         #modal-them-mon-hoc select,
@@ -738,7 +760,7 @@
 
 		/* Thêm style cho Select2 */
         .select2-container {
-            z-index: 9999 !important;
+            z-index: 1000  !importan;
         }
         
         .select2-container--open {
@@ -891,7 +913,7 @@
 		</div>
 
         <!-- Modal import Excel -->
-        <div id="modal-import" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div id="modal-import" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
             <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold text-gray-900">Import từ Excel</h3>
@@ -973,7 +995,7 @@
         </div>
 
         <!-- Modal hiển thị lỗi import -->
-        <div id="modal-import-errors" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div id="modal-import-errors" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
             <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold text-gray-900">Chi tiết lỗi khi import</h3>
@@ -1061,7 +1083,7 @@
     </div>
 
     <!-- Modal thêm chương trình đào tạo -->
-	<div id="modal-them-chuong-trinh" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+	<div id="modal-them-chuong-trinh" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
         <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-gray-900">Thêm chương trình đào tạo mới</h3>
@@ -1144,7 +1166,7 @@
     </div>
 
     <!-- Modal thêm môn học -->
-    <div id="modal-them-mon-hoc" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div id="modal-them-mon-hoc" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
         <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white" style="z-index: 1001;">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-gray-900">Thêm môn học mới</h3>
@@ -1632,6 +1654,9 @@
         		if (!modalElement) return;
 				
                 const modal = $('#modal-them-mon-hoc');
+
+				// Đóng tất cả Select2 đang mở trước
+        		closeAllOpenSelect2();
 				
 				// Khởi tạo Select2 cho các dropdown trong modal
 		        $('#select-existing-subject').select2({
@@ -2779,6 +2804,7 @@
         
         // Mở modal thêm chương trình
         function openThemChuongTrinhModal() {
+			closeAllOpenSelect2();
             console.log('Opening curriculum modal...');
             const modal = document.getElementById('modal-them-chuong-trinh');
             if (modal) {
@@ -2813,6 +2839,10 @@
             if (modal) {
                 modal.classList.add('hidden');
             }
+
+			if (!document.querySelector('.modal:not(.hidden)')) {
+		        document.body.classList.remove('modal-open');
+		    }
 			document.body.classList.remove('overflow-hidden');
 			
 			// Reset form
@@ -2920,8 +2950,36 @@
             });
         }
 
+		// Hàm đóng tất cả Select2 đang mở
+		function closeAllOpenSelect2() {
+		    try {
+		        // Đóng tất cả Select2 dropdown đang mở
+		        $('.select2-container--open').each(function() {
+		            const $select = $(this).prev('select');
+		            if ($select.length && $.fn.select2) {
+		                $select.select2('close');
+		            }
+		        });
+		        
+		        // Ẩn tất cả dropdown
+		        $('.select2-dropdown').hide();
+		    } catch (error) {
+		        console.error('Error closing select2:', error);
+		    }
+		}
+		
         // Mở modal thêm môn học
         function openThemMonHocModal() {
+			// Disable Select2 bên ngoài
+		    $('body').addClass('modal-open');
+		    $('.select2-container:not(.modal .select2-container)').css({
+		        'opacity': '0.5',
+		        'pointer-events': 'none'
+		    });
+			
+			// Đóng tất cả Select2 đang mở trước
+    		closeAllOpenSelect2();
+			
             const modal = document.getElementById('modal-them-mon-hoc');
             if (!modal) {
                 console.error('Modal them mon hoc not found');
@@ -3007,13 +3065,22 @@
 
         // Đóng modal thêm môn học
         function closeThemMonHocModal() {
+			// Enable Select2 bên ngoài
+		    $('body').removeClass('modal-open');
+		    $('.select2-container:not(.modal .select2-container)').css({
+		        'opacity': '1',
+		        'pointer-events': 'auto'
+		    });
+			
 			const modal = document.getElementById('modal-them-mon-hoc');
 		    if (modal) {
 		        modal.classList.add('hidden');
 		    }
-		    
+			// Chỉ xóa modal-open nếu không còn modal nào mở
+		    if (!document.querySelector('.modal:not(.hidden)')) {
+		        document.body.classList.remove('modal-open');
+		    }
 		    document.body.classList.remove('overflow-hidden');
-		    //document.body.classList.remove('modal-open');
 		    
 		    // Reset form
 		    //const form = document.getElementById('form-them-mon-hoc');
@@ -3747,7 +3814,18 @@
 		        e.stopPropagation();
 		        createMonHoc();
 		    });
-            
+
+			// Đóng Select2 khi click ra ngoài
+		    document.addEventListener('click', function(e) {
+		        const $target = $(e.target);
+		        
+		        // Nếu click ra ngoài Select2 container và không phải trong modal
+		        if (!$target.closest('.select2-container').length && 
+		            !$target.closest('.modal:not(.hidden)').length) {
+		            closeAllOpenSelect2();
+		        }
+		    });
+			
             // Đóng modal khi click outside
             const modalThemMonHoc = document.getElementById('modal-them-mon-hoc');
             modalThemMonHoc.addEventListener('click', function(e) {
@@ -3755,6 +3833,19 @@
                     closeThemMonHocModal();
                 }
             });
+
+			// Ngăn sự kiện click trong modal lan ra ngoài
+		    document.querySelectorAll('.modal').forEach(modal => {
+		        modal.addEventListener('click', function(e) {
+		            if (e.target === this) {
+		                // Nếu click vào backdrop, đóng modal
+		                if (this.id === 'modal-them-mon-hoc') closeThemMonHocModal();
+		                if (this.id === 'modal-them-chuong-trinh') closeThemChuongTrinhModal();
+		                if (this.id === 'modal-import') closeImportModal();
+		                if (this.id === 'modal-import-errors') closeImportErrorsModal();
+		            }
+		        });
+			
             // Prevent modal content clicks from closing modal
 		    const modalContent = document.querySelector('#modal-them-mon-hoc > div');
 		    if (modalContent) {
@@ -3763,6 +3854,7 @@
 		        });
 		    }
 
+			
 			// ===== CRITICAL FIX: Force enable inputs when modal opens =====
 		    // Observer to detect when modal becomes visible
 		    const modalObserver = new MutationObserver(function(mutations) {
