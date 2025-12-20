@@ -1426,6 +1426,20 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script>
     <script>
+		window.addEventListener('error', function(e) {
+		    console.error('Global error caught:', e.message);
+		    console.error('Error at:', e.filename, 'line:', e.lineno, 'col:', e.colno);
+		    console.error('Error stack:', e.error?.stack);
+		    return false;
+		});
+		
+		// Bắt lỗi unhandled promise rejections
+		window.addEventListener('unhandledrejection', function(e) {
+		    console.error('Unhandled promise rejection:', e.reason);
+		    console.error('Promise:', e.promise);
+		    return false;
+		});
+		
         // Biến toàn cục lưu trữ dữ liệu
         let allDepartments = {{ departments|safe }};
         let allSubjectGroups = {{ subject_groups|safe }};
@@ -1439,23 +1453,38 @@
 
         // Khởi tạo monHocData từ dữ liệu Django template
 		try {
-		    // Kiểm tra xem mon_hoc_data có phải là chuỗi JSON không
-		    let rawData = '{{ mon_hoc_data|escapejs }}';
-		    if (rawData && rawData !== '[]') {
+		    // Lấy dữ liệu từ Django template
+		    let rawData = '{{ mon_hoc_data|escapejs|safe }}';
+		    
+		    console.log('Raw data length:', rawData.length);
+		    console.log('Raw data sample:', rawData.substring(0, 100));
+		    
+		    if (rawData && rawData.trim() !== '' && rawData !== '[]' && rawData !== '{{ mon_hoc_data|escapejs|safe }}') {
 		        // Thay thế các ký tự đặc biệt
 		        rawData = rawData.replace(/&quot;/g, '"')
 		                         .replace(/&#39;/g, "'")
-		                         .replace(/&amp;/g, '&');
+		                         .replace(/&amp;/g, '&')
+		                         .replace(/&lt;/g, '<')
+		                         .replace(/&gt;/g, '>')
+		                         .replace(/&nbsp;/g, ' ')
+		                         .replace(/\\/g, '\\\\');
+		        
+		        console.log('After replace:', rawData.substring(0, 100));
 		        
 		        // Parse JSON
 		        monHocData = JSON.parse(rawData);
+		        console.log('Successfully parsed monHocData. Items:', monHocData.length);
+		    } else {
+		        console.log('No mon_hoc_data provided or empty');
+		        monHocData = [];
 		    }
 		} catch (e) {
 		    console.error('Error parsing monHocData:', e);
+		    console.error('Error details:', e.message);
 		    monHocData = [];
 		}
 		
-		console.log('MonHocData loaded:', monHocData);
+		console.log('MonHocData loaded with', monHocData.length, 'items');
 		
 		// Hàm fetch an toàn với xử lý lỗi
 		async function safeFetch(url, options = {}) {
@@ -1913,10 +1942,11 @@
 		            dropdown.appendChild(option);
 		        });
             
-            // Cập nhật Select2 nếu đã được khởi tạo
-            if ($(dropdown).hasClass('select2-hidden-accessible')) {
-                $(dropdown).trigger('change');
-            }
+	            // Cập nhật Select2 nếu đã được khởi tạo
+	            if ($(dropdown).hasClass('select2-hidden-accessible')) {
+	                $(dropdown).trigger('change');
+	            }
+			}
         }
         
         // Render bảng dữ liệu
