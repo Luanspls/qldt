@@ -1771,12 +1771,12 @@
 		    // Thêm các môn học
 			if (subjectList.length > 0) {
 			    subjectList.forEach(subject => {
-			        select.append($('<option>', {
-			            value: subject.id,
-			            text: `${subject.code || ''} - ${subject.name || ''}`,
-			            'data-subject': JSON.stringify(subject)
-			        }));
-					select.append(option);
+			        const option = $('<option>', {
+                        value: subject.id,
+                        text: `${subject.code || ''} - ${subject.name || ''}`,
+                        'data-subject': JSON.stringify(subject)
+                    });
+                    select.append(option);
 			    });
 			} else {
 		        select.append($('<option>', {
