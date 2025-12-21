@@ -1,6 +1,7 @@
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Count, Sum, F, Q, Case, When, IntegerField
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.cache import cache_page
 import json
 import random
 import traceback
@@ -1267,11 +1268,18 @@ def serialize_curriculum_data(data):
         return data
     
 @csrf_exempt
+@cache_page(60 * 5)
 def api_all_subjects(request):
     """API lấy tất cả môn học (cho dropdown chọn môn học có sẵn)"""
     try:
         # Chỉ lấy các trường cần thiết, không cần select_related tất cả
-        subjects = Subject.objects.all().only(
+        subjects = Subject.objects.select_related(
+	        'subject_type',
+	        'subject_group',
+	        'department'
+	    ).prefetch_related(
+	        Prefetch('instructors', queryset=Instructor.objects.only('id', 'code', 'full_name'))
+	    ).only(
             'id', 'code', 'name', 'credits', 'total_hours', 
             'theory_hours', 'practice_hours', 'tests_hours', 
             'exam_hours', 'order_number', 'department', 
