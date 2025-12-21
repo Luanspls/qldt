@@ -1533,11 +1533,10 @@
 		
 		// Hàm fetch an toàn với xử lý lỗi
 		async function safeFetch(url, options = {}) {
-			const timeout = 5000; // 5 seconds
-		    
+		    const timeout = 5000;
 		    const controller = new AbortController();
 		    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
+		
 		    try {
 		        const response = await fetch(url, {
 		            ...options,
@@ -1545,43 +1544,24 @@
 		        });
 		        
 		        clearTimeout(timeoutId);
-
-				if (!response.ok) {
-		            // Không throw error, chỉ trả về object lỗi
-		            return {
-		                success: false,
-		                data: [],
-		                message: `HTTP ${response.status}: ${response.statusText}`
-		            };
+		
+		        if (!response.ok) {
+		            console.error(`Fetch error: ${response.status} ${response.statusText}`);
+		            return []; // Trả về mảng rỗng thay vì object phức tạp
 		        }
-
-		        try {
-		            const data = await response.json();
-		            return {
-		                success: true,
-		                data: data,
-		                message: 'Success'
-		            };
-		        } catch (jsonError) {
-		            console.error('JSON parse error:', jsonError);
-		            return {
-		                success: false,
-		                data: [],
-		                message: 'Invalid JSON response'
-		            };
-		        }
+		
+		        const data = await response.json();
+		        return data; // Trả về dữ liệu trực tiếp, không bọc thêm object
 		    } catch (error) {
-				clearTimeout(timeoutId);
-				if (error.name === 'AbortError') {
+		        clearTimeout(timeoutId);
+		        
+		        if (error.name === 'AbortError') {
 		            console.error(`Fetch timeout for ${url}`);
-		            return { 
-		                success: false, 
-		                data: [], 
-		                message: 'Request timeout (server is slow)' 
-		            };
+		        } else {
+		            console.error(`Fetch error for ${url}:`, error);
 		        }
-		        console.error(`Fetch error for ${url}:`, error);
-		        return { success: false, data: [], message: error.message || 'Network error' };
+		        
+		        return []; // Luôn trả về mảng rỗng khi có lỗi
 		    }
 		}
 
@@ -2413,7 +2393,7 @@
 			console.log('Filters:', { departmentId, curriculumId, courseId });
 
 			// Nếu không có bộ lọc, hiển thị tất cả dữ liệu
-		    if (!departmentId && !curriculumId && !courseId) {
+		    if (!departmentId && !curriculumId && !courseId && !subjectGroupId) {
 		        console.log('No filters applied, showing all data');
 		        renderTable();
 		        return;
@@ -2424,42 +2404,38 @@
 		    if (tableBody) {
 		        tableBody.innerHTML = '<tr><td colspan="19" class="px-4 py-4 text-center text-gray-500">Đang lọc dữ liệu...</td></tr>';
 		    }
-		    
-		    // Giả lập việc lọc dữ liệu
-		    setTimeout(() => {
-		        // Trong thực tế, đây sẽ là call API
-		        // Tạm thời hiển thị toàn bộ dữ liệu
-		        console.log('Filtering complete, showing data');
-		        renderTable();
-		    }, 500);
-
 			
-            //let url = '/api/subjects/';
-            //const params = [];
+            let url = '/api/subjects/';
+            const params = [];
             
-            //if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
-            //if (departmentId) params.push(`department_id=${departmentId}`);
-            //if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
-			//if (courseId) params.push(`course_id=${courseId}`);
+            if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
+            if (departmentId) params.push(`department_id=${departmentId}`);
+            if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
+			if (courseId) params.push(`course_id=${courseId}`);
             
-            //url += '?' + params.join('&');
+            if (params.length > 0) {
+		        url += '?' + params.join('&');
+		    }
             
-            //safeFetch(url)
-            //    .then(data => {
-            //        monHocData = data;
-            //        renderTable();
+            safeFetch(url)
+                .then(data => {
+                    monHocData = Array.isArray(data) ? data : [];
+            		renderTable();
                     
                     // Load thống kê nếu có curriculum
-            //        if (curriculumId) {
-            //            loadThongKe(curriculumId);
-            //        } else {
-            //            updateStatistics();
-            //        }
-            //    })
-            //    .catch(error => {
-            //        console.error('Error loading filtered data:', error);
-            //        alert('Có lỗi xảy ra khi tải dữ liệu');
-            //    });
+		            if (curriculumId) {
+		                loadThongKe(curriculumId);
+		            } else {
+		                updateStatistics();
+		            }
+		        })
+		        .catch(error => {
+		            console.error('Error loading filtered data:', error);
+		            // Fallback: hiển thị dữ liệu hiện có
+		            console.log('Using existing monHocData as fallback');
+		            renderTable();
+		            updateStatistics();
+		        });
         }
 
         // Thêm hàm để tải danh sách môn học có sẵn
@@ -2467,19 +2443,67 @@
             safeFetch('/api/all-subjects/')
                 .then(subjects => {
                     const select = document.getElementById('select-existing-subject');
-                    select.innerHTML = '<option value="">-- Chọn môn học có sẵn --</option>';
-                    
-                    subjects.forEach(subject => {
-                        const option = document.createElement('option');
-                        option.value = subject.id;
-                        option.textContent = `${subject.code} - ${subject.name}`;
-                        option.setAttribute('data-name', subject.name);
-                        option.setAttribute('data-code', subject.code);
-                        select.appendChild(option);
-                    });
+                    if (select) {
+						select.innerHTML = '<option value="">-- Tìm kiếm môn học có sẵn --</option>';
+	                    
+	                    subjects.forEach(subject => {
+	                        const option = document.createElement('option');
+	                        option.value = subject.id || subject.code;
+	                        option.textContent = `${subject.code || ''} - ${subject.name || ''}`;
+                    		option.setAttribute('data-subject', JSON.stringify(subject));
+	                        select.appendChild(option);
+	                    });
+						
+						// Cập nhật Select2
+		                if ($(select).hasClass('select2-hidden-accessible')) {
+		                    $(select).trigger('change.select2');
+		                }
+					}
+
+					// Lưu vào biến toàn cục
+            		window.existingSubjects = subjects;
                 })
                 .catch(error => {
                     console.error('Error loading existing subjects:', error);
+					
+					// Fallback: sử dụng dữ liệu từ monHocData
+		            const existingSubjects = [];
+		            const uniqueSubjects = {};
+		            
+		            if (monHocData && monHocData.length > 0) {
+		                monHocData.forEach(item => {
+		                    if (item.ma_mon_hoc && !uniqueSubjects[item.ma_mon_hoc]) {
+		                        uniqueSubjects[item.ma_mon_hoc] = true;
+		                        existingSubjects.push({
+		                            id: item.id || item.ma_mon_hoc,
+		                            code: item.ma_mon_hoc,
+		                            name: item.ten_mon_hoc,
+		                            credits: item.so_tin_chi,
+		                            total_hours: item.tong_so_gio,
+		                            theory_hours: item.ly_thuyet,
+		                            practice_hours: item.thuc_hanh,
+		                            tests_hours: item.kiem_tra,
+		                            exam_hours: item.thi
+		                        });
+		                    }
+		                });
+					}
+
+					// Cập nhật dropdown với fallback data
+		            const select = document.getElementById('select-existing-subject');
+		            if (select) {
+		                select.innerHTML = '<option value="">-- Tìm kiếm môn học có sẵn --</option>';
+		                
+		                existingSubjects.forEach(subject => {
+		                    const option = document.createElement('option');
+		                    option.value = subject.id;
+		                    option.textContent = `${subject.code} - ${subject.name}`;
+		                    option.setAttribute('data-subject', JSON.stringify(subject));
+		                    select.appendChild(option);
+		                });
+		            }
+
+					window.existingSubjects = existingSubjects;
                 });
         }
 
@@ -3344,35 +3368,32 @@
 		    }
     		console.log('Loading all subjects from API...');
 			return safeFetch('/api/all-subjects/')
-		        .then(result => {
-		            console.log('API result:', result);
+		        .then(data => {
+		            console.log('API returned data:', data);
 		            
-		            if (result.success) {
-		                // Kiểm tra cấu trúc response mới
-		                if (result.data.status === 'success') {
-		                    allSubjects = result.data.data || [];
-		                    console.log('Successfully loaded', allSubjects.length, 'subjects');
-		                } else if (Array.isArray(result.data)) {
-		                    // Fallback cho response cũ (nếu vẫn là array)
-		                    allSubjects = result.data || [];
-		                    console.log('Loaded (legacy format)', allSubjects.length, 'subjects');
-		                } else {
-		                    console.warn('Unexpected API response format:', result.data);
-		                    allSubjects = [];
-		                }
+		            // Kiểm tra cấu trúc dữ liệu
+		            if (Array.isArray(data)) {
+		                allSubjects = data;
+		            } else if (data && data.status === 'success' && Array.isArray(data.data)) {
+		                // Xử lý response có cấu trúc {status: 'success', data: [...]}
+		                allSubjects = data.data;
+		            } else if (data && Array.isArray(data.subjects)) {
+		                // Xử lý response có cấu trúc {subjects: [...]}
+		                allSubjects = data.subjects;
 		            } else {
-		                console.warn('API call failed:', result.message);
+		                console.warn('Unexpected API response format, using fallback data');
 		                allSubjects = [];
 		            }
 		            
 		            isSubjectsLoaded = true;
+		            console.log('Loaded', allSubjects.length, 'subjects');
 		            return allSubjects;
 		        })
 		        .catch(error => {
 		            console.error('Error in loadAllSubjects:', error);
 		            
 		            // Fallback data
-		            const fallbackSubjects = [
+		            allSubjects = [
 		                { id: 1, code: 'MH001', name: 'Toán cao cấp', credits: 3, total_hours: 45, theory_hours: 30, practice_hours: 15 },
 		                { id: 2, code: 'MH002', name: 'Lập trình cơ bản', credits: 4, total_hours: 60, theory_hours: 30, practice_hours: 30 },
 		                { id: 3, code: 'MH003', name: 'Cơ sở dữ liệu', credits: 3, total_hours: 45, theory_hours: 25, practice_hours: 20 },
@@ -3380,9 +3401,7 @@
 		                { id: 5, code: 'MH005', name: 'Phần mềm mã nguồn mở', credits: 2, total_hours: 30, theory_hours: 15, practice_hours: 15 },
 		            ];
 		            
-		            allSubjects = fallbackSubjects;
 		            isSubjectsLoaded = true;
-		            
 		            console.log('Using fallback subjects:', allSubjects.length);
 		            return allSubjects;
 		        });
@@ -3451,10 +3470,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded - initializing...');
 
-			// Render bảng với dữ liệu hiện có
-            renderTable();
 			// Khởi tạo dropdowns từ dữ liệu Django template
             initializeDropdowns();
+			
+			// Render bảng với dữ liệu hiện có
+            renderTable();
             
             // Khởi tạo Select2 sau khi DOM đã sẵn sàng
             setTimeout(() => {
