@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Quản lý Chương trình Đào tạo</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://code.jquery.com/jquery-3.6.0.min.js" as="script">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
+    <!-- Inline critical CSS -->
+    <style>
+        /* CRITICAL CSS - Load above the fold content immediately */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            min-height: 20px;
+            border-radius: 4px;
+        }
+        
+        .skeleton-text {
+            width: 100%;
+            height: 16px;
+            margin-bottom: 8px;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Minimal essential styles for initial render */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .container { width: 100%; max-width: 1400px; margin: 0 auto; }
+        .hidden { display: none !important; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; }
+        
+        /* Mobile-first responsive */
+        @media (max-width: 768px) {
+            .mobile-hidden { display: none !important; }
+            .mobile-full-width { width: 100% !important; }
+        }
+    </style>
+    
+    <!-- Lazy load non-critical CSS -->
+    <link rel="preload" href="{% static 'css/train_program.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{% static 'css/train_program.css' %}"></noscript>
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://code.jquery.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    
+    <!-- Prefetch data -->
+    <link rel="prefetch" href="/api/subjects/" as="fetch">
+</head>
+<body class="bg-gray-100">
+    {% csrf_token %}
+    
+    <!-- Loading state -->
+    <div id="app-loading" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        <div class="spinner w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+        <p class="text-gray-600">Đang tải ứng dụng...</p>
+    </div>
+    
+    <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <!-- Skeleton loading for header -->
+        <div id="main-content" class="opacity-0 transition-opacity duration-300">
+            <div class="skeleton h-10 w-64 mx-auto mb-8"></div>
+            
+            <!-- Thông tin chung - Skeleton -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {% for i in "1234" %}
+                    <div>
+                        <div class="skeleton h-5 w-24 mb-2"></div>
+                        <div class="skeleton h-10 w-full"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Nút chức năng - Skeleton -->
+            <div class="flex flex-wrap justify-between mb-6">
+                <div class="flex space-x-2 mb-4">
+                    <div class="skeleton h-10 w-48"></div>
+                    <div class="skeleton h-10 w-40"></div>
+                    <div class="skeleton h-10 w-32 mobile-hidden"></div>
+                </div>
+                <div class="skeleton h-10 w-40"></div>
+            </div>
+            
+            <!-- Bảng dữ liệu - Skeleton -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div class="table-container">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr>
+                                {% for i in "123456789" %}
+                                <th class="px-2 py-3"><div class="skeleton h-4 w-full"></div></th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in "12345" %}
+                            <tr>
+                                {% for col in "123456789" %}
+                                <td class="px-2 py-3"><div class="skeleton h-4 w-full"></div></td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actual content (hidden initially) -->
+        <div id="actual-content" class="hidden">
+            <h1 class="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-blue-800">QUẢN LÝ CHƯƠNG TRÌNH ĐÀO TẠO</h1>
+            
+            <!-- Thông tin chung -->
+            <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <!-- Các dropdown thực tế -->
+                </div>
+            </div>
+            
+            <!-- Nút chức năng -->
+            <div class="flex flex-wrap justify-between mb-6">
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button id="btn-them" class="btn-primary">
+                        <i class="fas fa-plus mr-2"></i> Thêm chương trình
+                    </button>
+                    <button id="btn-them-mon-hoc" class="btn-success">
+                        <i class="fas fa-book-medical mr-2"></i> Thêm môn học
+                    </button>
+                    <button id="btn-cap-nhat" class="btn-secondary mobile-hidden">
+                        <i class="fas fa-sync-alt mr-2"></i> Cập nhật
+                    </button>
+                </div>
+                <button id="btn-import" class="btn-purple">
+                    <i class="fas fa-file-excel mr-2"></i> Import Excel
+                </button>
+            </div>
+
+            <!-- Bảng dữ liệu thực tế -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div class="table-container">
+                    <!-- Table content loaded via JS -->
+                </div>
+            </div>
+            
+            <!-- Thông tin tổng kết -->
+            <div class="mt-6 bg-white rounded-lg shadow-sm p-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- Statistics -->
+                </div>
+            </div>
+
+            <!-- Quản lý lớp học -->
+            <div class="mt-6 text-center">
+                <a href="{% url 'teaching_management' %}" class="btn-purple">
+                    <i class="fas fa-chalkboard-teacher mr-3"></i> 
+                    <span class="mobile-hidden">Quản lý Phân công Giảng dạy</span>
+                    <span class="md:hidden">Phân công Giảng dạy</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals (loaded lazily) -->
+    <div id="modals-container"></div>
+
+    <!-- Thư viện JavaScript với defer -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js" defer></script>
+    
+    <!-- Dữ liệu từ Django template -->
+    <script>
+        window.APP_CONFIG = {
+            csrfToken: "{{ csrf_token }}",
+            staticUrl: "{% static '' %}",
+            apiEndpoints: {
+                subjects: "/api/subjects/",
+                curriculum: "/api/curriculum/",
+                import: "/import-excel/",
+                template: "/download-excel-template/"
+            },
+            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        };
+        
+        // Pass data as JSON (safe)
+        window.APP_DATA = {
+            departments: {{ departments|safe|default:"[]" }},
+            subjectGroups: {{ subject_groups|safe|default:"[]" }},
+            curricula: {{ curricula|safe|default:"[]" }},
+            courses: {{ courses|safe|default:"[]" }},
+            subjectTypes: {{ subject_types|safe|default:"[]" }},
+            majors: {{ majors|safe|default:"[]" }},
+            initialData: {{ mon_hoc_data|safe|default:"[]" }}
+        };
+    </script>
+    
+    <!-- Load main app with low priority -->
+    <script src="{% static 'js/train_program.js' %}" defer></script>
+    
+    <!-- Service worker for offline support -->
+    <script>
+        if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
+            navigator.serviceWorker.register('{% static "js/sw.js" %}')
+                .catch(console.error);
+        }
+    </script>
+</body>
+</html>
