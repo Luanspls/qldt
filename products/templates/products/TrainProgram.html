@@ -1513,8 +1513,8 @@
 		let allCourses = {% if courses %}{{ courses|safe }}{% else %}[]{% endif %};
 		let allSubjectTypes = {% if subject_types %}{{ subject_types|safe }}{% else %}[]{% endif %};
 		let allMajors = {% if majors %}{{ majors|safe }}{% else %}[]{% endif %};
-		let allSubjects = [];
-		let isSubjectsLoaded = false;
+		
+		
 		let monHocData = [];
 
         // Khởi tạo monHocData từ dữ liệu Django template
