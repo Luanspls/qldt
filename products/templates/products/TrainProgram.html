@@ -1519,50 +1519,56 @@
 
         // Khởi tạo monHocData từ dữ liệu Django template
 		try {
-		    const dataElement = document.getElementById('mon-hoc-data-json');
-		    if (dataElement) {
-		        monHocData = JSON.parse(dataElement.textContent);
-		        console.log('Successfully loaded monHocData:', monHocData.length, 'items');
+		    // Sửa cách lấy dữ liệu từ Django template
+		    const rawData = {% if mon_hoc_data %}{{ mon_hoc_data|safe }}{% else %}[]{% endif %};
+		    
+		    if (Array.isArray(rawData)) {
+		        monHocData = rawData;
+		    } else if (typeof rawData === 'string' && rawData.trim()) {
+		        // Nếu là string, thử parse JSON
+		        monHocData = JSON.parse(rawData);
 		    } else {
-		        console.log('No mon_hoc_data element found');
+		        monHocData = [];
 		    }
+		    
+		    console.log('MonHocData loaded from template:', monHocData.length);
 		} catch (e) {
 		    console.error('Error parsing monHocData:', e);
 		    monHocData = [];
-		};
+		}
+		
+		// Vẫn giữ biến này để tương thích
+		let allSubjects = monHocData; // Sử dụng dữ liệu từ template làm fallback
+		let isSubjectsLoaded = true;
 		
 		// Hàm fetch an toàn với xử lý lỗi
 		async function safeFetch(url, options = {}) {
-		    const timeout = 5000;
-		    const controller = new AbortController();
-		    const timeoutId = setTimeout(() => controller.abort(), timeout);
-		
-		    try {
-		        const response = await fetch(url, {
-		            ...options,
-		            signal: controller.signal
-		        });
+		    const timeoutDuration = options.timeout || 10000;
+		    
+			return new Promise((resolve) => {
+		        const timeout = setTimeout(() => {
+		            console.warn(`Fetch timeout for ${url}`);
+		            resolve([]); // Trả về mảng rỗng thay vì throw error
+		        }, timeoutDuration);
 		        
-		        clearTimeout(timeoutId);
-		
-		        if (!response.ok) {
-		            console.error(`Fetch error: ${response.status} ${response.statusText}`);
-		            return []; // Trả về mảng rỗng thay vì object phức tạp
-		        }
-		
-		        const data = await response.json();
-		        return data; // Trả về dữ liệu trực tiếp, không bọc thêm object
-		    } catch (error) {
-		        clearTimeout(timeoutId);
-		        
-		        if (error.name === 'AbortError') {
-		            console.error(`Fetch timeout for ${url}`);
-		        } else {
-		            console.error(`Fetch error for ${url}:`, error);
-		        }
-		        
-		        return []; // Luôn trả về mảng rỗng khi có lỗi
-		    }
+		        fetch(url, options)
+		            .then(response => {
+		                clearTimeout(timeout);
+		                if (!response.ok) {
+		                    console.warn(`Fetch error: ${response.status}`);
+		                    return [];
+		                }
+		                return response.json();
+		            })
+		            .then(data => {
+		                resolve(data || []);
+		            })
+		            .catch(error => {
+		                clearTimeout(timeout);
+		                console.warn(`Fetch failed for ${url}:`, error.message);
+		                resolve([]); // Luôn trả về mảng rỗng khi có lỗi
+		            });
+		    });
 		}
 
         // Khởi tạo Select2 cho tất cả dropdown
@@ -1838,46 +1844,37 @@
 		// Hàm hiển thị dữ liệu trong dropdown
 		function populateSubjectSelect(subjects) {
 		    const select = $('#select-existing-subject');
-		    if (!select.length) {
-		        console.error('Select element not found');
-		        return;
-		    }
+		    if (!select.length) return;
 
 			// Lưu giá trị hiện tại
 		    const currentValue = select.val();
-		    select.empty();
+
+			// Clear và thêm option mặc định
+		    select.empty().append(
+				$('<option>', {value: '', text: '-- Tìm kiếm môn học có sẵn --'})
+			);
 		    
-		    // Thêm option mặc định
-		    select.append($('<option>', {
-		        value: '',
-		        text: '-- Tìm kiếm môn học có sẵn --'
-		    }));
-		    
-			// Sử dụng subjects được truyền vào, nếu không có thì dùng allSubjects
-    		const subjectList = subjects && subjects.length > 0 ? subjects : (allSubjects || []);
-			
-		    // Thêm các môn học
-			if (subjectList.length > 0) {
-			    subjectList.forEach(subject => {
-			        const option = $('<option>', {
-                        value: subject.id,
-                        text: `${subject.code || ''} - ${subject.name || ''}`,
-                        'data-subject': JSON.stringify(subject)
-                    });
-                    select.append(option);
-			    });
-			} else {
-		        select.append($('<option>', {
-		            value: '',
-		            text: '-- Không có môn học nào --'
-		        }));
+			// Thêm dữ liệu
+		    if (subjects && subjects.length > 0) {
+		        subjects.forEach(subject => {
+		            select.append(
+		                $('<option>', {
+		                    value: subject.id || subject.code,
+		                    text: `${subject.code || ''} - ${subject.name || ''}`,
+		                    'data-subject': JSON.stringify(subject)
+		                })
+		            );
+		        });
 		    }
+			
 		    // Khôi phục giá trị cũ (nếu có)
 		    if (currentValue) {
 		        select.val(currentValue);
 		    }
 		    // Refresh Select2
-		    select.trigger('change.select2');
+		    if (select.hasClass('select2-hidden-accessible')) {
+		        select.trigger('change.select2');
+		    }
 		}
 
         // Cập nhật hàm handleUseExistingSubject
@@ -2392,49 +2389,64 @@
 
 			console.log('Filters:', { departmentId, curriculumId, courseId });
 
-			// Nếu không có bộ lọc, hiển thị tất cả dữ liệu
-		    if (!departmentId && !curriculumId && !courseId && !subjectGroupId) {
-		        console.log('No filters applied, showing all data');
-		        renderTable();
-		        return;
+			// 1. Ưu tiên: Lọc từ dữ liệu local trước
+		    if (monHocData.length > 0) {
+		        let filteredData = monHocData;
+		        
+		        // Áp dụng filters
+		        if (curriculumId) {
+		            filteredData = filteredData.filter(item => 
+		                item.chuong_trinh_id == curriculumId || 
+		                item.curriculum_id == curriculumId
+		            );
+		        }
+		        
+		        if (departmentId) {
+		            filteredData = filteredData.filter(item => 
+		                item.department_id == departmentId
+		            );
+		        }
+		        
+		        if (courseId) {
+		            filteredData = filteredData.filter(item => 
+		                item.course_id == courseId
+		            );
+		        }
+		        
+		        console.log('Filtered local data:', filteredData.length);
+		        
+		        if (filteredData.length > 0) {
+		            renderTable();
+		            updateStatistics();
+		            return;
+		        }
 		    }
 
-			// Hiển thị thông báo đang lọc
+			// 2. Fallback: Gọi API nếu không có dữ liệu local hoặc lọc không ra kết quả
 		    const tableBody = document.getElementById('table-body');
 		    if (tableBody) {
 		        tableBody.innerHTML = '<tr><td colspan="19" class="px-4 py-4 text-center text-gray-500">Đang lọc dữ liệu...</td></tr>';
 		    }
 			
-            let url = '/api/subjects/';
             const params = [];
             
             if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
             if (departmentId) params.push(`department_id=${departmentId}`);
             if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
 			if (courseId) params.push(`course_id=${courseId}`);
+
+			const url = '/api/subjects/' + (params.length ? '?' + params.join('&') : '');
             
-            if (params.length > 0) {
-		        url += '?' + params.join('&');
-		    }
-            
-            safeFetch(url)
+            safeFetch(url, { timeout: 15000 })
                 .then(data => {
                     monHocData = Array.isArray(data) ? data : [];
             		renderTable();
-                    
-                    // Load thống kê nếu có curriculum
-		            if (curriculumId) {
-		                loadThongKe(curriculumId);
-		            } else {
-		                updateStatistics();
-		            }
+					updateStatistics();
 		        })
 		        .catch(error => {
-		            console.error('Error loading filtered data:', error);
+		            console.error('Error loading data:', error);
 		            // Fallback: hiển thị dữ liệu hiện có
-		            console.log('Using existing monHocData as fallback');
 		            renderTable();
-		            updateStatistics();
 		        });
         }
 
@@ -3362,47 +3374,50 @@
 
         // Hàm load tất cả môn học để populate dropdowns
         function loadAllSubjects() {
-            if (allSubjects.length > 0 && isSubjectsLoaded) {
-		        console.log('Subjects already loaded:', allSubjects.length);
+			console.log('Loading subjects...');
+            // Nếu đã có dữ liệu từ template, dùng luôn
+		    if (monHocData.length > 0) {
+		        allSubjects = monHocData.map(item => ({
+		            id: item.id,
+		            code: item.ma_mon_hoc,
+		            name: item.ten_mon_hoc,
+		            credits: item.so_tin_chi,
+		            total_hours: item.tong_so_gio,
+		            theory_hours: item.ly_thuyet,
+		            practice_hours: item.thuc_hanh,
+		            tests_hours: item.kiem_tra,
+		            exam_hours: item.thi
+		        }));
+		        
+		        console.log('Using subjects from template data:', allSubjects.length);
+		        populateSubjectSelect(allSubjects);
 		        return Promise.resolve(allSubjects);
 		    }
-    		console.log('Loading all subjects from API...');
+
+			// Nếu không có dữ liệu từ template, mới gọi API
 			return safeFetch('/api/all-subjects/')
 		        .then(data => {
 		            console.log('API returned data:', data);
 		            
-		            // Kiểm tra cấu trúc dữ liệu
+		            // Xử lý các định dạng response khác nhau
 		            if (Array.isArray(data)) {
 		                allSubjects = data;
-		            } else if (data && data.status === 'success' && Array.isArray(data.data)) {
-		                // Xử lý response có cấu trúc {status: 'success', data: [...]}
+		            } else if (data && data.data && Array.isArray(data.data)) {
 		                allSubjects = data.data;
-		            } else if (data && Array.isArray(data.subjects)) {
-		                // Xử lý response có cấu trúc {subjects: [...]}
+		            } else if (data && data.subjects && Array.isArray(data.subjects)) {
 		                allSubjects = data.subjects;
 		            } else {
-		                console.warn('Unexpected API response format, using fallback data');
+		                console.warn('Unexpected response format, using empty array');
 		                allSubjects = [];
 		            }
 		            
-		            isSubjectsLoaded = true;
-		            console.log('Loaded', allSubjects.length, 'subjects');
+		            console.log('Loaded', allSubjects.length, 'subjects from API');
+		            populateSubjectSelect(allSubjects);
 		            return allSubjects;
 		        })
 		        .catch(error => {
-		            console.error('Error in loadAllSubjects:', error);
-		            
-		            // Fallback data
-		            allSubjects = [
-		                { id: 1, code: 'MH001', name: 'Toán cao cấp', credits: 3, total_hours: 45, theory_hours: 30, practice_hours: 15 },
-		                { id: 2, code: 'MH002', name: 'Lập trình cơ bản', credits: 4, total_hours: 60, theory_hours: 30, practice_hours: 30 },
-		                { id: 3, code: 'MH003', name: 'Cơ sở dữ liệu', credits: 3, total_hours: 45, theory_hours: 25, practice_hours: 20 },
-		                { id: 4, code: 'MH004', name: 'Mạng máy tính', credits: 3, total_hours: 45, theory_hours: 30, practice_hours: 15 },
-		                { id: 5, code: 'MH005', name: 'Phần mềm mã nguồn mở', credits: 2, total_hours: 30, theory_hours: 15, practice_hours: 15 },
-		            ];
-		            
-		            isSubjectsLoaded = true;
-		            console.log('Using fallback subjects:', allSubjects.length);
+		            console.error('Error loading subjects:', error);
+		            allSubjects = [];
 		            return allSubjects;
 		        });
         }
@@ -3469,6 +3484,7 @@
         // Xử lý sự kiện khi trang tải xong
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded - initializing...');
+			console.log('Initial monHocData from template:', monHocData.length);
 
 			// Khởi tạo dropdowns từ dữ liệu Django template
             initializeDropdowns();
@@ -3479,17 +3495,14 @@
             // Khởi tạo Select2 sau khi DOM đã sẵn sàng
             setTimeout(() => {
                 initializeSelect2();
-            }, 300);
+            }, 100);
             
             // Pre-load danh sách môn học nhưng không block render
 			setTimeout(() => {
-		        loadAllSubjects().then(subjects => {
-		            // Chỉ cập nhật dropdown nếu modal đang mở
-		            if (!document.getElementById('modal-them-mon-hoc').classList.contains('hidden')) {
-		                populateSubjectSelect(subjects);
-		            }
+		        loadAllSubjects().then(() => {
+		            console.log('Subjects loaded for dropdown');
 		        });
-			}, 500);
+		    }, 500);
 			    
             // Kiểm tra các input trong modal
             const modalInputs = document.querySelectorAll('#modal-them-chuong-trinh input, #modal-them-chuong-trinh select, #modal-them-chuong-trinh textarea');
