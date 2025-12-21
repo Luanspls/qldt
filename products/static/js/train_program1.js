@@ -24,41 +24,6 @@ window.addEventListener('unhandledrejection', function(e) {
 	return false;
 });
 
-// Biến toàn cục lưu trữ dữ liệu
-let allDepartments = {% if departments %}{{ departments|safe }}{% else %}[]{% endif %};
-let allSubjectGroups = {% if subject_groups %}{{ subject_groups|safe }}{% else %}[]{% endif %};
-let allCurricula = {% if curricula %}{{ curricula|safe }}{% else %}[]{% endif %};
-let allCourses = {% if courses %}{{ courses|safe }}{% else %}[]{% endif %};
-let allSubjectTypes = {% if subject_types %}{{ subject_types|safe }}{% else %}[]{% endif %};
-let allMajors = {% if majors %}{{ majors|safe }}{% else %}[]{% endif %};
-
-
-let monHocData = [];
-
-// Khởi tạo monHocData từ dữ liệu Django template
-try {
-	// Sửa cách lấy dữ liệu từ Django template
-	const rawData = {% if mon_hoc_data %}{{ mon_hoc_data|safe }}{% else %}[]{% endif %};
-	
-	if (Array.isArray(rawData)) {
-		monHocData = rawData;
-	} else if (typeof rawData === 'string' && rawData.trim()) {
-		// Nếu là string, thử parse JSON
-		monHocData = JSON.parse(rawData);
-	} else {
-		monHocData = [];
-	}
-	
-	console.log('MonHocData loaded from template:', monHocData.length);
-} catch (e) {
-	console.error('Error parsing monHocData:', e);
-	monHocData = [];
-}
-
-// Vẫn giữ biến này để tương thích
-let allSubjects = monHocData; // Sử dụng dữ liệu từ template làm fallback
-let isSubjectsLoaded = true;
-
 // ===== SAFE FETCH FUNCTION =====
 async function safeFetch(url, options = {}) {
 	const timeoutDuration = options.timeout || 10000;
@@ -168,62 +133,15 @@ function initializeSelect2ForSubjectModal() {
 		// Đóng tất cả Select2 đang mở trước
 		closeAllOpenSelect2();
 		
-		// Khởi tạo Select2 cho các dropdown trong modal
-		$('#select-existing-subject').select2({
-			placeholder: '-- Tìm kiếm môn học có sẵn --',
-			allowClear: true,
-			width: '100%',
-			dropdownParent: monHocModal
-		});
-		
-		$('#them-mon-hoc-curriculum').select2({
-			placeholder: '-- Chọn chương trình --',
-			allowClear: true,
-			width: '100%',
-			dropdownParent: monHocModal
-		});
-		
-		$('#them-mon-hoc-course').select2({
-			placeholder: '-- Chọn khóa học --',
-			allowClear: true,
-			width: '100%',
-			dropdownParent: monHocModal
-		});
-
-		$('#them-mon-hoc-major').select2({
-			placeholder: '-- Chọn ngành --',
-			allowClear: true,
-			width: '100%',
-			dropdownParent: monHocModal
-		});
-		
-		$('select[name="department_id"]').select2({
-			placeholder: '-- Chọn đơn vị --',
-			allowClear: true,
-			width: '100%',
-			dropdownParent: monHocModal
-		});
-		
-		$('select[name="subject_type_id"]').select2({
-			placeholder: '-- Chọn loại môn --',
-			allowClear: true,
-			width: '100%',
-			dropdownParent: monHocModal
-		});
-		
-		$('select[name="subject_group_id"]').select2({
-			placeholder: '-- Chọn tổ bộ môn --',
-			allowClear: true,
-			width: '100%',
-			dropdownParent: monHocModal
-		});
-		
-		$('select[name="semester"]').select2({
-			placeholder: '-- Chọn học kỳ --',
-			allowClear: true,
-			width: '100%',
-			dropdownParent: monHocModal
-		});
+		// Initialize all select2 elements in modal
+        $('#select-existing-subject, #them-mon-hoc-curriculum, #them-mon-hoc-course, #them-mon-hoc-major, ' +
+          'select[name="department_id"], select[name="subject_type_id"], ' +
+          'select[name="subject_group_id"], select[name="semester"]').select2({
+            placeholder: '-- Chọn --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: monHocModal
+        });
 
 		console.log('Select2 initialized for subject modal');
 	} catch (error) {
@@ -512,144 +430,127 @@ function renderTable() {
 		const row = document.createElement('tr');
 		row.innerHTML = `<td colspan="19" class="px-4 py-4 text-center text-gray-500">Không có dữ liệu môn học</td>`;
 		tableBody.appendChild(row);
-		//updateStatistics();
+		updateStatistics();
 		return;
 	}
 
 	monHocData.forEach((monHoc, index) => {
-		const row = document.createElement('tr');
-		row.className = 'hover:bg-gray-50';
-		row.innerHTML = `
-			<td class="px-2 py-2 text-center text-sm col-tt">${index + 1}</td>
-			<td class="px-2 py-2 col-ma">
-				<input type="text" value="${monHoc.ma_mon_hoc || ''}"
-					class="editable w-full bg-transparent border-none text-sm text-center"
-					data-field="code" data-id="${monHoc.id}" readonly
-					data-original-value="${monHoc.ma_mon_hoc || ''}">
-			</td>
-			<td class="px-2 py-2 col-ten wrap-cell">
-				<input type="text" value="${monHoc.ten_mon_hoc || 0}"
-					class="editable w-full bg-transparent border-none text-sm text-center"
-					data-field="name" data-id="${monHoc.id}" readonly
-					data-original-value="${monHoc.ten_mon_hoc || ''}">
-			</td>
-			<td class="px-2 py-2 text-center col-tinchi">
-				<input type="number" value="${monHoc.so_tin_chi || 0}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="credits" data-id="${monHoc.id}" readonly step="0.5" min="0"
-					data-original-value="${monHoc.so_tin_chi || 0}">
-			</td>
-			<td class="px-2 py-2 text-center col-gio">
-				<input type="number" value="${monHoc.tong_so_gio || 0}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="total_hours" data-id="${monHoc.id}" readonly min="0"
-					data-original-value="${monHoc.tong_so_gio || 0}">
-			</td>
-			<td class="px-2 py-2 text-center col-lythuyet">
-				<input type="number" value="${monHoc.ly_thuyet || 0}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="theory_hours" data-id="${monHoc.id}" readonly min="0"
-					data-original-value="${monHoc.ly_thuyet || 0}">
-			</td>
-			<td class="px-2 py-2 text-center col-thuchanh">
-				<input type="number" value="${monHoc.thuc_hanh || 0}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="practice_hours" data-id="${monHoc.id}" readonly min="0"
-					data-original-value="${monHoc.thuc_hanh || 0}">
-			</td>
-			<td class="px-2 py-2 text-center col-kiemtra">
-				<input type="number" value="${monHoc.kiem_tra || 0}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="tests_hours" data-id="${monHoc.id}" readonly min="0"
-					data-original-value="${monHoc.kiem_tra || 0}">
-			</td>
-			<td class="px-2 py-2 text-center col-thi">
-				<input type="number" value="${monHoc.thi || 0}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="exam_hours" data-id="${monHoc.id}" readonly min="0"
-					data-original-value="${monHoc.thi || 0}">
-			</td>
-			<td class="px-2 py-2 text-center col-hk">
-				<input type="number" value="${monHoc.hk1 || ''}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="hk1" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
-					data-original-value="${monHoc.hk1 || ''}">
-			</td>
-			<td class="px-2 py-2 text-center col-hk">
-				<input type="number" value="${monHoc.hk2 || ''}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="hk2" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
-					data-original-value="${monHoc.hk2 || ''}">
-			</td>
-			<td class="px-2 py-2 text-center col-hk">
-				<input type="number" value="${monHoc.hk3 || ''}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="hk3" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
-					data-original-value="${monHoc.hk3 || ''}">
-			</td>
-			<td class="px-2 py-2 text-center col-hk">
-				<input type="number" value="${monHoc.hk4 || ''}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="hk4" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
-					data-original-value="${monHoc.hk4 || ''}">
-			</td>
-			<td class="px-2 py-2 text-center col-hk">
-				<input type="number" value="${monHoc.hk5 || ''}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="hk5" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
-					data-original-value="${monHoc.hk5 || ''}">
-			</td>
-			<td class="px-2 py-2 text-center col-hk">
-				<input type="number" value="${monHoc.hk6 || ''}" 
-					class="editable w-full bg-transparent border-none text-sm text-center" 
-					data-field="hk6" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
-					data-original-value="${monHoc.hk6 || ''}">
-			</td>
-			<td class="px-2 py-2 col-donvi">
-				<select class="editable select department-select w-full bg-transparent border-none text-sm" 
-						data-field="department" data-id="${monHoc.id}" disabled
-						data-original-value="${monHoc.don_vi || ''}">
-					<option value="">-- Chọn đơn vị --</option>
-					${allDepartments.map(dept => `
-						<option value="${dept.name}" ${dept.name === monHoc.don_vi ? 'selected' : ''}>
-							${dept.name}
-						</option>
-					`).join('')}
-				</select>
-			</td>
-			<td class="px-2 py-2 col-giangvien">
-				<input type="text" value="${monHoc.giang_vien || ''}" 
-					class="editable instructor-autocomplete w-full bg-transparent border-none text-sm" 
-					data-field="instructor" data-id="${monHoc.id}" readonly
-					data-original-value="${monHoc.giang_vien || ''}"
-					placeholder="Nhập tên giảng viên...">
-			</td>
-			<td class="px-2 py-2 col-course">
-				<select class="editable w-full bg-transparent border-none text-sm" 
-						data-field="course" data-id="${monHoc.id}" disabled
-						data-original-value="${monHoc.course_id || ''}">
-					<option value="">-- Chọn khóa học --</option>
-					${allCourses.map(course => `
-						<option value="${course.id}" ${course.id == monHoc.course_id ? 'selected' : ''}>
-							${course.name} (${course.code})
-						</option>
-					`).join('')}
-				</select>
-			</td>
-			<td class="px-2 py-2 text-center col-thaotac">
-				<button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" data-id="${monHoc.id}" title="Sửa">
-					<i class="fas fa-edit"></i>
-				</button>
-				<button class="btn-xoa text-red-600 hover:text-red-900" data-id="${monHoc.id}" title="Xóa">
-					<i class="fas fa-trash"></i>
-				</button>
-			</td>
-		`;
-		tableBody.appendChild(row);
-	});
-	
-	// Cập nhật thống kê
-	updateStatistics();
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.innerHTML = generateTableRowHTML(monHoc, index);
+        tableBody.appendChild(row);
+    });
+    
+    updateStatistics();
+}
+
+function generateTableRowHTML(monHoc, index) {
+    return `
+        <td class="px-2 py-2 text-center text-sm col-tt">${index + 1}</td>
+        <td class="px-2 py-2 col-ma">
+            <input type="text" value="${escapeHtml(monHoc.ma_mon_hoc || '')}"
+                class="editable w-full bg-transparent border-none text-sm text-center"
+                data-field="code" data-id="${monHoc.id}" readonly
+                data-original-value="${escapeHtml(monHoc.ma_mon_hoc || '')}">
+        </td>
+        <td class="px-2 py-2 col-ten wrap-cell">
+            <input type="text" value="${escapeHtml(monHoc.ten_mon_hoc || '')}"
+                class="editable w-full bg-transparent border-none text-sm text-center"
+                data-field="name" data-id="${monHoc.id}" readonly
+                data-original-value="${escapeHtml(monHoc.ten_mon_hoc || '')}">
+        </td>
+        <td class="px-2 py-2 text-center col-tinchi">
+            <input type="number" value="${monHoc.so_tin_chi || 0}" 
+                class="editable w-full bg-transparent border-none text-sm text-center" 
+                data-field="credits" data-id="${monHoc.id}" readonly step="0.5" min="0"
+                data-original-value="${monHoc.so_tin_chi || 0}">
+        </td>
+        <td class="px-2 py-2 text-center col-gio">
+            <input type="number" value="${monHoc.tong_so_gio || 0}" 
+                class="editable w-full bg-transparent border-none text-sm text-center" 
+                data-field="total_hours" data-id="${monHoc.id}" readonly min="0"
+                data-original-value="${monHoc.tong_so_gio || 0}">
+        </td>
+        <td class="px-2 py-2 text-center col-lythuyet">
+            <input type="number" value="${monHoc.ly_thuyet || 0}" 
+                class="editable w-full bg-transparent border-none text-sm text-center" 
+                data-field="theory_hours" data-id="${monHoc.id}" readonly min="0"
+                data-original-value="${monHoc.ly_thuyet || 0}">
+        </td>
+        <td class="px-2 py-2 text-center col-thuchanh">
+            <input type="number" value="${monHoc.thuc_hanh || 0}" 
+                class="editable w-full bg-transparent border-none text-sm text-center" 
+                data-field="practice_hours" data-id="${monHoc.id}" readonly min="0"
+                data-original-value="${monHoc.thuc_hanh || 0}">
+        </td>
+        <td class="px-2 py-2 text-center col-kiemtra">
+            <input type="number" value="${monHoc.kiem_tra || 0}" 
+                class="editable w-full bg-transparent border-none text-sm text-center" 
+                data-field="tests_hours" data-id="${monHoc.id}" readonly min="0"
+                data-original-value="${monHoc.kiem_tra || 0}">
+        </td>
+        <td class="px-2 py-2 text-center col-thi">
+            <input type="number" value="${monHoc.thi || 0}" 
+                class="editable w-full bg-transparent border-none text-sm text-center" 
+                data-field="exam_hours" data-id="${monHoc.id}" readonly min="0"
+                data-original-value="${monHoc.thi || 0}">
+        </td>
+        ${generateSemesterCells(monHoc)}
+        <td class="px-2 py-2 col-donvi">
+            <select class="editable select department-select w-full bg-transparent border-none text-sm" 
+                    data-field="department" data-id="${monHoc.id}" disabled
+                    data-original-value="${escapeHtml(monHoc.don_vi || '')}">
+                <option value="">-- Chọn đơn vị --</option>
+                ${allDepartments.map(dept => `
+                    <option value="${dept.name}" ${dept.name === monHoc.don_vi ? 'selected' : ''}>
+                        ${dept.name}
+                    </option>
+                `).join('')}
+            </select>
+        </td>
+        <td class="px-2 py-2 col-giangvien">
+            <input type="text" value="${escapeHtml(monHoc.giang_vien || '')}" 
+                class="editable instructor-autocomplete w-full bg-transparent border-none text-sm" 
+                data-field="instructor" data-id="${monHoc.id}" readonly
+                data-original-value="${escapeHtml(monHoc.giang_vien || '')}"
+                placeholder="Nhập tên giảng viên...">
+        </td>
+        <td class="px-2 py-2 col-course">
+            <select class="editable w-full bg-transparent border-none text-sm" 
+                    data-field="course" data-id="${monHoc.id}" disabled
+                    data-original-value="${monHoc.course_id || ''}">
+                <option value="">-- Chọn khóa học --</option>
+                ${allCourses.map(course => `
+                    <option value="${course.id}" ${course.id == monHoc.course_id ? 'selected' : ''}>
+                        ${course.name} (${course.code})
+                    </option>
+                `).join('')}
+            </select>
+        </td>
+        <td class="px-2 py-2 text-center col-thaotac">
+            <button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" data-id="${monHoc.id}" title="Sửa">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn-xoa text-red-600 hover:text-red-900" data-id="${monHoc.id}" title="Xóa">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+}
+
+function generateSemesterCells(monHoc) {
+    let html = '';
+    for (let i = 1; i <= 6; i++) {
+        html += `
+            <td class="px-2 py-2 text-center col-hk">
+                <input type="number" value="${monHoc[`hk${i}`] || ''}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="hk${i}" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                    data-original-value="${monHoc[`hk${i}`] || ''}">
+            </td>
+        `;
+    }
+    return html;
 }
 
 // Hàm escape HTML để tránh XSS
@@ -1378,7 +1279,6 @@ function getSheetNamesFromFile(file) {
 // Mở modal thêm chương trình
 function openThemChuongTrinhModal() {
 	closeAllOpenSelect2();
-	console.log('Opening curriculum modal...');
 	const chuongTrinhModal = document.getElementById('modal-them-chuong-trinh');
 	if (chuongTrinhModal) {
 		chuongTrinhModal.classList.remove('hidden');
@@ -1417,12 +1317,6 @@ function closeThemChuongTrinhModal() {
 		document.body.classList.remove('modal-open');
 	}
 	document.body.classList.remove('overflow-hidden');
-	
-	// Reset form
-	//const form = document.getElementById('form-them-chuong-trinh');
-	//if (form) {
-	//	form.reset();
-	//}
 }
 
 // Hàm kiểm tra và sửa lỗi input trong modal
@@ -1543,46 +1437,16 @@ function closeAllOpenSelect2() {
 
 // Mở modal thêm môn học
 function openThemMonHocModal() {
-	// Disable Select2 bên ngoài
-	$('body').addClass('modal-open');
-	$('.select2-container:not(.modal .select2-container)').css({
-		'opacity': '0.5',
-		'pointer-events': 'none'
-	});
-	
-	// Đóng tất cả Select2 đang mở trước
 	closeAllOpenSelect2();
 	
 	const monHocModal = document.getElementById('modal-them-mon-hoc');
-	if (!monHocModal) {
-		console.error('Modal them mon hoc not found');
-		return;
-	}
-
-	// Đóng các modal khác nếu đang mở
-	closeThemChuongTrinhModal();
-	closeImportModal();
+	if (!monHocModal) return;
 
 	// Reset form
 	const form = document.getElementById('form-them-mon-hoc');
 	if (form) {
 		form.reset();
 		clearSubjectSelection();
-	}
-
-	// Lấy giá trị từ dropdown chính
-	const curriculumSelect = document.getElementById('chuong-trinh-dao-tao');
-	const courseSelect = document.getElementById('khoa-hoc');
-	
-	let selectedCurriculumId = '';
-	let selectedCourseId = '';
-	
-	if (curriculumSelect) {
-		selectedCurriculumId = curriculumSelect.value;
-	}
-	
-	if (courseSelect) {
-		selectedCourseId = courseSelect.value;
 	}
 	
 	// Hiển thị modal
@@ -1592,39 +1456,13 @@ function openThemMonHocModal() {
 	setTimeout(() => {
 		// Khởi tạo Select2
 		initializeSelect2ForSubjectModal();
-		
-		// Set giá trị mặc định nếu có
-		if (selectedCurriculumId) {
-			const curriculumSelectInModal = document.getElementById('them-mon-hoc-curriculum');
-			if (curriculumSelectInModal) {
-				curriculumSelectInModal.value = selectedCurriculumId;
-				$(curriculumSelectInModal).trigger('change');
-				updateMajorInfo(selectedCurriculumId);
-			}
-		}
-		
-		if (selectedCourseId) {
-			const courseSelectInModal = document.getElementById('them-mon-hoc-course');
-			if (courseSelectInModal) {
-				courseSelectInModal.value = selectedCourseId;
-				$(courseSelectInModal).trigger('change');
-			}
-		}
-
-		// Tải danh sách môn học có sẵn từ dữ liệu hiện tại
 		loadExistingSubjectsFromCurrentData();
-		
-		// Load danh sách môn học có sẵn
-		//setTimeout(() => {
-		//    loadExistingSubjects();
-		//}, 300);
 		
 		// Focus vào input đầu tiên
 		setTimeout(() => {
 			const firstInput = monHocModal.querySelector('input[name="code"]');
 			if (firstInput) {
 				firstInput.focus();
-				//firstInput.select();
 			}
 		}, 200);
 		
@@ -1633,13 +1471,6 @@ function openThemMonHocModal() {
 
 // Đóng modal thêm môn học
 function closeThemMonHocModal() {
-	// Enable Select2 bên ngoài
-	$('body').removeClass('modal-open');
-	$('.select2-container:not(.modal .select2-container)').css({
-		'opacity': '1',
-		'pointer-events': 'auto'
-	});
-	
 	const monHocModal = document.getElementById('modal-them-mon-hoc');
 	if (monHocModal) {
 		monHocModal.classList.add('hidden');
@@ -1649,13 +1480,6 @@ function closeThemMonHocModal() {
 		document.body.classList.remove('modal-open');
 	}
 	document.body.classList.remove('overflow-hidden');
-	
-	// Reset form
-	//const form = document.getElementById('form-them-mon-hoc');
-	//if (form) {
-	//    form.reset();
-	//    clearSubjectSelection();
-	//}
 }
 
 // Cập nhật thông tin ngành đào tạo khi chọn chương trình
