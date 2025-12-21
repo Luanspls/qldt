@@ -89,7 +89,11 @@ class PerformanceUtils {
     }
     
     static measurePerformance(label, callback) {
-        if (process.env.NODE_ENV === 'development') {
+        const isDevelopment = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.includes('local');
+        
+        if (isDevelopment) {
             console.time(label);
             const result = callback();
             console.timeEnd(label);
@@ -770,56 +774,11 @@ class App {
     }
 }
 
-// ===== SERVICE WORKER ===== (`sw.js`)
-const CACHE_NAME = 'train-program-v1';
-const STATIC_ASSETS = [
-    '/static/css/train_program.css',
-    '/static/js/train_program.js',
-    '/static/images/',
-    'https://code.jquery.com/jquery-3.6.0.min.js'
-];
 
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(STATIC_ASSETS))
-            .then(() => self.skipWaiting())
-    );
-});
-
-self.addEventListener('fetch', (event) => {
-    // Skip non-GET requests
-    if (event.request.method !== 'GET') return;
-    
-    // Skip API requests
-    if (event.request.url.includes('/api/')) return;
-    
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                if (response) {
-                    return response;
-                }
-                
-                return fetch(event.request).then(response => {
-                    // Don't cache if not a success response
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                        return response;
-                    }
-                    
-                    // Clone the response
-                    const responseToCache = response.clone();
-                    
-                    caches.open(CACHE_NAME)
-                        .then(cache => {
-                            cache.put(event.request, responseToCache);
-                        });
-                    
-                    return response;
-                });
-            })
-    );
-});
+// Export for modules if needed
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { App, AppState, ApiService };
+}
 
 // ===== INITIALIZE APP =====
 let app;
