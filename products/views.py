@@ -44,7 +44,7 @@ class KeepAliveMiddleware:
         return self.get_response(request)
 
 class TrainProgramManagerView(View):
-    template_name = 'products/train_program.html'
+    template_name = 'products/TrainProgram.html'
     
     def get(self, request):
         try:
