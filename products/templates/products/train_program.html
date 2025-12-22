@@ -6,9 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Quản lý Chương trình Đào tạo</title>
     
-    <!-- Preload critical resources -->
-    <link rel="preload" href="https://code.jquery.com/jquery-3.6.0.min.js" as="script">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'css/train_program.css' %}">
+    
+    <!-- External libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Favicon để tránh lỗi 404 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
     
     <!-- Inline critical CSS -->
     <style>
@@ -25,6 +33,39 @@
             width: 100%;
             height: 16px;
             margin-bottom: 8px;
+        }
+
+        #app-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none !important;
         }
         
         @keyframes loading {
@@ -45,18 +86,6 @@
             .mobile-full-width { width: 100% !important; }
         }
     </style>
-    
-    <!-- Lazy load non-critical CSS -->
-    <link rel="preload" href="{% static 'css/train_program.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="{% static 'css/train_program.css' %}"></noscript>
-    
-    <!-- Preconnect to external domains -->
-    <link rel="preconnect" href="https://code.jquery.com">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    
-    <!-- Prefetch data -->
-    <link rel="prefetch" href="/api/subjects/" as="fetch">
 </head>
 <body class="bg-gray-100">
     {% csrf_token %}
