@@ -1,0 +1,866 @@
+/* ===== RESET & BASE STYLES ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== MODAL FIXES ===== */
+/* Modal cơ bản */
+.fixed.inset-0 {
+    display: none;
+    z-index: 50;
+}
+
+.fixed.inset-0:not(.hidden) {
+    display: flex;
+}
+
+/* Modal thêm môn học - FIXED */
+#modal-them-mon-hoc {
+    display: none !important;
+    z-index: 1050 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#modal-them-mon-hoc.hidden {
+    display: none !important;
+}
+
+#modal-them-mon-hoc:not(.hidden) {
+    display: flex !important;
+}
+
+#modal-them-mon-hoc > div {
+    z-index: 1051 !important;
+    position: relative;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    background-color: white !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    width: 95% !important;
+    max-width: 1200px !important;
+}
+
+.modal {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+/* ===== SELECT2 FIXES ===== */
+/* Select2 trong modal */
+.modal .select2-container {
+    z-index: 1060 !important;
+}
+
+.modal .select2-container--open {
+    z-index: 1070 !important;
+}
+
+.modal .select2-dropdown {
+    z-index: 1080 !important;
+    position: fixed !important;
+    top: auto !important;
+    left: auto !important;
+    width: auto !important;
+    min-width: 300px !important;
+    background-color: white !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 0.375rem !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Ẩn Select2 bên ngoài khi modal mở */
+body.modal-open .select2-container:not(.modal .select2-container) {
+    z-index: 1030 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+body.modal-open .select2-container--open:not(.modal .select2-container--open) {
+z-index: 1031 !important;
+}
+
+body.modal-open .select2-dropdown:not(.modal .select2-dropdown) {
+    display: none !important;
+}
+
+/* Select2 cơ bản */
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+    border: 1px solid #d1d5db !important;
+    border-radius: 0.375rem !important;
+    min-height: 45px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.select2-container--default .select2-selection--single {
+transition: border-color 0.2s;
+}
+.select2-container--default .select2-selection--multiple {
+    height: auto !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #3b82f6 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 0.25rem !important;
+}
+
+.select2-dropdown {
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== INPUT & FORM STYLES ===== */
+#modal-them-mon-hoc, 
+#modal-them-chuong-trinh,
+#modal-import,
+#modal-import-errors {
+backdrop-filter: blur(4px);
+background-color: rgba(0, 0, 0, 0.5) !important;
+}
+/* Input trong modal */
+#modal-them-mon-hoc input:not([type="checkbox"]),
+#modal-them-mon-hoc select,
+#modal-them-mon-hoc textarea {
+    background-color: white !important;
+    color: #000 !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 0.375rem !important;
+    padding: 0.75rem !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+    pointer-events: auto !important;
+    user-select: auto !important;
+    cursor: text !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#modal-them-mon-hoc input:focus,
+#modal-them-mon-hoc select:focus,
+#modal-them-mon-hoc textarea:focus {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 2px !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Select trong modal - đảm bảo hiển thị mũi tên */
+#modal-them-mon-hoc select {
+    appearance: auto !important;
+    -webkit-appearance: auto !important;
+    -moz-appearance: auto !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+    background-position: right 0.5rem center !important;
+    background-repeat: no-repeat !important;
+    background-size: 1.5em 1.5em !important;
+    padding-right: 2.5rem !important;
+}
+
+/* ===== TABLE STYLES ===== */
+.table-container {
+    max-height: 500px;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Đảm bảo nội dung trong ô không bị tràn */
+table td, table th {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+
+/* Loading state cho bảng */
+.table-loading {
+position: relative;
+min-height: 100px;
+}
+
+.table-loading::after {
+content: '';
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: 40px;
+height: 40px;
+border: 3px solid #f3f3f3;
+border-top: 3px solid #3498db;
+border-radius: 50%;
+animation: spin 1s linear infinite;
+}
+
+.wrap-cell {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Độ rộng cột cụ thể */
+.col-tt { width: 48px; min-width: 48px; }
+.col-ma { width: 100px; min-width: 100px; }
+.col-ten { width: 220px; min-width: 220px; }
+.col-tinchi { width: 64px; min-width: 64px; }
+.col-gio { width: 80px; min-width: 80px; }
+.col-lythuyet { width: 64px; min-width: 64px; }
+.col-thuchanh { width: 64px; min-width: 64px; }
+.col-kiemtra { width: 50px; min-width: 50px; }
+.col-thi { width: 40px; min-width: 40px; }
+.col-hk { width: 48px; min-width: 48px; }
+.col-donvi { width: 180px; min-width: 180px; }
+.col-giangvien { width: 200px; min-width: 200px; }
+.col-course { width: 150px; min-width: 150px; }
+.col-thaotac { width: 80px; min-width: 80px; }
+
+/* Table header sticky */
+.bg-gray-50.sticky {
+    z-index: 20;
+    position: sticky;
+    top: 0;
+}
+
+/* ===== EDITABLE CELL STYLES ===== */
+.editable:focus {
+    outline: 2px solid #3b82f6;
+    background-color: #f0f9ff;
+    border-radius: 0.25rem;
+}
+
+.editable.select {
+    background-color: transparent;
+    border: none;
+    width: 100%;
+    padding: 2px 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.editable.select:focus {
+    outline: 2px solid #3b82f6;
+    background-color: white;
+    border-radius: 4px;
+}
+
+/* ===== BUTTON STYLES ===== */
+button:not(:disabled) {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Button colors */
+.bg-blue-600 { background-color: #2563eb; }
+.bg-blue-600:hover { background-color: #1d4ed8; }
+
+.bg-green-600 { background-color: #059669; }
+.bg-green-600:hover { background-color: #047857; }
+
+.bg-gray-600 { background-color: #4b5563; }
+.bg-gray-600:hover { background-color: #374151; }
+
+.bg-purple-600 { background-color: #7c3aed; }
+.bg-purple-600:hover { background-color: #6d28d9; }
+
+/* ===== AUTOCOMPLETE STYLES ===== */
+.instructor-autocomplete {
+    position: relative;
+}
+
+.autocomplete-suggestions {
+    position: absolute;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    top: 100%;
+    left: 0;
+}
+
+.autocomplete-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.autocomplete-suggestion:hover {
+    background-color: #f3f4f6;
+}
+
+.autocomplete-suggestion:last-child {
+    border-bottom: none;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal > div {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+.select2-dropdown {
+    animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.fa-spinner.fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* ===== UTILITY CLASSES ===== */
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* Success/Error states */
+.success-badge {
+    background-color: #10b981;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.error-badge {
+    background-color: #ef4444;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* ===== RESPONSIVE STYLES ===== */
+@media (max-width: 768px) {
+.select2-container {
+    font-size: 14px;
+}
+
+.select2-selection--single {
+    height: 40px !important;
+    line-height: 40px !important;
+}
+
+.select2-selection__arrow {
+    height: 38px !important;
+}
+
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .modal > div {
+        width: 95% !important;
+        margin: 1rem auto !important;
+        padding: 1rem !important;
+    }
+    
+    .modal .select2-dropdown {
+        position: fixed !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 90% !important;
+        max-width: 300px !important;
+    }
+    
+    .table-container {
+        max-height: 400px;
+    }
+    
+    /* Stack grid columns on mobile */
+    .grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem;
+    }
+    
+    /* Adjust font sizes */
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    .text-xl {
+        font-size: 1.125rem !important;
+    }
+    
+    /* Button spacing */
+    .flex.space-x-2 {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .flex.space-x-2 > button {
+        width: 100%;
+    }
+    
+    /* Table adjustments */
+    table {
+        font-size: 0.875rem;
+    }
+    
+    .col-ten, .col-donvi, .col-giangvien, .col-course {
+        min-width: 150px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .modal > div {
+        width: 100% !important;
+        margin: 0.5rem !important;
+        padding: 0.75rem !important;
+    }
+    
+    /* Hide some less important columns on very small screens */
+    .col-lythuyet, .col-thuchanh, .col-kiemtra .col-thi {
+        display: none;
+    }
+    
+    .text-3xl {
+        font-size: 1.25rem !important;
+    }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+    .modal,
+    .select2-dropdown,
+    button:not(.print-button),
+    .no-print {
+        display: none !important;
+    }
+    
+    .table-container {
+        max-height: none;
+        overflow: visible;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th, td {
+        border: 1px solid #000;
+        padding: 0.5rem;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+}
+
+/* ===== ACCESSIBILITY ===== */
+/* Focus styles for keyboard navigation */
+:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Screen reader only text */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .bg-blue-600 { background-color: #0000ff; }
+    .bg-green-600 { background-color: #008000; }
+    .bg-gray-600 { background-color: #000000; }
+    .bg-purple-600 { background-color: #800080; }
+    
+    .border {
+        border-width: 2px !important;
+    }
+}
+
+/* ===== DARK MODE SUPPORT ===== */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #111827;
+        color: #f9fafb;
+    }
+    
+    .bg-white {
+        background-color: #1f2937 !important;
+    }
+    
+    .bg-gray-100 {
+        background-color: #111827 !important;
+    }
+    
+    .bg-gray-50 {
+        background-color: #374151 !important;
+    }
+    
+    .text-gray-700 {
+        color: #d1d5db !important;
+    }
+    
+    .text-gray-900 {
+        color: #f9fafb !important;
+    }
+    
+    .border-gray-300 {
+        border-color: #4b5563 !important;
+    }
+    
+    /* Modal trong dark mode */
+    .modal > .bg-white {
+        background-color: #1f2937 !important;
+    }
+    
+    /* Table trong dark mode */
+    table {
+        color: #f9fafb;
+    }
+    
+    thead.bg-gray-50 {
+        background-color: #374151 !important;
+    }
+    
+    /* Input trong dark mode */
+    input, select, textarea {
+        background-color: #374151 !important;
+        color: #f9fafb !important;
+        border-color: #4b5563 !important;
+    }
+    
+    /* Select2 trong dark mode */
+    .select2-container--default .select2-selection--single,
+    .select2-container--default .select2-selection--multiple {
+        background-color: #374151 !important;
+        border-color: #4b5563 !important;
+    }
+    
+    .select2-dropdown {
+        background-color: #1f2937 !important;
+        border-color: #4b5563 !important;
+    }
+    
+    .select2-results__option {
+        color: #f9fafb;
+    }
+    
+    .select2-search__field {
+        background-color: #374151 !important;
+        color: #f9fafb !important;
+    }
+}
+
+/* ===== FIX FOR SPECIFIC ELEMENTS ===== */
+/* Đảm bảo các nút trong modal có thể click */
+#modal-them-mon-hoc button,
+#modal-them-chuong-trinh button {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Đảm bảo modal không bị ảnh hưởng bởi các style khác */
+#modal-them-mon-hoc,
+#modal-them-chuong-trinh {
+    pointer-events: auto !important;
+}
+
+#modal-them-mon-hoc *,
+#modal-them-chuong-trinh * {
+    pointer-events: auto !important;
+}
+
+/* Fix cho chiều cao modal content */
+#modal-them-mon-hoc .bg-white {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+/* Đảm bảo body không scroll khi modal mở */
+body.modal-open {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+}
+
+/* Fix cho placeholder trong input */
+::placeholder {
+    color: #9ca3af;
+    opacity: 1;
+}
+
+/* ===== CUSTOM SCROLLBAR FOR MODAL ===== */
+#modal-them-mon-hoc .bg-white::-webkit-scrollbar {
+    width: 6px;
+}
+
+#modal-them-mon-hoc .bg-white::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#modal-them-mon-hoc .bg-white::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+#modal-them-mon-hoc .bg-white::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* ===== LOADING SPINNER ===== */
+.spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+/* ===== TOOLTIP STYLES ===== */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: #374151;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.75rem;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* ===== VALIDATION STYLES ===== */
+.valid-input {
+    border-color: #10b981 !important;
+}
+
+.invalid-input {
+    border-color: #ef4444 !important;
+}
+
+.validation-message {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.validation-message.error {
+    color: #ef4444;
+}
+
+.validation-message.success {
+    color: #10b981;
+}
+
+/* ===== FINAL TOUCHES ===== */
+/* Smooth transitions */
+.modal,
+.modal > div,
+.select2-container,
+.select2-dropdown {
+    transition: all 0.3s ease;
+}
+
+/* Thêm style cho Select2 */
+.select2-container {
+    z-index: 1000 !important;
+}
+
+.select2-container--open {
+    z-index: 10000 !important;
+}
+
+.select2-dropdown {
+    z-index: 10001 !important;
+}
+
+/* Đảm bảo modal có z-index cao */
+.fixed.inset-0 {
+    z-index: 9998 !important;
+}
+
+/* Improve text readability */
+p, label, span, div {
+    line-height: 1.6;
+}
+
+/* Better spacing for form elements */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+/* Card-like elements */
+.card {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.status-active {
+    background-color: #10b981;
+}
+
+.status-inactive {
+    background-color: #ef4444;
+}
+
+.status-draft {
+    background-color: #f59e0b;
+}
+
+/* ===== PERFORMANCE OPTIMIZATIONS ===== */
+/* Hardware acceleration for smooth animations */
+.modal > div,
+.select2-dropdown {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    .modal > div,
+    .select2-dropdown,
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
