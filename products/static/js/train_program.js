@@ -1,3 +1,5 @@
+// train_program.js - OOP VERSION WITHOUT SERVICE WORKER
+
 // ===== CONFIGURATION =====
 const CONFIG = {
     DEBOUNCE_DELAY: 300,
@@ -30,20 +32,6 @@ class PerformanceUtils {
                 setTimeout(() => inThrottle = false, limit);
             }
         };
-    }
-    
-    static measurePerformance(label, callback) {
-        // Không dùng process.env
-        const isDevelopment = window.location.hostname === 'localhost' || 
-                            window.location.hostname === '127.0.0.1';
-        
-        if (isDevelopment) {
-            console.time(label);
-            const result = callback();
-            console.timeEnd(label);
-            return result;
-        }
-        return callback();
     }
 }
 
@@ -126,41 +114,38 @@ class TableManager {
     render(data) {
         if (!this.tableBody) return;
         
-        PerformanceUtils.measurePerformance('renderTable', () => {
-            if (!data || data.length === 0) {
-                this.showEmptyState();
-                return;
-            }
-            
-            // FIXED: Sử dụng this.app.state
-            const isMobile = this.app?.state?.isMobile || false;
-            const displayData = isMobile ? 
-                data.slice(0, CONFIG.MAX_ROWS_VISIBLE) : 
-                data;
-            
-            // Dùng DocumentFragment cho hiệu suất
-            const fragment = document.createDocumentFragment();
-            
-            displayData.forEach((item, index) => {
-                const row = this.createRow(item, index);
-                fragment.appendChild(row);
-            });
-            
-            this.tableBody.innerHTML = '';
-            this.tableBody.appendChild(fragment);
-            
-            // Nếu có nhiều dữ liệu trên mobile
-            if (isMobile && data.length > CONFIG.MAX_ROWS_VISIBLE) {
-                this.showLoadMoreButton(data.length - CONFIG.MAX_ROWS_VISIBLE);
-            }
+        if (!data || data.length === 0) {
+            this.showEmptyState();
+            return;
+        }
+        
+        // Sử dụng this.app.state thay vì appState
+        const isMobile = this.app?.state?.isMobile || false;
+        const displayData = isMobile ? 
+            data.slice(0, CONFIG.MAX_ROWS_VISIBLE) : 
+            data;
+        
+        // Dùng DocumentFragment cho hiệu suất
+        const fragment = document.createDocumentFragment();
+        
+        displayData.forEach((item, index) => {
+            const row = this.createRow(item, index);
+            fragment.appendChild(row);
         });
+        
+        this.tableBody.innerHTML = '';
+        this.tableBody.appendChild(fragment);
+        
+        // Nếu có nhiều dữ liệu trên mobile
+        if (isMobile && data.length > CONFIG.MAX_ROWS_VISIBLE) {
+            this.showLoadMoreButton(data.length - CONFIG.MAX_ROWS_VISIBLE);
+        }
     }
     
     createRow(item, index) {
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50';
         
-        // Tạo HTML đơn giản
         row.innerHTML = `
             <td class="px-2 py-2 text-center">${index + 1}</td>
             <td class="px-2 py-2">
@@ -248,15 +233,13 @@ class TableManager {
         this.tableBody.innerHTML = `
             <tr>
                 <td colspan="19" class="px-4 py-8 text-center text-gray-500">
-                    <i class="fas fa-inbox text-4xl mb-2 opacity-50"></i>
-                    <p class="text-lg">Không có dữ liệu môn học</p>
+                    Không có dữ liệu môn học
                 </td>
             </tr>
         `;
     }
     
     showLoadMoreButton(remaining) {
-        if (!this.tableBody) return;
         const row = document.createElement('tr');
         row.innerHTML = `
             <td colspan="19" class="px-4 py-3 text-center">
@@ -279,7 +262,7 @@ class App {
         this.tableManager = new TableManager(this);
         this.isLoading = false;
         
-        // Tạo global reference
+        // Tạo global reference để debug
         window.app = this;
     }
     
@@ -287,14 +270,12 @@ class App {
         try {
             console.log('App initializing...');
             
-            // Initialize table
+            // Initialize components
             this.tableManager.init();
+            this.initEventListeners();
             
             // Load initial data
             await this.loadInitialData();
-            
-            // Initialize event listeners
-            this.initEventListeners();
             
             // Hide loading
             this.hideLoading();
@@ -304,7 +285,7 @@ class App {
             
         } catch (error) {
             console.error('App initialization failed:', error);
-            this.showError('Không thể khởi tạo ứng dụng');
+            this.showError('Không thể khởi tạo ứng dụng: ' + error.message);
             this.hideLoading(); // Vẫn ẩn loading dù có lỗi
         }
     }
@@ -362,25 +343,34 @@ class App {
             this.loadFilteredData();
         });
         
+        document.getElementById('btn-them-mon-hoc')?.addEventListener('click', () => {
+            this.openModal('them-mon-hoc');
+        });
+        
         // Table event delegation
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-sua')) {
-                const btn = e.target.closest('.btn-sua');
-                const id = btn.dataset.id;
-                this.editSubject(id);
-            }
-            
-            if (e.target.closest('.btn-xoa')) {
-                const btn = e.target.closest('.btn-xoa');
-                const id = btn.dataset.id;
-                this.deleteSubject(id);
-            }
+        $(document).on('click', '.btn-sua', (e) => {
+            const btn = e.currentTarget;
+            const id = btn.dataset.id;
+            this.editSubject(id);
+        });
+        
+        $(document).on('click', '.btn-xoa', (e) => {
+            const btn = e.currentTarget;
+            const id = btn.dataset.id;
+            this.deleteSubject(id);
         });
         
         // Window resize
         window.addEventListener('resize', 
             PerformanceUtils.throttle(() => this.handleResize(), 250)
         );
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeAllModals();
+            }
+        });
     }
     
     async loadInitialData() {
@@ -482,10 +472,24 @@ class App {
         }
     }
     
+    openModal(modalName) {
+        const modal = document.getElementById(`modal-${modalName}`);
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+    }
+    
+    closeAllModals() {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.add('hidden');
+        });
+        document.body.classList.remove('overflow-hidden');
+    }
+    
     editSubject(id) {
         console.log('Edit subject:', id);
-        // Implement edit functionality
-        alert(`Chức năng sửa môn học ID: ${id} đang được phát triển`);
+        this.showToast(`Chức năng sửa môn học ID: ${id} đang được phát triển`, 'info');
     }
     
     async deleteSubject(id) {
@@ -570,4 +574,4 @@ document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
 
-// KHÔNG CÓ Service Worker registration
+// KHÔNG CÓ Service Worker registration ở đây
