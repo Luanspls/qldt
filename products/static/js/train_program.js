@@ -861,21 +861,22 @@ function initApp() {
 }
 
 // Service Worker đăng ký đơn giản
-if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
-    // Chỉ register nếu file tồn tại
-    fetch('/static/js/sw.js')
-        .then(response => {
-            if (response.ok) {
-                return navigator.serviceWorker.register('/static/js/sw.js');
-            }
-            return null;
-        })
-        .then(registration => {
-            if (registration) {
-                console.log('SW registered');
-            }
-        })
-        .catch(() => {
-            console.log('SW registration skipped');
-        });
+if ('serviceWorker' in navigator) {
+    // Chỉ chạy trên production
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+    
+    if (!isLocalhost) {
+        // Thử đăng ký với timeout
+        setTimeout(() => {
+            navigator.serviceWorker.register('/static/js/sw.js')
+                .then(reg => {
+                    console.log('Service Worker registered:', reg);
+                })
+                .catch(err => {
+                    console.warn('Service Worker registration failed:', err);
+                    // Không làm gì thêm, bỏ qua lỗi
+                });
+        }, 3000); // Delay 3 giây để trang load xong
+    }
 }
