@@ -1,577 +1,2648 @@
-// train_program.js - OOP VERSION WITHOUT SERVICE WORKER
+// ===== GLOBAL VARIABLES =====
+let allDepartments = {% if departments %}{{ departments|safe }}{% else %}[]{% endif %};
+let allSubjectGroups = {% if subject_groups %}{{ subject_groups|safe }}{% else %}[]{% endif %};
+let allCurricula = {% if curricula %}{{ curricula|safe }}{% else %}[]{% endif %};
+let allCourses = {% if courses %}{{ courses|safe }}{% else %}[]{% endif %};
+let allSubjectTypes = {% if subject_types %}{{ subject_types|safe }}{% else %}[]{% endif %};
+let allMajors = {% if majors %}{{ majors|safe }}{% else %}[]{% endif %};
 
-// ===== CONFIGURATION =====
-const CONFIG = {
-    DEBOUNCE_DELAY: 300,
-    THROTTLE_DELAY: 100,
-    API_TIMEOUT: 10000,
-    MAX_ROWS_VISIBLE: 50,
-    MOBILE_BREAKPOINT: 768
-};
+let monHocData = [];
+let allSubjects = [];
+let isSubjectsLoaded = false;
 
-// ===== PERFORMANCE UTILITIES =====
-class PerformanceUtils {
-    static debounce(func, wait = CONFIG.DEBOUNCE_DELAY) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
+// ===== INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded - initializing...');
+
+    // Initialize data from Django template
+    initializeData();
+
+    // Khởi tạo dropdowns từ dữ liệu Django template
+    initializeDropdowns();
     
-    static throttle(func, limit = CONFIG.THROTTLE_DELAY) {
-        let inThrottle;
-        return function(...args) {
-            if (!inThrottle) {
-                func.apply(this, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        };
-    }
-}
-
-// ===== STATE MANAGEMENT =====
-class AppState {
-    constructor() {
-        this.data = {
-            subjects: window.APP_DATA?.monHocData || [],
-            departments: window.APP_DATA?.departments || [],
-            subjectGroups: window.APP_DATA?.subjectGroups || [],
-            curricula: window.APP_DATA?.curricula || [],
-            courses: window.APP_DATA?.courses || [],
-            subjectTypes: window.APP_DATA?.subjectTypes || [],
-            majors: window.APP_DATA?.majors || []
-        };
-        
-        this.filters = {
-            departmentId: null,
-            subjectGroupId: null,
-            curriculumId: null,
-            courseId: null
-        };
-        
-        this.cache = new Map();
-        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        this.isInitialized = false;
-    }
-}
-
-// ===== API SERVICE =====
-class ApiService {
-    constructor() {
-        this.baseUrl = '';
-    }
+    // Render table with existing data
+    renderTable();
     
-    async fetchWithTimeout(url, options = {}) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), CONFIG.API_TIMEOUT);
-        
-        try {
-            const response = await fetch(url, {
-                ...options,
-                signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            clearTimeout(timeoutId);
-            console.warn('Fetch error:', error.message);
-            return [];
-        }
-    }
-}
+    // Initialize Select2 after DOM is ready
+    setTimeout(() => {
+        initializeSelect2();
+    }, 100);
+    
+    // Pre-load subject list
+    setTimeout(() => {
+        loadAllSubjects().then(() => {
+            console.log('Subjects loaded for dropdown');
+        });
+    }, 500);
 
-// ===== TABLE MANAGER =====
-class TableManager {
-    constructor(app) {
-        this.app = app;
-        this.container = document.querySelector('.table-container');
-        this.tableBody = null;
-    }
+    // Kiểm tra các input trong modal
+    const modalInputs = document.querySelectorAll('#modal-them-chuong-trinh input, #modal-them-chuong-trinh select, #modal-them-chuong-trinh textarea');
+    console.log('Found inputs in modal:', modalInputs.length);
     
-    init() {
-        this.tableBody = this.container?.querySelector('tbody');
-        if (!this.tableBody && this.container) {
-            const table = this.container.querySelector('table');
-            if (table) {
-                this.tableBody = document.createElement('tbody');
-                table.appendChild(this.tableBody);
-            }
-        }
-    }
-    
-    render(data) {
-        if (!this.tableBody) return;
+    modalInputs.forEach(input => {
+        console.log('Input:', input.name, 'Type:', input.type, 'Readonly:', input.readOnly, 'Disabled:', input.disabled);
         
-        if (!data || data.length === 0) {
-            this.showEmptyState();
-            return;
-        }
+        // Xóa các attribute có thể chặn input
+        input.removeAttribute('readonly');
+        input.removeAttribute('disabled');
         
-        // Sử dụng this.app.state thay vì appState
-        const isMobile = this.app?.state?.isMobile || false;
-        const displayData = isMobile ? 
-            data.slice(0, CONFIG.MAX_ROWS_VISIBLE) : 
-            data;
-        
-        // Dùng DocumentFragment cho hiệu suất
-        const fragment = document.createDocumentFragment();
-        
-        displayData.forEach((item, index) => {
-            const row = this.createRow(item, index);
-            fragment.appendChild(row);
+        // Thêm event listener để debug
+        input.addEventListener('focus', function() {
+            console.log('Input focused:', this.name);
         });
         
-        this.tableBody.innerHTML = '';
-        this.tableBody.appendChild(fragment);
+        input.addEventListener('input', function() {
+            console.log('Input changed:', this.name, 'Value:', this.value);
+        });
+    });
+
+    // Cập nhật sự kiện cho dropdown chính sử dụng jQuery
+    $(document).on('change', '#khoa-dao-tao', function() {
+        const departmentId = this.value;
         
-        // Nếu có nhiều dữ liệu trên mobile
-        if (isMobile && data.length > CONFIG.MAX_ROWS_VISIBLE) {
-            this.showLoadMoreButton(data.length - CONFIG.MAX_ROWS_VISIBLE);
+        // Reset các dropdown phía sau
+        $('#to-bo-mon').val('').trigger('change');
+        $('#chuong-trinh-dao-tao').val('').trigger('change');
+        $('#khoa-hoc').val('').trigger('change');
+        
+        // Load subject groups theo department
+        if (departmentId) {
+            fetch(`/api/subject-groups/?department_id=${departmentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Cập nhật dropdown tổ bộ môn
+                    const select = $('#to-bo-mon');
+                    select.empty();
+                    select.append($('<option>', {
+                        value: '',
+                        text: '-- Chọn tổ bộ môn --'
+                    }));
+                    
+                    data.forEach(item => {
+                        select.append($('<option>', {
+                            value: item.id,
+                            text: item.name
+                        }));
+                    });
+                    
+                    select.trigger('change');
+                });
+        }
+        
+        loadFilteredData();
+    });
+    
+    $(document).on('change', '#chuong-trinh-dao-tao', function() {
+        const curriculumId = this.value;
+        $('#khoa-hoc').val('').trigger('change');
+        
+        if (curriculumId) {
+            // 1. Đầu tiên, thử filter từ dữ liệu đã có (allCourses từ template)
+            const localCourses = allCourses.filter(course => {
+                // Kiểm tra cả số và chuỗi để đảm bảo matching
+                return course.curriculum_id == curriculumId || 
+                       (course.curriculum && course.curriculum.id == curriculumId) ||
+                       (typeof course.curriculum_id !== 'undefined' && course.curriculum_id == curriculumId);
+            });
+            
+            const courseSelect = $('#khoa-hoc');
+            courseSelect.empty();
+            
+            if (localCourses.length > 0) {
+                console.log('Using local courses data:', localCourses.length);
+                
+                courseSelect.append($('<option>', {
+                    value: '',
+                    text: '-- Chọn khóa học --'
+                }));
+                
+                localCourses.forEach(item => {
+                    const displayText = item.code ? 
+                        `${item.name} (${item.code})` : 
+                        item.name;
+                    
+                    courseSelect.append($('<option>', {
+                        value: item.id,
+                        text: displayText
+                    }));
+                });
+                
+                courseSelect.trigger('change');
+            } else {
+                // 2. Nếu không có dữ liệu cục bộ, mới gọi API
+                console.log('No local courses, fetching from API...');
+                
+                courseSelect.append($('<option>', {
+                    value: '',
+                    text: 'Đang tải...'
+                }));
+                courseSelect.prop('disabled', true);
+                
+                // Gọi API với timeout ngắn hơn
+                setTimeout(() => {
+                    safeFetch(`/api/courses/?curriculum_id=${curriculumId}`)
+                        .then(result => {
+                            courseSelect.empty();
+                            courseSelect.append($('<option>', {
+                                value: '',
+                                text: '-- Chọn khóa học --'
+                            }));
+                            
+                            if (result.success && Array.isArray(result.data)) {
+                                result.data.forEach(item => {
+                                    const displayText = item.code ? 
+                                        `${item.name} (${item.code})` : 
+                                        item.name;
+                                    
+                                    courseSelect.append($('<option>', {
+                                        value: item.id,
+                                        text: displayText
+                                    }));
+                                });
+                            } else {
+                                console.warn('No courses from API:', result.message);
+                                courseSelect.append($('<option>', {
+                                    value: '',
+                                    text: '-- Không có khóa học --',
+                                    disabled: true
+                                }));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading courses:', error);
+                            courseSelect.empty();
+                            courseSelect.append($('<option>', {
+                                value: '',
+                                text: '-- Lỗi tải dữ liệu --',
+                                disabled: true
+                            }));
+                        })
+                        .finally(() => {
+                            courseSelect.prop('disabled', false);
+                            courseSelect.trigger('change');
+                        });
+                }, 100);
+            }
+        }
+        
+        loadFilteredData();
+    });
+    
+    $(document).on('change', '#khoa-hoc', loadFilteredData);
+    
+    // Cập nhật sự kiện cho dropdown chọn môn học có sẵn
+    $(document).on('change', '#select-existing-subject', function() {
+        if (this.value) {
+            handleUseExistingSubject();
+        }
+    });
+
+    // Thêm cho chức năng chọn môn học có sẵn
+    document.getElementById('btn-use-existing')?.addEventListener('click', function() {
+        const select = document.getElementById('select-existing-subject');
+        if (select && select.value) {
+            const selectedOption = select.options[select.selectedIndex];
+            const subjectData = selectedOption.getAttribute('data-subject');
+            
+            if (subjectData) {
+                try {
+                    const subject = JSON.parse(subjectData);
+                    fillSubjectFormFromExisting(subject);
+                } catch (e) {
+                    console.error('Error parsing subject data:', e);
+                }
+            }
+        } else {
+            alert('Vui lòng chọn một môn học từ danh sách');
+        }
+    });
+    
+    // Sự kiện cho nút Xóa lựa chọn
+    document.getElementById('btn-clear-selection')?.addEventListener('click', clearSubjectSelection);
+
+    // Xử lý sự kiện cho nút sửa
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-sua')) {
+            const button = e.target.closest('.btn-sua');
+            const row = button.closest('tr');
+            //const inputs = row.querySelectorAll('input');
+            const id = button.getAttribute('data-id');
+            //const editables = row.querySelectorAll('input, select');
+            const isEditMode = button.innerHTML.includes('fa-edit');
+
+            if (isEditMode) {
+                // Chuyển sang chế độ sửa
+                enterEditMode(row, button);
+            } else {
+                // Chuyển sang chế độ xem và lưu thay đổi
+                exitEditMode(row, button, id);
+            }    
+        }
+        
+        // Xử lý xóa môn học
+        if (e.target.closest('.btn-xoa')) {
+            const button = e.target.closest('.btn-xoa');
+            const id = button.getAttribute('data-id');
+            if (id) {
+                deleteMonHoc(id);
+            }
+        }
+    });
+
+    // Xử lý thêm chương trình đào tạo
+    document.getElementById('btn-them')?.addEventListener('click', openThemChuongTrinhModal);
+    
+    // Đóng modal bằng nút hủy
+    document.getElementById('btn-huy-chuong-trinh')?.addEventListener('click', closeThemChuongTrinhModal);
+    
+    // Đóng modal bằng nút X
+    document.getElementById('btn-dong-chuong-trinh')?.addEventListener('click', closeThemChuongTrinhModal);
+    
+    // Lưu chương trình
+    document.getElementById('btn-luu-chuong-trinh')?.addEventListener('click', createCurriculum);
+    
+    // Đóng modal khi click outside
+    document.getElementById('modal-them-chuong-trinh').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeThemChuongTrinhModal();
+        }
+    });
+
+    // Ngăn sự kiện click trong modal lan ra ngoài
+    document.getElementById('form-them-chuong-trinh').addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+    
+    // Kiểm tra modal sau khi load
+    //setTimeout(fixModalInputs, 1000);
+    
+    /// Xử lý import Excel
+    document.getElementById('btn-import').addEventListener('click', function() {
+        console.log('Button Import clicked');
+        openImportModal();
+    });
+
+    // Cập nhật dropdown sheet khi chọn file
+    document.getElementById('excel-file').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const sheetSelect = document.getElementById('sheet-select');
+        
+        if (file) {
+            // Hiển thị loading
+            const originalHTML = sheetSelect.innerHTML;
+            sheetSelect.innerHTML = '<option value="">Đang tải danh sách sheet...</option>';
+            
+            getSheetNamesFromFile(file)
+                .then(sheetNames => {
+                    sheetSelect.innerHTML = '<option value="">-- Tự động chọn sheet đầu tiên --</option>';
+                    
+                    sheetNames.forEach(sheetName => {
+                        const option = document.createElement('option');
+                        option.value = sheetName;
+                        option.textContent = sheetName;
+                        sheetSelect.appendChild(option);
+                    });
+                    
+                    // Tự động chọn sheet đầu tiên nếu chỉ có một sheet
+                    if (sheetNames.length === 1) {
+                        sheetSelect.value = sheetNames[0];
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading sheet names:', error);
+                    sheetSelect.innerHTML = originalHTML;
+                    alert('Không thể đọc danh sách sheet từ file. Vui lòng kiểm tra định dạng file.');
+                });
+        } else {
+            // Reset dropdown nếu không có file
+            sheetSelect.innerHTML = '<option value="">-- Tự động chọn sheet đầu tiên --</option>';
+        }
+    });
+
+    // Đóng modal khi click outside
+    document.getElementById('modal-import').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeImportModal();
+        }
+    });
+
+    document.getElementById('modal-import-errors').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeImportErrorsModal();
+        }
+    });
+    
+    // Tải file mẫu
+    document.getElementById('btn-download-template')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        downloadTemplate();
+    });
+    
+    // Xử lý nút cập nhật
+    document.getElementById('btn-cap-nhat')?.addEventListener('click', function() {
+        loadFilteredData();
+        alert('Đã cập nhật dữ liệu');
+    });
+    
+    // Thiết lập các ô input ban đầu là readonly
+    document.querySelectorAll('input').forEach(input => {
+        input.setAttribute('readonly', true);
+    });
+
+    // Đóng Select2 khi click ra ngoài
+    document.addEventListener('click', function(e) {
+        const $target = $(e.target);
+        
+        // Nếu click ra ngoài Select2 container và không phải trong modal
+        if (!$target.closest('.select2-container').length && 
+            !$target.closest('.modal:not(.hidden)').length) {
+            closeAllOpenSelect2();
+        }
+    });
+    
+    // Đóng modal khi click outside
+    const modalThemMonHoc = document.getElementById('modal-them-mon-hoc');
+    modalThemMonHoc.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeThemMonHocModal();
+        }
+    });
+
+    // Ngăn sự kiện click trong modal lan ra ngoài
+    document.querySelectorAll('.modal').forEach(modalEl => {
+        modalEl.addEventListener('click', function(e) {
+            if (e.target === this) {
+                // Nếu click vào backdrop, đóng modal
+                if (this.id === 'modal-them-mon-hoc') closeThemMonHocModal();
+                if (this.id === 'modal-them-chuong-trinh') closeThemChuongTrinhModal();
+                if (this.id === 'modal-import') closeImportModal();
+                if (this.id === 'modal-import-errors') closeImportErrorsModal();
+            }
+        });
+    });
+    // Prevent modal content clicks from closing modal
+    const modalContent = document.querySelector('#modal-them-mon-hoc > div');
+    if (modalContent) {
+        modalContent.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+
+    
+    // ===== CRITICAL FIX: Force enable inputs when modal opens =====
+    // Observer to detect when modal becomes visible
+    const modalObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const monHocModal = document.getElementById('modal-them-mon-hoc');
+                if (monHocModal && !monHocModal.classList.contains('hidden')) {
+                    console.log('Modal opened, enabling inputs...');
+                    
+                    // Small delay to ensure DOM is ready
+                    setTimeout(() => {
+                        enableModalInputs();
+                        
+                        // Also force select2 reinitialization
+                        if (typeof initializeSelect2ForSubjectModal === 'function') {
+                            setTimeout(initializeSelect2ForSubjectModal, 100);
+                        }
+                    }, 100);
+                }
+            }
+        });
+    });
+    
+    // Start observing the modal
+    const monHocModal = document.getElementById('modal-them-mon-hoc');
+    if (monHocModal) {
+        modalObserver.observe(monHocModal, { attributes: true });
+    }
+    
+    
+    // Cập nhật thông tin ngành khi chọn chương trình trong modal
+    const themMonHocCurriculum = document.getElementById('them-mon-hoc-curriculum');
+    if (themMonHocCurriculum) {
+        themMonHocCurriculum.addEventListener('change', function() {
+            updateMajorInfo(this.value);
+        });
+    }
+    
+    // Lọc tổ bộ môn khi chọn đơn vị
+    const departmentSelect = document.querySelector('select[name="department_id"]');
+    if (departmentSelect) {
+        departmentSelect.addEventListener('change', function() {
+            filterSubjectGroupsByDepartment(this.value);
+        });
+    }
+    
+    // Tự động tính tổng số giờ
+    const hourInputs = ['theory_hours', 'practice_hours', 'tests_hours', 'exam_hours'];
+    hourInputs.forEach(field => {
+        const input = document.querySelector(`input[name="${field}"]`);
+        if (input) {
+            input.addEventListener('input', function() {
+                calculateTotalHours();
+            });
+        }
+    });
+    
+    function calculateTotalHours() {
+        const theory = parseInt(document.querySelector('input[name="theory_hours"]')?.value) || 0;
+        const practice = parseInt(document.querySelector('input[name="practice_hours"]')?.value) || 0;
+        const test = parseInt(document.querySelector('input[name="tests_hours"]')?.value) || 0;
+        const exam = parseInt(document.querySelector('input[name="exam_hours"]')?.value) || 0;
+        const total = theory + practice + test + exam;
+        const totalInput = document.querySelector('input[name="total_hours"]');
+        if (totalInput) {
+            totalInput.value = total || '';
         }
     }
     
-    createRow(item, index) {
-        const row = document.createElement('tr');
-        row.className = 'hover:bg-gray-50';
+    // Initialize event listeners
+    setupEventListeners();
+    
+    // Initialize modal observers
+    //setupModalObservers();
+
+    // Xử lý phím Enter trong modal
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const activeEditButton = document.querySelector('.btn-sua.text-green-600');
+            if (activeEditButton) {
+                activeEditButton.click();
+            }
+        }
+
+        // ESC để đóng tất cả modal
+        if (e.key === 'Escape') {
+            const activeEditButton = document.querySelector('.btn-sua.text-green-600');
+            if (activeEditButton) {
+                const row = activeEditButton.closest('tr');
+                const button = activeEditButton;
+                const id = button.getAttribute('data-id');
+                
+                // Thoát chế độ sửa không lưu
+                button.innerHTML = '<i class="fas fa-edit"></i>';
+                button.classList.remove('text-green-600');
+                button.classList.add('text-blue-600');
+                button.title = 'Sửa';
+                
+                // Khôi phục giá trị gốc
+                const editables = row.querySelectorAll('input.editable, select.editable');
+                editables.forEach(editable => {
+                    const originalValue = editable.getAttribute('data-original-value');
+                    editable.value = originalValue;
+                    
+                    if (editable.tagName === 'SELECT') {
+                        editable.disabled = true;
+                    } else {
+                        editable.setAttribute('readonly', true);
+                    }
+                    editable.classList.remove('border', 'border-blue-400', 'bg-blue-50');
+                });
+                
+                showNotification('Đã hủy thay đổi', 'info');
+            }
+            
+            closeThemMonHocModal();
+            closeThemChuongTrinhModal();
+            closeImportModal();
+            closeImportErrorsModal();
+            document.body.classList.remove('overflow-hidden');
+        }
         
-        row.innerHTML = `
-            <td class="px-2 py-2 text-center">${index + 1}</td>
-            <td class="px-2 py-2">
-                <span class="text-sm">${this.escapeHtml(item.ma_mon_hoc || item.code || '')}</span>
+        // Enter trong modal import (với Ctrl)
+        if (!document.getElementById('modal-import').classList.contains('hidden')) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                importExcel();
+            }
+        }
+        
+        // Enter trong modal thêm chương trình (với Ctrl)
+        if (!document.getElementById('modal-them-chuong-trinh').classList.contains('hidden')) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                createCurriculum();
+            }
+        }
+                    
+        if (!document.getElementById('modal-them-mon-hoc').classList.contains('hidden')) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                createMonHoc();
+            }
+        }
+    });
+});
+
+// Lọc tổ bộ môn theo khoa
+function filterSubjectGroupsByDepartment(departmentId) {
+    const subjectGroupSelect = document.querySelector('select[name="subject_group_id"]');
+    if (!subjectGroupSelect) return;
+    
+    const options = subjectGroupSelect.querySelectorAll('option');
+    
+    options.forEach(option => {
+        if (option.value === '') return; // Giữ option "-- Chọn tổ bộ môn --"
+        
+        const optionDepartmentId = option.getAttribute('data-department');
+        if (!departmentId || optionDepartmentId == departmentId) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    });
+    
+    // Reset selection nếu option hiện tại bị ẩn
+    if (subjectGroupSelect.value) {
+        const selectedOption = subjectGroupSelect.querySelector(`option[value="${subjectGroupSelect.value}"]`);
+        if (selectedOption && selectedOption.style.display === 'none') {
+            subjectGroupSelect.value = '';
+        }
+    }
+}
+
+// ===== DATA INITIALIZATION =====
+function initializeData() {
+    try {
+        // Parse monHocData from Django template
+        const rawData = {% if mon_hoc_data %}{{ mon_hoc_data|safe }}{% else %}[]{% endif %};
+        
+        if (Array.isArray(rawData)) {
+            monHocData = rawData;
+        } else if (typeof rawData === 'string' && rawData.trim()) {
+            monHocData = JSON.parse(rawData);
+        } else {
+            monHocData = [];
+        }
+        
+        console.log('MonHocData loaded from template:', monHocData.length);
+        allSubjects = monHocData;
+        isSubjectsLoaded = true;
+    } catch (e) {
+        console.error('Error parsing monHocData:', e);
+        monHocData = [];
+        allSubjects = [];
+    }
+}
+
+// ===== EVENT LISTENERS SETUP =====
+function setupEventListeners() {
+    // Add button event listeners
+    document.getElementById('btn-them')?.addEventListener('click', openThemChuongTrinhModal);
+    document.getElementById('btn-them-mon-hoc')?.addEventListener('click', openThemMonHocModal);
+    document.getElementById('btn-cap-nhat')?.addEventListener('click', handleRefresh);
+    document.getElementById('btn-import')?.addEventListener('click', openImportModal);
+    
+    // Modal close buttons
+    document.getElementById('btn-huy-chuong-trinh')?.addEventListener('click', closeThemChuongTrinhModal);
+    document.getElementById('btn-dong-chuong-trinh')?.addEventListener('click', closeThemChuongTrinhModal);
+    document.getElementById('btn-huy-mon-hoc')?.addEventListener('click', closeThemMonHocModal);
+    document.getElementById('btn-dong-mon-hoc')?.addEventListener('click', closeThemMonHocModal);
+    
+    // Modal save buttons
+    document.getElementById('btn-luu-chuong-trinh')?.addEventListener('click', createCurriculum);
+    document.getElementById('btn-luu-mon-hoc').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        createMonHoc();
+    });
+    
+    // Import modal
+    document.getElementById('btn-huy-import')?.addEventListener('click', closeImportModal);
+    document.getElementById('btn-dong-import')?.addEventListener('click', closeImportModal);
+    document.getElementById('btn-luu-import')?.addEventListener('click', importExcel);
+
+    document.getElementById('btn-close-errors')?.addEventListener('click', closeImportErrorsModal);
+    document.getElementById('btn-dong-errors')?.addEventListener('click', closeImportErrorsModal);
+    
+    // Table event delegation
+    document.addEventListener('click', handleTableClick);
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+    
+    // Filter dropdowns
+    setupFilterEventListeners();
+}
+
+// ===== TABLE FUNCTIONS =====
+function renderTable() {
+    const tableBody = document.getElementById('table-body');
+    if (!tableBody) return;
+    
+    if (monHocData.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="19" class="px-4 py-4 text-center text-gray-500">
+                    Không có dữ liệu môn học
+                </td>
+            </tr>`;
+        //updateStatistics();
+        return;
+    }
+    
+    // Build table rows
+    let tableHTML = '';
+    monHocData.forEach((monHoc, index) => {
+        tableHTML += buildTableRow(monHoc, index);
+    });
+    
+    tableBody.innerHTML = tableHTML;
+    updateStatistics();
+}
+
+function buildTableRow(monHoc, index) {
+    // Trả về HTML cho một dòng trong bảng
+    // (Đã được tối ưu để tránh XSS)
+    return `
+        <tr class="hover:bg-gray-50">
+            <td class="px-2 py-2 text-center text-sm col-tt">${index + 1}</td>
+            <td class="px-2 py-2 col-ma">
+                <input type="text" value="${escapeHtml(monHoc.ma_mon_hoc || '')}"
+                    class="editable w-full bg-transparent border-none text-sm text-center"
+                    data-field="code" data-id="${monHoc.id}" readonly
+                    data-original-value="${escapeHtml(monHoc.ma_mon_hoc || '')}">
             </td>
-            <td class="px-2 py-2 wrap-cell">
-                <span class="text-sm">${this.escapeHtml(item.ten_mon_hoc || item.name || '')}</span>
+            <td class="px-2 py-2 col-ten wrap-cell">
+                <input type="text" value="${monHoc.ten_mon_hoc || 0}"
+                    class="editable w-full bg-transparent border-none text-sm text-center"
+                    data-field="name" data-id="${monHoc.id}" readonly
+                    data-original-value="${monHoc.ten_mon_hoc || ''}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.so_tin_chi || item.credits || 0}</span>
+            <td class="px-2 py-2 text-center col-tinchi">
+                <input type="number" value="${monHoc.so_tin_chi || 0}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="credits" data-id="${monHoc.id}" readonly step="0.5" min="0"
+                    data-original-value="${monHoc.so_tin_chi || 0}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.tong_so_gio || item.total_hours || 0}</span>
+            <td class="px-2 py-2 text-center col-gio">
+                <input type="number" value="${monHoc.tong_so_gio || 0}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="total_hours" data-id="${monHoc.id}" readonly min="0"
+                    data-original-value="${monHoc.tong_so_gio || 0}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.ly_thuyet || item.theory_hours || 0}</span>
+            <td class="px-2 py-2 text-center col-lythuyet">
+                <input type="number" value="${monHoc.ly_thuyet || 0}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="theory_hours" data-id="${monHoc.id}" readonly min="0"
+                    data-original-value="${monHoc.ly_thuyet || 0}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.thuc_hanh || item.practice_hours || 0}</span>
+            <td class="px-2 py-2 text-center col-thuchanh">
+                <input type="number" value="${monHoc.thuc_hanh || 0}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="practice_hours" data-id="${monHoc.id}" readonly min="0"
+                    data-original-value="${monHoc.thuc_hanh || 0}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.kiem_tra || item.tests_hours || 0}</span>
+            <td class="px-2 py-2 text-center col-kiemtra">
+                <input type="number" value="${monHoc.kiem_tra || 0}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="tests_hours" data-id="${monHoc.id}" readonly min="0"
+                    data-original-value="${monHoc.kiem_tra || 0}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.thi || item.exam_hours || 0}</span>
+            <td class="px-2 py-2 text-center col-thi">
+                <input type="number" value="${monHoc.thi || 0}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="exam_hours" data-id="${monHoc.id}" readonly min="0"
+                    data-original-value="${monHoc.thi || 0}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.hk1 || ''}</span>
+            <td class="px-2 py-2 text-center col-hk">
+                <input type="number" value="${monHoc.hk1 || ''}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="hk1" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                    data-original-value="${monHoc.hk1 || ''}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.hk2 || ''}</span>
+            <td class="px-2 py-2 text-center col-hk">
+                <input type="number" value="${monHoc.hk2 || ''}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="hk2" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                    data-original-value="${monHoc.hk2 || ''}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.hk3 || ''}</span>
+            <td class="px-2 py-2 text-center col-hk">
+                <input type="number" value="${monHoc.hk3 || ''}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="hk3" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                    data-original-value="${monHoc.hk3 || ''}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.hk4 || ''}</span>
+            <td class="px-2 py-2 text-center col-hk">
+                <input type="number" value="${monHoc.hk4 || ''}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="hk4" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                    data-original-value="${monHoc.hk4 || ''}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.hk5 || ''}</span>
+            <td class="px-2 py-2 text-center col-hk">
+                <input type="number" value="${monHoc.hk5 || ''}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="hk5" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                    data-original-value="${monHoc.hk5 || ''}">
             </td>
-            <td class="px-2 py-2 text-center">
-                <span class="text-sm">${item.hk6 || ''}</span>
+            <td class="px-2 py-2 text-center col-hk">
+                <input type="number" value="${monHoc.hk6 || ''}" 
+                    class="editable w-full bg-transparent border-none text-sm text-center" 
+                    data-field="hk6" data-id="${monHoc.id}" readonly step="0.5" min="0" placeholder="-"
+                    data-original-value="${monHoc.hk6 || ''}">
             </td>
-            <td class="px-2 py-2">
-                <span class="text-sm">${this.escapeHtml(item.don_vi || item.department_name || '')}</span>
+            <td class="px-2 py-2 col-donvi">
+                <select class="editable select department-select w-full bg-transparent border-none text-sm" 
+                        data-field="department" data-id="${monHoc.id}" disabled
+                        data-original-value="${monHoc.don_vi || ''}">
+                    <option value="">-- Chọn đơn vị --</option>
+                    ${allDepartments.map(dept => `
+                        <option value="${dept.name}" ${dept.name === monHoc.don_vi ? 'selected' : ''}>
+                            ${dept.name}
+                        </option>
+                    `).join('')}
+                </select>
             </td>
-            <td class="px-2 py-2">
-                <span class="text-sm">${this.escapeHtml(item.giang_vien || '')}</span>
+            <td class="px-2 py-2 col-giangvien">
+                <input type="text" value="${monHoc.giang_vien || ''}" 
+                    class="editable instructor-autocomplete w-full bg-transparent border-none text-sm" 
+                    data-field="instructor" data-id="${monHoc.id}" readonly
+                    data-original-value="${monHoc.giang_vien || ''}"
+                    placeholder="Nhập tên giảng viên...">
             </td>
-            <td class="px-2 py-2">
-                <span class="text-sm">${this.getCourseName(item.course_id)}</span>
+            <td class="px-2 py-2 col-course">
+                <select class="editable w-full bg-transparent border-none text-sm" 
+                        data-field="course" data-id="${monHoc.id}" disabled
+                        data-original-value="${monHoc.course_id || ''}">
+                    <option value="">-- Chọn khóa học --</option>
+                    ${allCourses.map(course => `
+                        <option value="${course.id}" ${course.id == monHoc.course_id ? 'selected' : ''}>
+                            ${course.name} (${course.code})
+                        </option>
+                    `).join('')}
+                </select>
             </td>
-            <td class="px-2 py-2 text-center">
-                <button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" 
-                        data-id="${item.id || index}" title="Sửa">
+            <td class="px-2 py-2 text-center col-thaotac">
+                <button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" data-id="${monHoc.id}" title="Sửa">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn-xoa text-red-600 hover:text-red-900" 
-                        data-id="${item.id || index}" title="Xóa">
+                <button class="btn-xoa text-red-600 hover:text-red-900" data-id="${monHoc.id}" title="Xóa">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
-        `;
-        
-        return row;
-    }
-    
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    getCourseName(courseId) {
-        if (!courseId) return '';
-        const courses = this.app?.state?.data?.courses || [];
-        const course = courses.find(c => c.id == courseId);
-        return course ? (course.name || course.ten_khoa_hoc) : '';
-    }
-    
-    showEmptyState() {
-        if (!this.tableBody) return;
-        this.tableBody.innerHTML = `
-            <tr>
-                <td colspan="19" class="px-4 py-8 text-center text-gray-500">
-                    Không có dữ liệu môn học
-                </td>
-            </tr>
-        `;
-    }
-    
-    showLoadMoreButton(remaining) {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td colspan="19" class="px-4 py-3 text-center">
-                <button onclick="app.loadMoreRows()" 
-                        class="text-blue-600 hover:text-blue-800 font-medium">
-                    <i class="fas fa-chevron-down mr-1"></i>
-                    Xem thêm ${remaining} môn học
-                </button>
-            </td>
-        `;
-        this.tableBody.appendChild(row);
-    }
+        </tr>`;
 }
 
-// ===== APP CLASS =====
-class App {
-    constructor() {
-        this.state = new AppState();
-        this.api = new ApiService();
-        this.tableManager = new TableManager(this);
-        this.isLoading = false;
-        
-        // Tạo global reference để debug
-        window.app = this;
+// Cập nhật thống kê
+function updateStatistics() {
+    if (!monHocData || monHocData.length === 0) {
+        document.getElementById('tong-tin-chi').textContent = '0';
+        document.getElementById('tong-gio').textContent = '0';
+        document.getElementById('ty-le-ly-thuyet').textContent = '0%';
+        document.getElementById('ty-le-thuc-hanh').textContent = '0%';
+        return;
     }
+    const totalCredits = monHocData.reduce((sum, item) => sum + (parseFloat(item.so_tin_chi) || 0), 0);
+    const totalHours = monHocData.reduce((sum, item) => sum + (parseInt(item.tong_so_gio) || 0), 0);
+    const totalTheory = monHocData.reduce((sum, item) => sum + (parseInt(item.ly_thuyet) || 0), 0);
+    const totalPractice = monHocData.reduce((sum, item) => sum + (parseInt(item.thuc_hanh) || 0), 0);
     
-    async init() {
-        try {
-            console.log('App initializing...');
-            
-            // Initialize components
-            this.tableManager.init();
-            this.initEventListeners();
-            
-            // Load initial data
-            await this.loadInitialData();
-            
-            // Hide loading
-            this.hideLoading();
-            
-            this.state.isInitialized = true;
-            console.log('App initialized successfully');
-            
-        } catch (error) {
-            console.error('App initialization failed:', error);
-            this.showError('Không thể khởi tạo ứng dụng: ' + error.message);
-            this.hideLoading(); // Vẫn ẩn loading dù có lỗi
-        }
-    }
+    const tyLeLyThuyet = totalHours > 0 ? (totalTheory / totalHours * 100).toFixed(1) : 0;
+    const tyLeThucHanh = totalHours > 0 ? (totalPractice / totalHours * 100).toFixed(1) : 0;
     
-    hideLoading() {
-        const loadingEl = document.getElementById('app-loading');
-        if (loadingEl) {
-            loadingEl.style.transition = 'opacity 0.3s';
-            loadingEl.style.opacity = '0';
-            setTimeout(() => {
-                loadingEl.classList.add('hidden');
-                
-                // Hiển thị nội dung chính
-                const actualContent = document.getElementById('actual-content');
-                if (actualContent) {
-                    actualContent.classList.remove('hidden');
-                    setTimeout(() => {
-                        actualContent.style.opacity = '1';
-                    }, 50);
-                }
-            }, 300);
-        }
-    }
-    
-    showError(message) {
-        console.error('App Error:', message);
-        // Hiển thị thông báo lỗi đơn giản
-        const errorEl = document.createElement('div');
-        errorEl.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50';
-        errorEl.innerHTML = `
-            <strong class="font-bold">Lỗi!</strong>
-            <span class="block sm:inline"> ${message}</span>
-        `;
-        document.body.appendChild(errorEl);
-        
-        setTimeout(() => errorEl.remove(), 5000);
-    }
-    
-    initEventListeners() {
-        // Filter changes với debounce
-        $(document).on('change', '#khoa-dao-tao', 
-            PerformanceUtils.debounce(() => this.loadFilteredData(), 500)
-        );
-        
-        $(document).on('change', '#chuong-trinh-dao-tao', 
-            PerformanceUtils.debounce(() => this.loadFilteredData(), 500)
-        );
-        
-        $(document).on('change', '#khoa-hoc', 
-            PerformanceUtils.debounce(() => this.loadFilteredData(), 500)
-        );
-        
-        // Button clicks
-        document.getElementById('btn-cap-nhat')?.addEventListener('click', () => {
-            this.loadFilteredData();
+    document.getElementById('tong-tin-chi').textContent = totalCredits.toFixed(1);
+    document.getElementById('tong-gio').textContent = totalHours;
+    document.getElementById('ty-le-ly-thuyet').textContent = `${tyLeLyThuyet}%`;
+    document.getElementById('ty-le-thuc-hanh').textContent = `${tyLeThucHanh}%`;
+}
+
+// Load thống kê
+function loadThongKe(curriculumId) {
+    fetch(`/thong-ke/?curriculum_id=${curriculumId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('tong-tin-chi').textContent = data.tong_tin_chi;
+            document.getElementById('tong-gio').textContent = data.tong_gio;
+            document.getElementById('ty-le-ly-thuyet').textContent = data.ty_le_ly_thuyet;
+            document.getElementById('ty-le-thuc-hanh').textContent = data.ty_le_thuc_hanh;
+        })
+        .catch(error => {
+            console.error('Error loading statistics:', error);
+            updateStatistics();
         });
-        
-        document.getElementById('btn-them-mon-hoc')?.addEventListener('click', () => {
-            this.openModal('them-mon-hoc');
-        });
-        
-        // Table event delegation
-        $(document).on('click', '.btn-sua', (e) => {
-            const btn = e.currentTarget;
-            const id = btn.dataset.id;
-            this.editSubject(id);
-        });
-        
-        $(document).on('click', '.btn-xoa', (e) => {
-            const btn = e.currentTarget;
-            const id = btn.dataset.id;
-            this.deleteSubject(id);
-        });
-        
-        // Window resize
-        window.addEventListener('resize', 
-            PerformanceUtils.throttle(() => this.handleResize(), 250)
-        );
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeAllModals();
-            }
-        });
+}
+
+// Mở modal import Excel
+function openImportModal() {
+    document.getElementById('modal-import').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+// Đóng modal import Excel
+function closeImportModal() {
+    const importmodal = document.getElementById('modal-import');
+    if (importmodal) {
+        importmodal.classList.add('hidden');
     }
-    
-    async loadInitialData() {
-        // Sử dụng dữ liệu từ template nếu có
-        if (this.state.data.subjects.length > 0) {
-            this.tableManager.render(this.state.data.subjects);
-            this.updateStatistics();
-            return;
-        }
-        
-        // Nếu không, thử load từ API
-        await this.loadFilteredData();
-    }
-    
-    async loadFilteredData() {
-        if (this.isLoading) return;
-        
-        this.isLoading = true;
-        const btn = document.getElementById('btn-cap-nhat');
-        if (btn) btn.classList.add('opacity-50', 'cursor-not-allowed');
-        
-        try {
-            const params = new URLSearchParams();
-            
-            const curriculumId = document.getElementById('chuong-trinh-dao-tao')?.value;
-            const departmentId = document.getElementById('khoa-dao-tao')?.value;
-            const courseId = document.getElementById('khoa-hoc')?.value;
-            
-            if (curriculumId) params.append('curriculum_id', curriculumId);
-            if (departmentId) params.append('department_id', departmentId);
-            if (courseId) params.append('course_id', courseId);
-            
-            const url = `/api/subjects/${params.toString() ? '?' + params.toString() : ''}`;
-            const data = await this.api.fetchWithTimeout(url);
-            
-            this.state.data.subjects = data;
-            this.tableManager.render(data);
-            this.updateStatistics();
-            
-        } catch (error) {
-            console.error('Error loading data:', error);
-            this.showError('Không thể tải dữ liệu. Vui lòng thử lại.');
-        } finally {
-            this.isLoading = false;
-            if (btn) btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-    }
-    
-    updateStatistics() {
-        const data = this.state.data.subjects;
-        if (!data || data.length === 0) {
-            this.setStatValue('tong-tin-chi', '0');
-            this.setStatValue('tong-gio', '0');
-            this.setStatValue('ty-le-ly-thuyet', '0%');
-            this.setStatValue('ty-le-thuc-hanh', '0%');
-            return;
-        }
-        
-        const totalCredits = data.reduce((sum, item) => 
-            sum + (parseFloat(item.so_tin_chi) || 0), 0
-        );
-        
-        const totalHours = data.reduce((sum, item) => 
-            sum + (parseInt(item.tong_so_gio) || 0), 0
-        );
-        
-        this.setStatValue('tong-tin-chi', totalCredits.toFixed(1));
-        this.setStatValue('tong-gio', totalHours);
-        
-        if (totalHours > 0) {
-            const totalTheory = data.reduce((sum, item) => 
-                sum + (parseInt(item.ly_thuyet) || 0), 0
-            );
-            
-            const totalPractice = data.reduce((sum, item) => 
-                sum + (parseInt(item.thuc_hanh) || 0), 0
-            );
-            
-            const theoryPercent = ((totalTheory / totalHours) * 100).toFixed(1);
-            const practicePercent = ((totalPractice / totalHours) * 100).toFixed(1);
-            
-            this.setStatValue('ty-le-ly-thuyet', `${theoryPercent}%`);
-            this.setStatValue('ty-le-thuc-hanh', `${practicePercent}%`);
-        }
-    }
-    
-    setStatValue(id, value) {
-        const element = document.getElementById(id);
-        if (element) {
-            element.textContent = value;
-        }
-    }
-    
-    handleResize() {
-        const isNowMobile = window.innerWidth <= CONFIG.MOBILE_BREAKPOINT;
-        if (isNowMobile !== this.state.isMobile) {
-            this.state.isMobile = isNowMobile;
-            this.tableManager.render(this.state.data.subjects);
-        }
-    }
-    
-    openModal(modalName) {
-        const modal = document.getElementById(`modal-${modalName}`);
-        if (modal) {
-            modal.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
-        }
-    }
-    
-    closeAllModals() {
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.classList.add('hidden');
-        });
-        document.body.classList.remove('overflow-hidden');
-    }
-    
-    editSubject(id) {
-        console.log('Edit subject:', id);
-        this.showToast(`Chức năng sửa môn học ID: ${id} đang được phát triển`, 'info');
-    }
-    
-    async deleteSubject(id) {
-        if (!confirm('Bạn có chắc chắn muốn xóa môn học này?')) return;
-        
-        try {
-            const csrfToken = this.getCSRFToken();
-            const response = await fetch(`/train-program/${id}/`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                }
-            });
-            
-            if (response.ok) {
-                this.showToast('Đã xóa môn học thành công', 'success');
-                await this.loadFilteredData();
-            } else {
-                throw new Error('Xóa không thành công');
-            }
-        } catch (error) {
-            console.error('Error deleting subject:', error);
-            this.showError('Không thể xóa môn học');
-        }
-    }
-    
-    getCSRFToken() {
-        try {
-            const metaTag = document.querySelector('meta[name="csrf-token"]');
-            if (metaTag) return metaTag.getAttribute('content');
-            
-            const csrfTokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfTokenInput) return csrfTokenInput.value;
-            
-            return '';
-        } catch (error) {
-            return '';
-        }
-    }
-    
-    showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 
-                          ${type === 'success' ? 'bg-green-100 text-green-800' : 
-                            type === 'error' ? 'bg-red-100 text-red-800' : 
-                            'bg-blue-100 text-blue-800'}`;
-        toast.innerHTML = `
-            <div class="flex items-center">
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : 
-                               type === 'error' ? 'fa-exclamation-circle' : 
-                               'fa-info-circle'} mr-2"></i>
-                <span>${message}</span>
+    document.body.classList.remove('overflow-hidden');
+}
+
+// Mở modal lỗi import
+function openImportErrorsModal() {
+    document.getElementById('modal-import-errors').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+// Đóng modal lỗi import
+function closeImportErrorsModal() {
+    document.getElementById('modal-import-errors').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+// Hiển thị lỗi import
+function showImportErrors(errors) {
+    const errorsContent = document.getElementById('import-errors-content');
+    if (errors && errors.length > 0) {
+        errorsContent.innerHTML = `
+            <div class="mb-3 p-3 bg-red-50 border border-red-200 rounded">
+                <h4 class="font-semibold text-red-800 mb-2">Có ${errors.length} lỗi cần xem xét:</h4>
+            </div>
+            <div class="space-y-2">
+                ${errors.map(error => 
+                    `<div class="flex items-start text-red-700 py-2 border-b border-red-100">
+                        <i class="fas fa-exclamation-circle mt-1 mr-2 text-red-500 flex-shrink-0"></i>
+                        <span class="text-sm">${error}</span>
+                    </div>`
+                ).join('')}
             </div>
         `;
-        
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.3s';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+    } else {
+        errorsContent.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
+                <div class="text-green-600 font-semibold">Không có lỗi nào trong quá trình import</div>
+            </div>
+        `;
+    }
+    openImportErrorsModal();
+}
+
+
+// Import Excel với xử lý lỗi chi tiết
+function importExcel() {
+    const form = document.getElementById('form-import');
+    const formData = new FormData(form);
+    const curriculumId = document.getElementById('import-curriculum').value;
+    const courseId = document.getElementById('import-course').value;
+    const fileInput = document.getElementById('excel-file');
+    const sheetSelect = document.getElementById('sheet-select');
+    
+    if (!curriculumId) {
+        alert('Vui lòng chọn chương trình đào tạo');
+        return;
     }
     
-    loadMoreRows() {
-        // Implement load more functionality
-        console.log('Loading more rows...');
-        this.showToast('Đang tải thêm dữ liệu...', 'info');
+    if (!fileInput.files.length) {
+        alert('Vui lòng chọn file Excel');
+        return;
+    }
+
+    // Thêm thông tin sheet vào formData
+    const selectedSheet = sheetSelect.value;
+    if (selectedSheet) {
+        formData.append('sheet_name', selectedSheet);
+    }
+    
+    // Hiển thị loading
+    const importBtn = document.getElementById('btn-luu-import');
+    const originalText = importBtn.innerHTML;
+    importBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang xử lý...';
+    importBtn.disabled = true;
+    
+    fetch('/import-excel/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            let successMessage = '✅ ' + data.message;
+            if (data.sheet_used) {
+                successMessage += ` (Sheet: ${data.sheet_used})`;
+            }
+            alert(successMessage);
+            closeImportModal();
+            
+            // Hiển thị chi tiết lỗi nếu có
+            if (data.data && data.data.errors && data.data.errors.length > 0) {
+                showImportErrors(data.data.errors);
+            }
+            
+            // Reload data
+            loadFilteredData();
+        } else {
+            alert('❌ Lỗi: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Có lỗi xảy ra khi import file: ' + error.message);
+    })
+    .finally(() => {
+        // Khôi phục trạng thái nút
+        importBtn.innerHTML = originalText;
+        importBtn.disabled = false;
+    });
+}
+
+// Tải file mẫu
+function downloadTemplate() {
+    window.open('/download-excel-template/', '_blank');
+}
+
+// Load lại danh sách curricula
+function loadCurricula() {
+    fetch('/api/curricula/')
+        .then(response => response.json())
+        .then(data => {
+            allCurricula = data;
+            populateDropdown('chuong-trinh-dao-tao', allCurricula, 'name');
+            populateDropdown('import-curriculum', allCurricula, 'name');
+        })
+        .catch(error => {
+            console.error('Error loading curricula:', error);
+        });
+}
+
+// Load lại danh sách courses
+function loadCourses() {
+    fetch('/api/courses/')
+        .then(response => response.json())
+        .then(data => {
+            allCourses = data;
+            populateDropdown('khoa-hoc', allCourses, 'name');
+            populateDropdown('import-course', allCourses, 'name');
+        })
+        .catch(error => {
+            console.error('Error loading curricula:', error);
+        });
+}
+
+// Hàm lấy danh sách sheet từ file Excel
+function getSheetNamesFromFile(file) {
+    return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('excel_file', file);
+        
+        fetch('/api/get-sheet-names/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                resolve(data.sheet_names);
+            } else {
+                reject(new Error(data.message));
+            }
+        })
+        .catch(error => {
+            reject(error);
+        });
+    });
+}
+
+// ===== UTILITY FUNCTIONS =====
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Cập nhật môn học
+function updateMonHoc(id, field, value) {
+    try {
+        const csrfToken = getCSRFToken();
+        if (!csrfToken) {
+            console.error('CSRF token not found');
+            alert('Lỗi bảo mật: Không tìm thấy CSRF token');
+            return;
+        }
+        
+        const data = {
+            id: id,
+            field: field,
+            value: value
+        };
+        console.log('Sending update:', data);
+
+        fetch(`/train-program/${id}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status !== 'success') {
+                console.error('Update error:', data.message);
+                alert(data.message);
+                // Reload data to reset values
+                loadFilteredData();
+            } else {
+                console.log('Update success:', data.message);
+                //updateOriginalValue(id, field, value);
+                loadFilteredData();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi cập nhật: ' + error.message);
+            loadFilteredData();
+        });
+    } catch (error) {
+        console.error('Error in updateMonHoc:', error);
+        alert('Lỗi trong hàm updateMonHoc: ' + error.message);
     }
 }
 
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM Content Loaded');
+// Tạo môn học mới
+function createMonHoc() {
+    const form = document.getElementById('form-them-mon-hoc');
+    if (!form) {
+        console.error('Form them mon hoc not found');
+        alert('Không tìm thấy form thêm môn học');
+        return;
+    }
     
-    // Khởi tạo app
-    const app = new App();
-    window.app = app;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+                
+    // Validate dữ liệu
+    if (!data.curriculum_id || !data.code || !data.name || !data.credits || !data.subject_type_id) {
+        alert('Vui lòng điền đầy đủ các trường bắt buộc (*)');
+        return;
+    }
     
-    // Bắt đầu khởi tạo
-    app.init();
-});
+    // Chuẩn bị dữ liệu học kỳ
+    const semesterData = {};
+    for (let i = 1; i <= 6; i++) {
+        const hkValue = data[`hk${i}`];
+        if (hkValue && hkValue !== '') {
+            try {
+                semesterData[`hk${i}`] = parseFloat(hkValue);
+            } catch (e) {
+                console.error(`Error parsing HK${i} value:`, hkValue);
+            }
+        }
+    }
+    
+    // Chuẩn bị dữ liệu gửi đi
+    const postData = {
+        ...data,
+        semester_allocations: semesterData
+    };
+                
+    // Hiển thị loading
+    const saveBtn = document.getElementById('btn-luu-mon-hoc');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang tạo...';
+    saveBtn.disabled = true;
+    
+    fetch('/api/subjects/create/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify(postData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            alert('✅ Đã tạo môn học thành công!');
+            closeThemMonHocModal();
+            // Reload dữ liệu
+            loadFilteredData();
+        } else {
+            alert('❌ Lỗi: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('❌ Có lỗi xảy ra khi tạo môn học: ' + error.message);
+    })
+    .finally(() => {
+        // Khôi phục trạng thái nút
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
 
-// KHÔNG CÓ Service Worker registration ở đây
+// Hàm cập nhật giá trị gốc sau khi thành công
+function updateOriginalValue(id, field, value) {
+    const input = document.querySelector(`[data-id="${id}"][data-field="${field}"]`);
+    if (input) {
+        input.setAttribute('data-original-value', value);
+    }
+}
+
+// Cập nhật phân bố học kỳ
+function updateSemesterAllocation(curriculumSubjectId, semester, credits) {
+    const data = {
+        id: curriculumSubjectId,
+        field: `hk${semester}`,
+        value: credits
+    };
+    
+    console.log('Sending semester update:', data); // Debug log
+    
+    fetch(`/train-program/${curriculumSubjectId}/`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status !== 'success') {
+            console.error('Semester update error:', data.message);
+            alert('Có lỗi khi cập nhật học kỳ: ' + data.message);
+            // Reload data to reset values
+            loadFilteredData();
+        } else {
+            console.log('Semester update success:', data.message);
+            loadFilteredData();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi cập nhật học kỳ: ' + error.message);
+        loadFilteredData();
+    });
+}
+
+// Xóa môn học
+function deleteMonHoc(id) {
+    if (!confirm('Bạn có chắc chắn muốn xóa môn học này?')) {
+        return;
+    }
+    
+    fetch(`/train-program/${id}/`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Đã xóa môn học thành công');
+            loadFilteredData();
+        } else {
+            alert('Có lỗi khi xóa: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi xóa');
+    });
+}
+
+// Tạo chương trình đào tạo mới
+function createCurriculum() {
+    const form = document.getElementById('form-them-chuong-trinh');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    // Validate
+    if (!data.code || !data.name || !data.academic_year || !data.major_id) {
+        alert('Vui lòng điền đầy đủ các trường bắt buộc');
+        return;
+    }
+    
+    fetch('/api/curriculum/create/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Đã tạo chương trình đào tạo thành công');
+            document.getElementById('modal-them-chuong-trinh').classList.add('hidden');
+            form.reset();
+            // Reload dropdown curricula
+            loadCurricula();
+        } else {
+            alert('Lỗi: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi tạo chương trình');
+    });
+}
+
+
+
+// Load dữ liệu theo bộ lọc
+function loadFilteredData() {
+    const departmentId = document.getElementById('khoa-dao-tao')?.value;
+    const subjectGroupId = document.getElementById('to-bo-mon')?.value;
+    const curriculumId = document.getElementById('chuong-trinh-dao-tao')?.value;
+    const courseId = document.getElementById('khoa-hoc')?.value;
+    const instructor = document.getElementById('instructor')?.value;
+
+    console.log('Filters:', { departmentId, curriculumId, courseId });
+
+    // 1. Ưu tiên: Lọc từ dữ liệu local trước
+    if (monHocData.length > 0) {
+        let filteredData = monHocData;
+        
+        // Áp dụng filters
+        if (curriculumId) {
+            filteredData = filteredData.filter(item => 
+                item.chuong_trinh_id == curriculumId || 
+                item.curriculum_id == curriculumId
+            );
+        }
+        
+        if (departmentId) {
+            filteredData = filteredData.filter(item => 
+                item.department_id == departmentId
+            );
+        }
+        
+        if (courseId) {
+            filteredData = filteredData.filter(item => 
+                item.course_id == courseId
+            );
+        }
+        
+        console.log('Filtered local data:', filteredData.length);
+        
+        if (filteredData.length > 0) {
+            renderTable();
+            updateStatistics();
+            return;
+        }
+    }
+
+    // 2. Fallback: Gọi API nếu không có dữ liệu local hoặc lọc không ra kết quả
+    const tableBody = document.getElementById('table-body');
+    if (tableBody) {
+        tableBody.innerHTML = '<tr><td colspan="19" class="px-4 py-4 text-center text-gray-500">Đang lọc dữ liệu...</td></tr>';
+    }
+    
+    const params = [];
+    
+    if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
+    if (departmentId) params.push(`department_id=${departmentId}`);
+    if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
+    if (courseId) params.push(`course_id=${courseId}`);
+
+    const url = '/api/subjects/' + (params.length ? '?' + params.join('&') : '');
+    
+    safeFetch(url, { timeout: 15000 })
+        .then(data => {
+            monHocData = Array.isArray(data) ? data : [];
+            renderTable();
+            updateStatistics();
+        })
+        .catch(error => {
+            console.error('Error loading data:', error);
+            // Fallback: hiển thị dữ liệu hiện có
+            renderTable();
+        });
+}
+
+function getCSRFToken() {
+    try {
+        // Thử tìm meta tag trước
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (metaTag) {
+            return metaTag.getAttribute('content');
+        }
+        
+        // Thử tìm trong {% csrf_token %}
+        const csrfTokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfTokenInput) {
+            return csrfTokenInput.value;
+        }
+        
+        // Thử lấy từ cookie
+        return getCookie('csrftoken');
+    } catch (error) {
+        console.error('Error getting CSRF token:', error);
+        return null;
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// ===== MODAL FUNCTIONS =====
+function openThemMonHocModal() {
+    // Disable Select2 bên ngoài
+    $('body').addClass('modal-open');
+    $('.select2-container:not(.modal .select2-container)').css({
+        'opacity': '0.5',
+        'pointer-events': 'none'
+    });
+    
+    // Đóng tất cả Select2 đang mở trước
+    closeAllOpenSelect2();
+    
+    const monHocModal = document.getElementById('modal-them-mon-hoc');
+    if (!monHocModal) {
+        console.error('Modal them mon hoc not found');
+        return;
+    }
+
+    // Đóng các modal khác nếu đang mở
+    closeThemChuongTrinhModal();
+    closeImportModal();
+
+    // Reset form
+    const form = document.getElementById('form-them-mon-hoc');
+    if (form) {
+        form.reset();
+        clearSubjectSelection();
+    }
+
+    // Lấy giá trị từ dropdown chính
+    const curriculumSelect = document.getElementById('chuong-trinh-dao-tao');
+    const courseSelect = document.getElementById('khoa-hoc');
+    
+    let selectedCurriculumId = '';
+    let selectedCourseId = '';
+    
+    if (curriculumSelect) {
+        selectedCurriculumId = curriculumSelect.value;
+    }
+    
+    if (courseSelect) {
+        selectedCourseId = courseSelect.value;
+    }
+    
+    // Hiển thị modal
+    monHocModal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    
+    setTimeout(() => {
+        // Khởi tạo Select2
+        initializeSelect2ForSubjectModal();
+        
+        // Set giá trị mặc định nếu có
+        if (selectedCurriculumId) {
+            const curriculumSelectInModal = document.getElementById('them-mon-hoc-curriculum');
+            if (curriculumSelectInModal) {
+                curriculumSelectInModal.value = selectedCurriculumId;
+                $(curriculumSelectInModal).trigger('change');
+                updateMajorInfo(selectedCurriculumId);
+            }
+        }
+        
+        if (selectedCourseId) {
+            const courseSelectInModal = document.getElementById('them-mon-hoc-course');
+            if (courseSelectInModal) {
+                courseSelectInModal.value = selectedCourseId;
+                $(courseSelectInModal).trigger('change');
+            }
+        }
+
+        // Tải danh sách môn học có sẵn từ dữ liệu hiện tại
+        loadExistingSubjectsFromCurrentData();
+
+        // Focus vào input đầu tiên
+        setTimeout(() => {
+            const firstInput = monHocModal.querySelector('input[name="code"]');
+            if (firstInput) {
+                firstInput.focus();
+                //firstInput.select();
+            }
+        }, 200);
+        
+    }, 100);
+}
+
+// Cập nhật thông tin ngành đào tạo khi chọn chương trình
+function updateMajorInfo(curriculumId) {
+    const majorField = document.getElementById('them-mon-hoc-major');
+    if (!majorField || !curriculumId) {
+        return;
+    }
+    
+    // Tìm thông tin chương trình
+    const curriculum = allCurricula.find(c => c.id == curriculumId);
+    if (curriculum && curriculum.major_id) {
+        const major = allMajors.find(m => m.id == curriculum.major_id);
+        if (major) {
+            majorField.value = `${major.name} (${major.code})`;
+            return;
+        }
+    }
+    majorField.value = 'Không xác định';
+}
+
+// Đóng modal thêm môn học
+function closeThemMonHocModal() {
+    // Enable Select2 bên ngoài
+    $('body').removeClass('modal-open');
+    $('.select2-container:not(.modal .select2-container)').css({
+        'opacity': '1',
+        'pointer-events': 'auto'
+    });
+    
+    const monHocModal = document.getElementById('modal-them-mon-hoc');
+    if (monHocModal) {
+        monHocModal.classList.add('hidden');
+    }
+    // Chỉ xóa modal-open nếu không còn modal nào mở
+    if (!document.querySelector('.modal:not(.hidden)')) {
+        document.body.classList.remove('modal-open');
+    }
+    document.body.classList.remove('overflow-hidden');
+}
+
+function openThemChuongTrinhModal() {
+    closeAllOpenSelect2();
+    console.log('Opening curriculum modal...');
+    const chuongTrinhModal = document.getElementById('modal-them-chuong-trinh');
+    if (chuongTrinhModal) {
+        chuongTrinhModal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    
+        // Đảm bảo các input có thể nhập
+        setTimeout(() => {
+            initializeSelect2ForCurriculumModal();
+    
+            // Đảm bảo các input có thể nhập
+            const inputs = chuongTrinhModal.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.removeAttribute('readonly');
+                input.removeAttribute('disabled');
+                input.style.pointerEvents = 'auto';
+                input.style.userSelect = 'auto';
+            });
+            
+            // Focus vào input đầu tiên
+            const firstInput = chuongTrinhModal.querySelector('input[name="code"]');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        }, 100);
+    }
+}
+
+// Đóng modal thêm chương trình
+function closeThemChuongTrinhModal() {
+    const chuongTrinhModal = document.getElementById('modal-them-chuong-trinh');
+    if (chuongTrinhModal) {
+        chuongTrinhModal.classList.add('hidden');
+    }
+
+    if (!document.querySelector('.modal:not(.hidden)')) {
+        document.body.classList.remove('modal-open');
+    }
+    document.body.classList.remove('overflow-hidden');
+}
+
+// Thêm hàm để tải danh sách môn học có sẵn
+function loadExistingSubjects() {
+    safeFetch('/api/all-subjects/')
+        .then(subjects => {
+            const select = document.getElementById('select-existing-subject');
+            if (select) {
+                select.innerHTML = '<option value="">-- Tìm kiếm môn học có sẵn --</option>';
+                
+                subjects.forEach(subject => {
+                    const option = document.createElement('option');
+                    option.value = subject.id || subject.code;
+                    option.textContent = `${subject.code || ''} - ${subject.name || ''}`;
+                    option.setAttribute('data-subject', JSON.stringify(subject));
+                    select.appendChild(option);
+                });
+                
+                // Cập nhật Select2
+                if ($(select).hasClass('select2-hidden-accessible')) {
+                    $(select).trigger('change.select2');
+                }
+            }
+
+            // Lưu vào biến toàn cục
+            window.existingSubjects = subjects;
+        })
+        .catch(error => {
+            console.error('Error loading existing subjects:', error);
+            
+            // Fallback: sử dụng dữ liệu từ monHocData
+            const existingSubjects = [];
+            const uniqueSubjects = {};
+            
+            if (monHocData && monHocData.length > 0) {
+                monHocData.forEach(item => {
+                    if (item.ma_mon_hoc && !uniqueSubjects[item.ma_mon_hoc]) {
+                        uniqueSubjects[item.ma_mon_hoc] = true;
+                        existingSubjects.push({
+                            id: item.id || item.ma_mon_hoc,
+                            code: item.ma_mon_hoc,
+                            name: item.ten_mon_hoc,
+                            credits: item.so_tin_chi,
+                            total_hours: item.tong_so_gio,
+                            theory_hours: item.ly_thuyet,
+                            practice_hours: item.thuc_hanh,
+                            tests_hours: item.kiem_tra,
+                            exam_hours: item.thi
+                        });
+                    }
+                });
+            }
+
+            // Cập nhật dropdown với fallback data
+            const select = document.getElementById('select-existing-subject');
+            if (select) {
+                select.innerHTML = '<option value="">-- Tìm kiếm môn học có sẵn --</option>';
+                
+                existingSubjects.forEach(subject => {
+                    const option = document.createElement('option');
+                    option.value = subject.id;
+                    option.textContent = `${subject.code} - ${subject.name}`;
+                    option.setAttribute('data-subject', JSON.stringify(subject));
+                    select.appendChild(option);
+                });
+            }
+
+            window.existingSubjects = existingSubjects;
+        });
+}
+
+// Tải danh sách môn học có sẵn từ dữ liệu hiện tại
+function loadExistingSubjectsFromCurrentData() {
+    console.log('Loading existing subjects from current data...');
+    
+    // Sử dụng dữ liệu monHocData hiện tại để tạo danh sách môn học có sẵn
+    const existingSubjects = [];
+    const seenCodes = new Set();
+    
+    // Lọc các môn học duy nhất từ monHocData
+    const uniqueSubjects = {};
+    if (monHocData && monHocData.length > 0) {
+        monHocData.forEach(item => {
+            const code = item.ma_mon_hoc;
+            if (code && !seenCodes.has(code)) {
+                seenCodes.add(code);
+                existingSubjects.push({
+                    id: item.id || code,
+                    code: code,
+                    name: item.ten_mon_hoc,
+                    credits: item.so_tin_chi,
+                    total_hours: item.tong_so_gio,
+                    theory_hours: item.ly_thuyet,
+                    practice_hours: item.thuc_hanh,
+                    tests_hours: item.kiem_tra,
+                    exam_hours: item.thi
+                });
+            }
+        });
+    }
+    
+    // Thêm một số môn học mẫu nếu không có dữ liệu
+    if (existingSubjects.length === 0) {
+        existingSubjects.push(
+            { id: 1, code: 'MH001', name: 'Toán cao cấp', credits: 3, total_hours: 45, theory_hours: 30, practice_hours: 15 },
+            { id: 2, code: 'MH002', name: 'Lập trình cơ bản', credits: 4, total_hours: 60, theory_hours: 30, practice_hours: 30 },
+            { id: 3, code: 'MH003', name: 'Cơ sở dữ liệu', credits: 3, total_hours: 45, theory_hours: 25, practice_hours: 20 }
+        );
+    }
+    
+    // Cập nhật dropdown
+    const select = document.getElementById('select-existing-subject');
+    if (select) {
+        // Xóa tất cả options trừ option đầu tiên
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+        
+        existingSubjects.forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject.id;
+            option.textContent = `${subject.code} - ${subject.name}`;
+            
+            // Sử dụng data attributes an toàn
+            try {
+                option.setAttribute('data-subject', JSON.stringify(subject));
+            } catch (e) {
+                console.warn('Could not stringify subject:', subject);
+            }
+            
+            select.appendChild(option);
+        });
+        
+        // Cập nhật Select2 nếu đã được khởi tạo
+        if ($(select).hasClass('select2-hidden-accessible')) {
+            $(select).trigger('change.select2');
+        }
+    }
+    
+    console.log('Loaded', existingSubjects.length, 'existing subjects');
+    return existingSubjects;
+}
+
+// Hàm kiểm tra và sửa lỗi input trong modal
+function fixModalInputs() {
+    const chuongTrinhModal = document.getElementById('modal-them-chuong-trinh');
+    if (!chuongTrinhModal) return;
+    
+    const inputs = chuongTrinhModal.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        // Xóa các attribute chặn input
+        input.removeAttribute('readonly');
+        input.removeAttribute('disabled');
+        
+        // Đảm bảo các thuộc tính style đúng
+        input.style.pointerEvents = 'auto';
+        input.style.userSelect = 'auto';
+        input.style.backgroundColor = 'white';
+        input.style.cursor = 'text';
+        
+        // Thêm event listener để debug
+        input.addEventListener('click', function(e) {
+            e.stopPropagation();
+            console.log('Input clicked:', this.name);
+        });
+        
+        input.addEventListener('focus', function(e) {
+            e.stopPropagation();
+            console.log('Input focused:', this.name);
+            this.style.borderColor = '#3b82f6';
+            this.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.2)';
+        });
+        
+        input.addEventListener('blur', function(e) {
+            e.stopPropagation();
+            this.style.borderColor = '#d1d5db';
+            this.style.boxShadow = 'none';
+        });
+    });
+}
+
+// Hàm load tất cả môn học để populate dropdowns
+function loadAllSubjects() {
+    console.log('Loading subjects...');
+    // Nếu đã có dữ liệu từ template, dùng luôn
+    if (monHocData.length > 0) {
+        allSubjects = monHocData.map(item => ({
+            id: item.id,
+            code: item.ma_mon_hoc,
+            name: item.ten_mon_hoc,
+            credits: item.so_tin_chi,
+            total_hours: item.tong_so_gio,
+            theory_hours: item.ly_thuyet,
+            practice_hours: item.thuc_hanh,
+            tests_hours: item.kiem_tra,
+            exam_hours: item.thi
+        }));
+        
+        console.log('Using subjects from template data:', allSubjects.length);
+        populateSubjectSelect(allSubjects);
+        return Promise.resolve(allSubjects);
+    }
+
+    // Nếu không có dữ liệu từ template, mới gọi API
+    return safeFetch('/api/all-subjects/')
+        .then(data => {
+            console.log('API returned data:', data);
+            
+            // Xử lý các định dạng response khác nhau
+            if (Array.isArray(data)) {
+                allSubjects = data;
+            } else if (data && data.data && Array.isArray(data.data)) {
+                allSubjects = data.data;
+            } else if (data && data.subjects && Array.isArray(data.subjects)) {
+                allSubjects = data.subjects;
+            } else {
+                console.warn('Unexpected response format, using empty array');
+                allSubjects = [];
+            }
+            
+            console.log('Loaded', allSubjects.length, 'subjects from API');
+            populateSubjectSelect(allSubjects);
+            return allSubjects;
+        })
+        .catch(error => {
+            console.error('Error loading subjects:', error);
+            allSubjects = [];
+            return allSubjects;
+        });
+}
+
+async function safeFetch(url, options = {}) {
+    const timeoutDuration = options.timeout || 10000;
+    
+    return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+            console.warn(`Fetch timeout for ${url}`);
+            resolve([]); // Trả về mảng rỗng thay vì throw error
+        }, timeoutDuration);
+        
+        fetch(url, options)
+            .then(response => {
+                clearTimeout(timeout);
+                if (!response.ok) {
+                    console.warn(`Fetch error: ${response.status}`);
+                    return [];
+                }
+                return response.json();
+            })
+            .then(data => {
+                resolve(data || []);
+            })
+            .catch(error => {
+                clearTimeout(timeout);
+                console.warn(`Fetch failed for ${url}:`, error.message);
+                resolve([]); // Luôn trả về mảng rỗng khi có lỗi
+            });
+    });
+}
+
+function enableModalInputs() {
+    const monHocModal = document.getElementById('modal-them-mon-hoc');
+    if (!monHocModal) return;
+    
+    const allInputs = monHocModal.querySelectorAll('input, select, textarea');
+    allInputs.forEach(input => {
+        // Remove any blocking attributes
+        input.removeAttribute('disabled');
+        input.removeAttribute('readonly');
+        
+        // Force styles
+        input.style.pointerEvents = 'auto';
+        input.style.cursor = 'text';
+        input.style.userSelect = 'auto';
+        input.style.webkitUserSelect = 'auto';
+        input.style.backgroundColor = 'white';
+        input.style.color = '#000';
+        input.style.opacity = '1';
+        
+        // Add event listeners to ensure they work
+        input.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+        });
+        
+        input.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        
+        input.addEventListener('focus', function(e) {
+            this.style.outline = '2px solid #3b82f6';
+        });
+        
+        input.addEventListener('blur', function(e) {
+            this.style.outline = '';
+        });
+    });
+}
+
+
+
+// Khởi tạo Select2 cho tất cả dropdown
+function initializeSelect2() {
+    setTimeout(() => {
+        try {
+            // Các dropdown chính trên trang
+            if ($('#khoa-dao-tao').length) {
+                $('#khoa-dao-tao').select2({
+                    width: '100%',
+                    placeholder: '-- Chọn khoa --',
+                    allowClear: true,
+                    language: 'vi',
+                    dropdownAutoWidth: true
+                });
+            }
+            if ($('#to-bo-mon').length) {
+                $('#to-bo-mon').select2({
+                    width: '100%',
+                    placeholder: '-- Chọn tổ bộ môn --',
+                    allowClear: true,
+                    language: 'vi',
+                    dropdownAutoWidth: true
+                });
+            }
+            if ($('#chuong-trinh-dao-tao').length) {
+                $('#chuong-trinh-dao-tao').select2({
+                    width: '100%',
+                    placeholder: '-- Chọn chương trình --',
+                    allowClear: true,
+                    language: 'vi',
+                    dropdownAutoWidth: true
+                });
+            }
+            if ($('#khoa-hoc').length) {
+                $('#khoa-hoc').select2({
+                    width: '100%',
+                    placeholder: '-- Chọn khóa học --',
+                    allowClear: true,
+                    language: 'vi',
+                    dropdownAutoWidth: true
+                });
+            }
+            
+            // Dropdown trong modal import
+            //$('#import-curriculum, #import-course').select2({
+            //    width: '100%',
+            //    placeholder: '-- Chọn --',
+            //    allowClear: true,
+            //    language: 'vi',
+            //	  dropdownAutoWidth: true,
+            //    dropdownParent: $('#modal-import')
+            //});
+            
+            // Dropdown sheet select
+            //$('#sheet-select').select2({
+            //    width: '100%',
+            //    placeholder: '-- Tự động chọn sheet đầu tiên --',
+            //    allowClear: true,
+            //    language: 'vi',
+            //	  dropdownAutoWidth: true,
+            //    dropdownParent: $('#modal-import')
+            //});
+            
+            // Dropdown trong modal thêm chương trình
+            //if (!$('select[name="major_id"]').hasClass('select2-hidden-accessible')) {
+            //    $('select[name="major_id"]').select2({
+            //        width: '100%',
+            //        placeholder: '-- Chọn ngành --',
+            //        allowClear: true,
+            //        language: 'vi',
+            //		  dropdownAutoWidth: true,
+            //        dropdownParent: $('#modal-them-chuong-trinh')
+            //    });
+            //}
+            console.log('Select2 initialized successfully');
+
+            // Tự động focus vào ô tìm kiếm khi mở dropdown
+            $(document).on('select2:open', function(e) {
+                setTimeout(function() {
+                    const searchInput = document.querySelector('.select2-search__field');
+                    if (searchInput) {
+                        searchInput.focus();
+                    }
+                }, 100);
+            });
+        } catch (error) {
+            console.error('Error initializing Select2:', error);
+        }
+    }, 500);
+}
+
+// Khởi tạo Select2 cho modal chỉ khi cần
+function initializeModalSelect2(modalId) {
+    if (modalId === 'modal-them-mon-hoc') {
+        initializeSelect2ForSubjectModal();
+    } else if (modalId === 'modal-them-chuong-trinh') {
+        initializeSelect2ForCurriculumModal();
+    }
+}
+
+// Khởi tạo Select2 cho modal thêm môn học
+function initializeSelect2ForSubjectModal() {
+    console.log('Initializing Select2 for subject modal...');
+    
+    try {
+        const monHocModal = document.getElementById('modal-them-mon-hoc');
+        if (!monHocModal) return;
+
+        // Đóng tất cả Select2 đang mở trước
+        closeAllOpenSelect2();
+        
+        // Khởi tạo Select2 cho các dropdown trong modal
+        $('#select-existing-subject').select2({
+            placeholder: '-- Tìm kiếm môn học có sẵn --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: monHocModal
+        });
+        
+        $('#them-mon-hoc-curriculum').select2({
+            placeholder: '-- Chọn chương trình --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: monHocModal
+        });
+        
+        $('#them-mon-hoc-course').select2({
+            placeholder: '-- Chọn khóa học --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: monHocModal
+        });
+
+        $('#them-mon-hoc-major').select2({
+            placeholder: '-- Chọn ngành --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: monHocModal
+        });
+        
+        $('select[name="department_id"]').select2({
+            placeholder: '-- Chọn đơn vị --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: monHocModal
+        });
+        
+        $('select[name="subject_type_id"]').select2({
+            placeholder: '-- Chọn loại môn --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: monHocModal
+        });
+        
+        $('select[name="subject_group_id"]').select2({
+            placeholder: '-- Chọn tổ bộ môn --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: monHocModal
+        });
+        
+        $('select[name="semester"]').select2({
+            placeholder: '-- Chọn học kỳ --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: monHocModal
+        });
+
+        console.log('Select2 initialized for subject modal');
+    } catch (error) {
+        console.error('Error initializing Select2 for subject modal:', error);
+    }
+}
+
+// Hàm đóng tất cả Select2 đang mở
+function closeAllOpenSelect2() {
+    try {
+        // Đóng tất cả Select2 dropdown đang mở
+        $('.select2-container--open').each(function() {
+            const $select = $(this).prev('select');
+            if ($select.length && $.fn.select2) {
+                $select.select2('close');
+            }
+        });
+        
+        // Ẩn tất cả dropdown
+        $('.select2-dropdown').hide();
+    } catch (error) {
+        console.error('Error closing select2:', error);
+    }
+}
+
+// Khởi tạo Select2 cho modal thêm chương trình
+function initializeSelect2ForCurriculumModal() {
+    console.log('Initializing Select2 for curriculum modal...');
+    
+    try {
+        const chuongTrinhModal = $('#modal-them-chuong-trinh');
+        
+        $('select[name="major_id"]').select2({
+            width: '100%',
+            placeholder: '-- Chọn ngành --',
+            allowClear: true,
+            language: 'vi',
+            dropdownParent: chuongTrinhModal,
+            //dropdownCssClass: 'modal-select2'
+        });
+
+        console.log('Select2 initialized for curriculum modal');
+        
+    } catch (error) {
+        console.error('Error initializing Select2 for curriculum modal:', error);
+    }
+}
+
+// Hàm cập nhật thông tin môn học khi chọn từ danh sách có sẵn
+function fillSubjectFormFromExisting(subject) {
+    if (!subject) return;
+    
+    const form = document.getElementById('form-them-mon-hoc');
+    if (!form) return;
+    
+    // Điền thông tin cơ bản
+    form.querySelector('input[name="code"]').value = subject.code || '';
+    //form.querySelector('input[name="code"]').readOnly = true;
+    form.querySelector('input[name="name"]').value = subject.name || '';
+    //form.querySelector('input[name="name"]').readOnly = true;
+    form.querySelector('input[name="credits"]').value = subject.credits || '';
+    form.querySelector('input[name="total_hours"]').value = subject.total_hours || '';
+    form.querySelector('input[name="theory_hours"]').value = subject.theory_hours || '';
+    form.querySelector('input[name="practice_hours"]').value = subject.practice_hours || '';
+    form.querySelector('input[name="tests_hours"]').value = subject.tests_hours || '';
+    form.querySelector('input[name="exam_hours"]').value = subject.exam_hours || '';
+    form.querySelector('input[name="order_number"]').value = subject.order_number || '';
+    
+    // Điền các trường select
+    if (subject.department_id) {
+        form.querySelector('select[name="department_id"]').value = subject.department_id;
+        $(form.querySelector('select[name="department_id"]')).trigger('change');
+    }
+    
+    if (subject.subject_type_id) {
+        form.querySelector('select[name="subject_type_id"]').value = subject.subject_type_id;
+        $(form.querySelector('select[name="subject_type_id"]')).trigger('change');
+    }
+    
+    if (subject.subject_group_id) {
+        form.querySelector('select[name="subject_group_id"]').value = subject.subject_group_id;
+        $(form.querySelector('select[name="subject_group_id"]')).trigger('change');
+    }
+    
+    if (subject.semester) {
+        form.querySelector('select[name="semester"]').value = subject.semester;
+        $(form.querySelector('select[name="semester"]')).trigger('change');
+    }
+    
+    // Điền textarea
+    form.querySelector('textarea[name="description"]').value = subject.description || '';
+    form.querySelector('textarea[name="prerequisites"]').value = subject.prerequisites || '';
+    form.querySelector('textarea[name="learning_outcomes"]').value = subject.learning_outcomes || '';
+    
+    // Điền checkbox
+    const isElectiveCheckbox = form.querySelector('input[name="is_elective"]');
+    if (isElectiveCheckbox) {
+        isElectiveCheckbox.checked = subject.is_elective || false;
+    }
+    
+    const electiveGroupInput = form.querySelector('input[name="elective_group"]');
+    if (electiveGroupInput) {
+        electiveGroupInput.value = subject.elective_group || '';
+    }
+    
+    // Điền phân bố học kỳ
+    for (let i = 1; i <= 6; i++) {
+        const hkField = `hk${i}`;
+        if (subject[hkField] !== undefined && subject[hkField] !== null) {
+            const input = form.querySelector(`input[name="${hkField}"]`);
+            if (input) {
+                input.value = subject[hkField];
+            }
+        }
+    }
+    
+    // Hiển thị thông báo
+    document.getElementById('existing-subject-info').classList.remove('hidden');
+    document.getElementById('selected-subject-name').textContent = 
+        `${subject.code} - ${subject.name}`;
+}
+
+// Hàm hiển thị dữ liệu trong dropdown
+function populateSubjectSelect(subjects) {
+    const select = $('#select-existing-subject');
+    if (!select.length) return;
+
+    // Lưu giá trị hiện tại
+    const currentValue = select.val();
+
+    // Clear và thêm option mặc định
+    select.empty().append(
+        $('<option>', {value: '', text: '-- Tìm kiếm môn học có sẵn --'})
+    );
+    
+    // Thêm dữ liệu
+    if (subjects && subjects.length > 0) {
+        subjects.forEach(subject => {
+            select.append(
+                $('<option>', {
+                    value: subject.id || subject.code,
+                    text: `${subject.code || ''} - ${subject.name || ''}`,
+                    'data-subject': JSON.stringify(subject)
+                })
+            );
+        });
+    }
+    
+    // Khôi phục giá trị cũ (nếu có)
+    if (currentValue) {
+        select.val(currentValue);
+    }
+    // Refresh Select2
+    if (select.hasClass('select2-hidden-accessible')) {
+        select.trigger('change.select2');
+    }
+}
+
+// Cập nhật hàm handleUseExistingSubject
+function handleUseExistingSubject() {
+    const select = document.getElementById('select-existing-subject');
+    if (!select) return;
+    
+    const selectedOption = select.options[select.selectedIndex];
+    if (!selectedOption.value || selectedOption.value === '') {
+        alert('Vui lòng chọn một môn học');
+        return;
+    }
+    
+    // Lấy thông tin môn học từ data attribute
+    const subjectData = selectedOption.getAttribute('data-subject');
+    if (subjectData) {
+        try {
+            const subject = JSON.parse(subjectData);
+            fillSubjectFormFromExisting(subject);
+        } catch (e) {
+            console.error('Error parsing subject data:', e);
+            // Fallback: tìm trong mảng existingSubjects
+            const subjectId = selectedOption.value;
+            const subject = window.existingSubjects?.find(s => s.id == subjectId);
+            if (subject) {
+                fillSubjectFormFromExisting(subject);
+            } else {
+                alert('Không thể tải thông tin môn học. Vui lòng thử lại.');
+            }
+        }
+    } else {
+        alert('Không có dữ liệu môn học. Vui lòng chọn môn học khác.');
+    }
+}
+
+// Cập nhật hàm clearSubjectSelection
+function clearSubjectSelection() {
+    console.log('Clearing subject selection...');
+
+    const select = document.getElementById('select-existing-subject');
+    if (select) {
+        select.value = '';
+        if ($(select).hasClass('select2-hidden-accessible')) {
+            $(select).trigger('change.select2');
+        }
+    }
+    
+    const form = document.getElementById('form-them-mon-hoc');
+    if (form) {
+        form.querySelector('input[name="code"]').readOnly = false;
+        form.querySelector('input[name="name"]').readOnly = false;
+    }
+}
+
+// Hàm hiển thị suggestions
+function showInstructorSuggestions(instructors, targetInput) {            
+    // Tìm datalist liên kết với input
+    const datalist = targetInput.nextElementSibling;
+    if (!datalist || datalist.tagName !== 'DATALIST') {
+        console.error('Datalist not found for input:', targetInput);
+        return;
+    }
+    
+    datalist.innerHTML = '';
+    
+    if (instructors.length === 0) {
+        return;
+    }
+    
+    instructors.forEach(instructor => {
+        const option = document.createElement('option');
+        option.value = instructor.full_name;
+        option.textContent = `${instructor.full_name} (${instructor.code})`;
+        option.setAttribute('data-instructor-id', instructor.id);
+        datalist.appendChild(option);
+    });
+    
+}
+
+// Hàm xóa suggestions
+function clearInstructorSuggestions(targetInput) {
+    const datalist = targetInput.nextElementSibling;
+    if (datalist && datalist.tagName === 'DATALIST') {
+        datalist.innerHTML = '';
+    }
+}
+
+// Hàm xử lý khi chọn một suggestion
+function handleInstructorSelection(input) {
+    // Có thể thêm logic xử lý khi chọn suggestion ở đây
+    console.log('Instructor selected:', input.value);
+}
+
+// Hàm khởi tạo autocomplete cho tất cả input giảng viên
+function initializeInstructorAutocompleteForTable() {
+    const inputs = document.querySelectorAll('.instructor-autocomplete');
+    inputs.forEach(input => {
+        // Chỉ khởi tạo cho các input chưa có autocomplete và không phải readonly
+        if (!input.hasAttribute('data-autocomplete-initialized') && !input.readOnly) {
+            initializeInstructorAutocompleteForInput(input);
+        }
+    });
+}
+
+// Khởi tạo dropdowns
+function initializeDropdowns() {
+    if (allDepartments && allDepartments.length > 0) {
+        populateDropdown('khoa-dao-tao', allDepartments, 'name');
+    }
+    
+    if (allSubjectGroups && allSubjectGroups.length > 0) {
+        populateDropdown('to-bo-mon', allSubjectGroups, 'name');
+    }
+    
+    if (allCurricula && allCurricula.length > 0) {
+        populateDropdown('chuong-trinh-dao-tao', allCurricula, 'name');
+        populateDropdown('import-curriculum', allCurricula, 'name');
+        populateDropdown('them-mon-hoc-curriculum', allCurricula, 'name');
+    }
+    
+    if (allCourses && allCourses.length > 0) {
+        populateDropdown('khoa-hoc', allCourses, 'name');
+        populateDropdown('import-course', allCourses, 'name');
+        populateDropdown('them-mon-hoc-course', allCourses, 'name');
+    }
+    
+    if (allMajors && allMajors.length > 0) {
+        const majorSelect = document.querySelector('select[name="major_id"]');
+        if (majorSelect) {
+            majorSelect.innerHTML = '<option value="">-- Chọn ngành --</option>';
+            allMajors.forEach(major => {
+                const option = document.createElement('option');
+                option.value = major.id;
+                option.textContent = `${major.name} (${major.code})`;
+                majorSelect.appendChild(option);
+            });
+        }
+    }
+    
+    if (allSubjectTypes && allSubjectTypes.length > 0) {
+        const typeSelect = document.querySelector('select[name="subject_type_id"]');
+        if (typeSelect) {
+            typeSelect.innerHTML = '<option value="">-- Chọn loại môn --</option>';
+            allSubjectTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.id;
+                option.textContent = type.name;
+                typeSelect.appendChild(option);
+            });
+        }
+    }
+}
+
+function populateDropdown(elementId, data, displayField) {
+    const dropdown = document.getElementById(elementId);
+    if (!dropdown) return;
+    
+    dropdown.innerHTML = '<option value="">-- Chọn --</option>';
+    
+    if (data && Array.isArray(data)) {
+        data.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            
+            let displayText = item[displayField] || '';
+            if (item.academic_year) {
+                displayText += ` (${item.academic_year})`;
+            }
+            if (item.code) {
+                displayText = `${item.code} - ${displayText}`;
+            }
+            
+            option.textContent = displayText;
+            option.setAttribute('data-name', item[displayField] || '');
+            option.setAttribute('data-code', item.code || '');
+            
+            // Lưu toàn bộ object dưới dạng data attribute
+            option.setAttribute('data-object', JSON.stringify(item));
+            
+            dropdown.appendChild(option);
+        });
+    
+        // Cập nhật Select2 nếu đã được khởi tạo
+        if ($(dropdown).hasClass('select2-hidden-accessible')) {
+            $(dropdown).trigger('change');
+        }
+    }
+}
+
+// ===== ENTER EDIT MODE FUNCTION =====
+function enterEditMode(row, button) {
+    console.log('Entering edit mode for row');
+    
+    // Thay đổi nút
+    button.innerHTML = '<i class="fas fa-check"></i>';
+    button.classList.remove('text-blue-600');
+    button.classList.add('text-green-600');
+    button.title = 'Lưu thay đổi';
+    
+    // Lấy tất cả input và select trong hàng
+    const inputs = row.querySelectorAll('input:not([type="hidden"])');
+    const selects = row.querySelectorAll('select');
+    
+    // Kích hoạt các trường có thể sửa
+    inputs.forEach(input => {
+        if (input.classList.contains('editable')) {
+            // Không bỏ readonly cho các trường không cho phép sửa
+            const field = input.getAttribute('data-field');
+            const allowedFields = ['instructor', 'department', 'course'];
+            
+            if (allowedFields.includes(field)) {
+                input.removeAttribute('readonly');
+                input.removeAttribute('disabled');
+                input.classList.add('border', 'border-blue-400', 'bg-blue-50');
+                
+                // Đặc biệt xử lý autocomplete cho giảng viên
+                if (field === 'instructor') {
+                    initializeInstructorAutocompleteForInput(input);
+                }
+            }
+        }
+    });
+    
+    // Kích hoạt các dropdown
+    selects.forEach(select => {
+        if (select.classList.contains('editable')) {
+            select.disabled = false;
+            select.classList.add('border', 'border-blue-400', 'bg-blue-50');
+            
+            // Khởi tạo Select2 cho dropdown nếu có
+            if ($(select).hasClass('select2-hidden-accessible')) {
+                $(select).select2({
+                    width: '100%',
+                    dropdownParent: row.closest('.table-container') || document.body
+                });
+            }
+        }
+    });
+}
+
+// ===== EXIT EDIT MODE FUNCTION =====
+function exitEditMode(row, button, id) {
+    console.log('Exiting edit mode for row', id);
+    
+    // Thay đổi nút
+    button.innerHTML = '<i class="fas fa-edit"></i>';
+    button.classList.remove('text-green-600');
+    button.classList.add('text-blue-600');
+    button.title = 'Sửa';
+    
+    let hasChanges = false;
+    const changes = {};
+    
+    // Lấy tất cả input và select đã thay đổi
+    const editables = row.querySelectorAll('input.editable, select.editable');
+    
+    editables.forEach(editable => {
+        const field = editable.getAttribute('data-field');
+        const value = editable.value;
+        const originalValue = editable.getAttribute('data-original-value');
+        
+        // Kiểm tra thay đổi
+        if (value !== originalValue) {
+            hasChanges = true;
+            changes[field] = {
+                value: value,
+                original: originalValue
+            };
+        }
+        
+        // Khôi phục trạng thái xem
+        if (editable.tagName === 'SELECT') {
+            editable.disabled = true;
+        } else {
+            editable.setAttribute('readonly', true);
+        }
+        editable.classList.remove('border', 'border-blue-400', 'bg-blue-50');
+        
+        // Cập nhật giá trị gốc mới
+        editable.setAttribute('data-original-value', value);
+    });
+    
+    // Gửi tất cả thay đổi nếu có
+    if (hasChanges && id) {
+        console.log('Saving changes for ID:', id, changes);
+        saveChanges(id, changes);
+    }
+}
+
+// ===== SAVE CHANGES FUNCTION =====
+function saveChanges(id, changes) {
+    const csrfToken = getCSRFToken();
+    
+    // Chuẩn bị dữ liệu
+    const data = {
+        id: id,
+        changes: changes
+    };
+    
+    console.log('Sending changes to server:', data);
+    
+    fetch(`/train-program/${id}/update-multiple/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('Changes saved successfully:', data.message);
+            // Hiển thị thông báo thành công
+            showNotification('Đã lưu thay đổi thành công!', 'success');
+            
+            // Cập nhật dữ liệu cục bộ nếu cần
+            updateLocalData(id, changes);
+        } else {
+            console.error('Save error:', data.message);
+            showNotification('Lỗi: ' + data.message, 'error');
+            // Rollback changes
+            setTimeout(() => {
+                loadFilteredData();
+            }, 1000);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving changes:', error);
+        showNotification('Có lỗi xảy ra khi lưu thay đổi', 'error');
+        // Rollback changes
+        setTimeout(() => {
+            loadFilteredData();
+        }, 1000);
+    });
+}
+
+// ===== INITIALIZE AUTOCORRECT FOR SPECIFIC INPUT =====
+function initializeInstructorAutocompleteForInput(inputElement) {
+    // Kiểm tra xem đã khởi tạo chưa
+    if (inputElement.hasAttribute('data-autocomplete-initialized')) {
+        return;
+    }
+    
+    console.log('Initializing autocomplete for input');
+    
+    // Đánh dấu đã khởi tạo
+    inputElement.setAttribute('data-autocomplete-initialized', 'true');
+    
+    // Xóa readonly và disabled nếu có
+    inputElement.removeAttribute('readonly');
+    inputElement.removeAttribute('disabled');
+    
+    // Thêm sự kiện
+    inputElement.addEventListener('input', function(e) {
+        const query = this.value;
+        if (query.length >= 2) {
+            searchInstructors(query, this);
+        }
+    });
+    
+    inputElement.addEventListener('focus', function(e) {
+        const query = this.value;
+        if (query.length >= 2) {
+            searchInstructorSuggestions(query, this);
+        }
+    });
+    
+    inputElement.addEventListener('blur', function(e) {
+        setTimeout(() => {
+            clearInstructorSuggestions(this);
+        }, 200);
+    });
+    
+    // Thêm datalist nếu chưa có
+    if (!inputElement.nextElementSibling || inputElement.nextElementSibling.tagName !== 'DATALIST') {
+        const datalist = document.createElement('datalist');
+        datalist.id = 'instructor-suggestions-' + inputElement.getAttribute('data-id');
+        inputElement.setAttribute('list', datalist.id);
+        inputElement.parentNode.appendChild(datalist);
+    }
+}
+
+// ===== ENHANCED SEARCH INSTRUCTORS FUNCTION =====
+function searchInstructorSuggestions(query, targetInput) {
+    if (!query || query.length < 2) return;
+    
+    // Hiển thị loading
+    const datalist = targetInput.nextElementSibling;
+    if (datalist && datalist.tagName === 'DATALIST') {
+        datalist.innerHTML = '';
+    }
+    
+    // Giả lập dữ liệu giảng viên (trong thực tế sẽ gọi API)
+    const mockInstructors = [
+        { id: 1, full_name: 'Nguyễn Văn A', code: 'GV001' },
+        { id: 2, full_name: 'Trần Thị B', code: 'GV002' },
+        { id: 3, full_name: 'Lê Văn C', code: 'GV003' },
+        { id: 4, full_name: 'Phạm Thị D', code: 'GV004' },
+        { id: 5, full_name: 'Hoàng Văn E', code: 'GV005' }
+    ];
+    
+    // Lọc giảng viên theo query
+    const filtered = mockInstructors.filter(instructor => 
+        instructor.full_name.toLowerCase().includes(query.toLowerCase()) ||
+        instructor.code.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    // Hiển thị suggestions
+    if (datalist) {
+        datalist.innerHTML = '';
+        filtered.forEach(instructor => {
+            const option = document.createElement('option');
+            option.value = instructor.full_name;
+            option.textContent = `${instructor.full_name} (${instructor.code})`;
+            datalist.appendChild(option);
+        });
+    }
+}
+
+// ===== SHOW NOTIFICATION FUNCTION =====
+function showNotification(message, type = 'info') {
+    // Tạo thông báo
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-4 py-3 rounded-md shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-circle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Tự động ẩn sau 3 giây
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// ===== UPDATE LOCAL DATA FUNCTION =====
+function updateLocalData(id, changes) {
+    // Cập nhật dữ liệu cục bộ
+    const index = monHocData.findIndex(item => item.id == id);
+    if (index !== -1) {
+        Object.keys(changes).forEach(field => {
+            const newValue = changes[field].value;
+            
+            // Map field name từ data-field sang tên trong monHocData
+            const fieldMap = {
+                'instructor': 'giang_vien',
+                'department': 'don_vi',
+                'course': 'course_id'
+            };
+            
+            const dataField = fieldMap[field] || field;
+            monHocData[index][dataField] = newValue;
+        });
+        
+        console.log('Local data updated');
+    }
+}
+
