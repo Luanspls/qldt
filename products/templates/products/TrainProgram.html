@@ -2373,11 +2373,11 @@
 		
         // Load dữ liệu theo bộ lọc
         function loadFilteredData() {
-            const departmentId = document.getElementById('khoa-dao-tao')?.value;
-            const subjectGroupId = document.getElementById('to-bo-mon')?.value;
-            const curriculumId = document.getElementById('chuong-trinh-dao-tao')?.value;
-            const courseId = document.getElementById('khoa-hoc')?.value;
-			const instructor = document.getElementById('instructor')?.value;
+            const departmentId = document.getElementById('khoa-dao-tao').value;
+            const subjectGroupId = document.getElementById('to-bo-mon').value;
+            const curriculumId = document.getElementById('chuong-trinh-dao-tao').value;
+            const courseId = document.getElementById('khoa-hoc').value;
+			const instructor = document.getElementById('instructor').value;
 
 			console.log('Filters:', { departmentId, curriculumId, courseId });
 
@@ -2388,7 +2388,6 @@
 		        // Áp dụng filters
 		        if (curriculumId) {
 		            filteredData = filteredData.filter(item => 
-		                item.chuong_trinh_id == curriculumId || 
 		                item.curriculum_id == curriculumId
 		            );
 		        }
