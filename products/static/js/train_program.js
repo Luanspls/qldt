@@ -30,7 +30,8 @@ class AppState {
         };
         
         this.cache = new Map();
-        this.isMobile = window.APP_CONFIG.isMobile;
+        //this.isMobile = window.APP_CONFIG.isMobile;
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         this.isInitialized = false;
     }
     
@@ -107,7 +108,7 @@ class PerformanceUtils {
 class ApiService {
     constructor() {
         this.baseUrl = '';
-        this.csrfToken = window.APP_CONFIG.csrfToken;
+        //this.csrfToken = window.APP_CONFIG.csrfToken;
     }
     
     async fetchWithTimeout(url, options = {}) {
@@ -118,11 +119,11 @@ class ApiService {
             const response = await fetch(url, {
                 ...options,
                 signal: controller.signal,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': this.csrfToken,
-                    ...options.headers
-                }
+                //headers: {
+                //    'Content-Type': 'application/json',
+                //    'X-CSRFToken': this.csrfToken,
+                //    ...options.headers
+                //}
             });
             
             clearTimeout(timeoutId);
@@ -201,7 +202,7 @@ class TableManager {
         this.app = app;
         this.container = document.querySelector('.table-container');
         this.tableBody = null;
-        this.visibleRows = new Set();
+        //this.visibleRows = new Set();
     }
     
     init() {
@@ -211,7 +212,7 @@ class TableManager {
             this.container.querySelector('table').appendChild(this.tableBody);
         }
         
-        this.setupVirtualScroll();
+        //this.setupVirtualScroll();
     }
     
     render(data) {
@@ -234,7 +235,7 @@ class TableManager {
             displayData.forEach((item, index) => {
                 const row = this.createRow(item, index);
                 fragment.appendChild(row);
-                this.visibleRows.add(row);
+                //this.visibleRows.add(row);
             });
             
             // Clear and append
@@ -242,7 +243,7 @@ class TableManager {
             this.tableBody.appendChild(fragment);
             
             // Show load more button if needed
-            if (appState.isMobile && data.length > CONFIG.MAX_ROWS_VISIBLE) {
+            if (this.app.state.isMobile && data.length > CONFIG.MAX_ROWS_VISIBLE) {
                 this.showLoadMoreButton(data.length - CONFIG.MAX_ROWS_VISIBLE);
             }
         });
@@ -251,24 +252,16 @@ class TableManager {
     createRow(item, index) {
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50 transition-colors duration-150';
-        row.dataset.id = item.id;
-        
-        // Create cells with optimized content
-        const cells = [
-            this.createCell(index + 1, 'text-center col-tt'),
-            this.createEditableCell(item.ma_mon_hoc || '', 'code', item.id, 'col-ma'),
-            this.createEditableCell(item.ten_mon_hoc || '', 'name', item.id, 'col-ten wrap-text'),
-            this.createEditableCell(item.so_tin_chi || 0, 'credits', item.id, 'text-center col-tinchi', 'number'),
-            this.createEditableCell(item.tong_so_gio || 0, 'total_hours', item.id, 'text-center col-gio', 'number'),
-            // Add more cells as needed
-        ];
-        
-        cells.forEach(cell => row.appendChild(cell));
-        
-        // Add action buttons
-        const actionCell = this.createActionCell(item.id);
-        row.appendChild(actionCell);
-        
+        row.innerHTML = `
+            <td class="px-2 py-2 text-center">${index + 1}</td>
+            <td class="px-2 py-2">${this.escapeHtml(item.ma_mon_hoc || '')}</td>
+            <td class="px-2 py-2">${this.escapeHtml(item.ten_mon_hoc || '')}</td>
+            <td class="px-2 py-2 text-center">${item.so_tin_chi || 0}</td>
+            <td class="px-2 py-2 text-center">${item.tong_so_gio || 0}</td>
+            <td class="px-2 py-2 text-center">${item.ly_thuyet || 0}</td>
+            <td class="px-2 py-2 text-center">${item.thuc_hanh || 0}</td>
+            <!-- Thêm các cột khác -->
+        `;
         return row;
     }
     
@@ -306,6 +299,13 @@ class TableManager {
         cell.appendChild(input);
         return cell;
     }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
     
     createActionCell(id) {
         const cell = document.createElement('td');
@@ -332,8 +332,7 @@ class TableManager {
         this.tableBody.innerHTML = `
             <tr>
                 <td colspan="19" class="px-4 py-8 text-center text-gray-500">
-                    <i class="fas fa-inbox text-4xl mb-2 opacity-50"></i>
-                    <p class="text-lg">Không có dữ liệu môn học</p>
+                    Không có dữ liệu
                 </td>
             </tr>
         `;
@@ -343,8 +342,7 @@ class TableManager {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td colspan="19" class="px-4 py-3 text-center">
-                <button class="btn-load-more text-blue-600 hover:text-blue-800 font-medium">
-                    <i class="fas fa-chevron-down mr-1"></i>
+                <button onclick="app.loadMoreRows()" class="text-blue-600 hover:text-blue-800">
                     Xem thêm ${remaining} môn học
                 </button>
             </td>
@@ -439,20 +437,23 @@ class App {
         this.modalManager = new ModalManager();
         this.isLoading = false;
 
+        window.app = this;
         window.appState = this.state;
     }
     
     async init() {
         try {
+            console.log('App initializing...');
+
             // Show loading state
-            this.showLoading();
+            //this.showLoading();
             
             // Load saved filters
-            this.state.loadFromSessionStorage();
+            //this.state.loadFromSessionStorage();
             
             // Initialize components
             this.initEventListeners();
-            this.initSelect2();
+            //this.initSelect2();
             this.tableManager.init();
             
             // Load initial data
@@ -462,32 +463,44 @@ class App {
             this.hideLoading();
             
             this.state.isInitialized = true;
+            console.log('App initialized successfully');
             
             // Report performance
-            this.reportPerformance();
+            //this.reportPerformance();
             
         } catch (error) {
             console.error('App initialization failed:', error);
-            this.showError('Không thể khởi tạo ứng dụng');
+            this.showError('Không thể khởi tạo ứng dụng: ' + error.message);
         }
     }
     
-    showLoading() {
-        document.getElementById('app-loading').classList.remove('hidden');
-    }
+    //showLoading() {
+    //    document.getElementById('app-loading').classList.remove('hidden');
+    //}
     
     hideLoading() {
         const loadingEl = document.getElementById('app-loading');
-        const mainContent = document.getElementById('main-content');
-        const actualContent = document.getElementById('actual-content');
+        if (loadingEl) {
+            loadingEl.style.opacity = '0';
+            setTimeout(() => {
+                loadingEl.classList.add('hidden');
+                const actualContent = document.getElementById('actual-content');
+                if (actualContent) {
+                    actualContent.classList.remove('hidden');
+                    actualContent.style.opacity = '1';
+                }
+            }, 300);
+        }
+        //const mainContent = document.getElementById('main-content');
+        //const actualContent = document.getElementById('actual-content');
         
-        loadingEl.style.opacity = '0';
-        setTimeout(() => {
-            loadingEl.classList.add('hidden');
-            mainContent.classList.add('hidden');
-            actualContent.classList.remove('hidden');
-            actualContent.style.opacity = '1';
-        }, 300);
+        //loadingEl.style.opacity = '0';
+        //setTimeout(() => {
+        //    loadingEl.classList.add('hidden');
+        //    mainContent.classList.add('hidden');
+        //    actualContent.classList.remove('hidden');
+        //    actualContent.style.opacity = '1';
+        //}, 300);
     }
     
     showError(message) {
@@ -504,11 +517,9 @@ class App {
     
     initEventListeners() {
         // Debounced filter changes
-        document.querySelectorAll('#khoa-dao-tao, #chuong-trinh-dao-tao, #khoa-hoc').forEach(select => {
-            select.addEventListener('change', PerformanceUtils.debounce((e) => {
-                this.handleFilterChange(e.target.id, e.target.value);
-            }));
-        });
+        $('#khoa-dao-tao, #chuong-trinh-dao-tao, #khoa-hoc').on('change', 
+            PerformanceUtils.debounce(() => this.loadFilteredData(), 500)
+        );
         
         // Button clicks
         document.getElementById('btn-them')?.addEventListener('click', () => {
@@ -516,11 +527,11 @@ class App {
         });
         
         document.getElementById('btn-them-mon-hoc')?.addEventListener('click', () => {
-            this.modalManager.show('them-mon-hoc');
+            this.openModal('them-mon-hoc');
         });
         
         document.getElementById('btn-cap-nhat')?.addEventListener('click', () => {
-            this.refreshData();
+            this.loadFilteredData();
         });
         
         // Table events (delegated)
@@ -563,6 +574,7 @@ class App {
             this.handleResize();
         }));
     }
+
     
     initSelect2() {
         // Lazy initialize Select2 only when needed
@@ -587,17 +599,47 @@ class App {
     
     async loadInitialData() {
         // Load from cache first for instant display
-        const cachedData = this.state.data.subjects;
-        if (cachedData.length > 0) {
-            this.tableManager.render(cachedData);
+        //const cachedData = this.state.data.subjects;
+        if (this.state.data.subjects.length > 0) {
+            this.tableManager.render(this.state.data.subjects);
+            this.updateStatistics();
+            return;
         }
+
+        // Nếu không, fetch từ API
+        await this.loadFilteredData();
+    }
+
+    async loadFilteredData() {
+        if (this.isLoading) return;
         
-        // Then fetch fresh data
-        const freshData = await this.api.getSubjects(this.state.filters);
-        if (freshData.length > 0) {
-            this.state.data.subjects = freshData;
-            this.tableManager.render(freshData);
-            this.updateStatistics(freshData);
+        this.isLoading = true;
+        const btn = document.getElementById('btn-cap-nhat');
+        if (btn) btn.classList.add('loading');
+        
+        try {
+            const curriculumId = $('#chuong-trinh-dao-tao').val();
+            const departmentId = $('#khoa-dao-tao').val();
+            const courseId = $('#khoa-hoc').val();
+            
+            // Build URL
+            const params = new URLSearchParams();
+            if (curriculumId) params.append('curriculum_id', curriculumId);
+            if (departmentId) params.append('department_id', departmentId);
+            if (courseId) params.append('course_id', courseId);
+            
+            const data = await this.api.fetchWithTimeout(`/api/subjects/?${params}`);
+            
+            this.state.data.subjects = data;
+            this.tableManager.render(data);
+            this.updateStatistics();
+            
+        } catch (error) {
+            console.error('Error loading data:', error);
+            this.showError('Không thể tải dữ liệu');
+        } finally {
+            this.isLoading = false;
+            if (btn) btn.classList.remove('loading');
         }
     }
     
@@ -658,15 +700,21 @@ class App {
         }
     }
     
-    updateStatistics(data) {
+    updateStatistics() {
+        const data = this.state.data.subjects;
         if (!data || data.length === 0) {
             this.updateStatElement('tong-tin-chi', '0');
             this.updateStatElement('tong-gio', '0');
             return;
         }
         
-        const totalCredits = data.reduce((sum, item) => sum + (parseFloat(item.so_tin_chi) || 0), 0);
-        const totalHours = data.reduce((sum, item) => sum + (parseInt(item.tong_so_gio) || 0), 0);
+        const totalCredits = data.reduce((sum, item) => 
+            sum + (parseFloat(item.so_tin_chi) || 0), 0
+        );
+        
+        const totalHours = data.reduce((sum, item) => 
+            sum + (parseInt(item.tong_so_gio) || 0), 0
+        );
         
         this.updateStatElement('tong-tin-chi', totalCredits.toFixed(1));
         this.updateStatElement('tong-gio', totalHours);
@@ -677,6 +725,19 @@ class App {
         if (element) {
             element.textContent = value;
         }
+    }
+
+    openModal(modalName) {
+        const modal = document.getElementById(`modal-${modalName}`);
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+    }
+
+    loadMoreRows() {
+        // Implement load more functionality
+        console.log('Loading more rows...');
     }
     
     async toggleEditMode(subjectId) {
@@ -804,7 +865,22 @@ function initApp() {
     window.app = app;
 }
 
-// Export for modules if needed
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { App, AppState, ApiService };
+// Service Worker đăng ký đơn giản
+if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
+    // Chỉ register nếu file tồn tại
+    fetch('/static/js/sw.js')
+        .then(response => {
+            if (response.ok) {
+                return navigator.serviceWorker.register('/static/js/sw.js');
+            }
+            return null;
+        })
+        .then(registration => {
+            if (registration) {
+                console.log('SW registered');
+            }
+        })
+        .catch(() => {
+            console.log('SW registration skipped');
+        });
 }
