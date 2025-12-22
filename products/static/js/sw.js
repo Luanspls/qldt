@@ -63,12 +63,7 @@ self.addEventListener('activate', (event) => {
 let app;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Wait for critical resources
-    if (document.readyState === 'complete') {
-        initApp();
-    } else {
-        window.addEventListener('load', initApp);
-    }
+    initApp();
 });
 
 function initApp() {
