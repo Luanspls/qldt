@@ -197,11 +197,11 @@ class ApiService {
 
 // ===== TABLE MANAGER =====
 class TableManager {
-    constructor() {
+    constructor(app) {
+        this.app = app;
         this.container = document.querySelector('.table-container');
         this.tableBody = null;
         this.visibleRows = new Set();
-        this.observer = null;
     }
     
     init() {
@@ -216,15 +216,17 @@ class TableManager {
     
     render(data) {
         PerformanceUtils.measurePerformance('renderTable', () => {
+            const isMobile = this.app?.state?.isMobile || false;
+            
             if (!data || data.length === 0) {
                 this.showEmptyState();
                 return;
             }
             
             // Limit rows for mobile performance
-            const displayData = appState.isMobile 
-                ? data.slice(0, CONFIG.MAX_ROWS_VISIBLE)
-                : data;
+            const displayData = isMobile ? 
+                data.slice(0, CONFIG.MAX_ROWS_VISIBLE) : 
+                data;
             
             // Use DocumentFragment for better performance
             const fragment = document.createDocumentFragment();
@@ -433,9 +435,11 @@ class App {
     constructor() {
         this.state = new AppState();
         this.api = new ApiService();
-        this.tableManager = new TableManager();
+        this.tableManager = new TableManager(this);
         this.modalManager = new ModalManager();
         this.isLoading = false;
+
+        window.appState = this.state;
     }
     
     async init() {
