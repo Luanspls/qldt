@@ -36,28 +36,28 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-self.addEventListener('fetch', (event) => {
+//self.addEventListener('fetch', (event) => {
     // Skip non-GET requests
-    if (event.request.method !== 'GET') return;
+//    if (event.request.method !== 'GET') return;
     
     // Skip API requests
-    if (event.request.url.includes('/api/')) return;
+//    if (event.request.url.includes('/api/')) return;
 
     // Bỏ qua các request không phải từ cùng origin
-    if (!event.request.url.startsWith(self.location.origin)) return;
+//    if (!event.request.url.startsWith(self.location.origin)) return;
     
-    event.respondWith(
-        fetch(event.request)
-            .catch(() => {
+//    event.respondWith(
+//        fetch(event.request)
+//            .catch(() => {
                 // Khi offline, chỉ trả về cached content cho CSS/JS
-                if (event.request.url.includes('.css') || 
-                    event.request.url.includes('.js')) {
-                    return caches.match(event.request);
-                }
-                return null;
-            })
-    );
-});
+//                if (event.request.url.includes('.css') || 
+//                    event.request.url.includes('.js')) {
+//                    return caches.match(event.request);
+//                }
+//                return null;
+//            })
+//    );
+//});
 
 // ===== INITIALIZE APP =====
 let app;
