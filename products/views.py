@@ -5,6 +5,7 @@ from django.views.decorators.cache import cache_page
 import json
 import random
 import traceback
+from django.db.models import Prefetch
 from django.shortcuts import render, get_object_or_404
 from django.core.serializers import serialize
 from django.views import View
@@ -1274,7 +1275,8 @@ def api_all_subjects(request):
     try:
         # Chỉ lấy các trường cần thiết, không cần select_related tất cả
         subjects = Subject.objects.select_related(
-	        'subject_type',
+	        'curiculum',
+            'subject_type',
 	        'subject_group',
 	        'department'
 	    ).prefetch_related(

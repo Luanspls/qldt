@@ -2379,65 +2379,50 @@
             const courseId = document.getElementById('khoa-hoc').value;
 			const instructor = document.getElementById('instructor').value;
 
-			console.log('Filters:', { departmentId, curriculumId, courseId });
-
-			// 1. Ưu tiên: Lọc từ dữ liệu local trước
-		    if (monHocData.length > 0) {
-		        let filteredData = monHocData;
-		        
-		        // Áp dụng filters
-		        if (curriculumId) {
-		            filteredData = filteredData.filter(item => 
-		                item.curriculum_id == curriculumId
-		            );
-		        }
-		        
-		        if (departmentId) {
-		            filteredData = filteredData.filter(item => 
-		                item.department_id == departmentId
-		            );
-		        }
-		        
-		        if (courseId) {
-		            filteredData = filteredData.filter(item => 
-		                item.course_id == courseId
-		            );
-		        }
-		        
-		        console.log('Filtered local data:', filteredData.length);
-		        
-		        if (filteredData.length > 0) {
-		            renderTable();
-		            updateStatistics();
-		            return;
-		        }
-		    }
-
-			// 2. Fallback: Gọi API nếu không có dữ liệu local hoặc lọc không ra kết quả
-		    const tableBody = document.getElementById('table-body');
-		    if (tableBody) {
-		        tableBody.innerHTML = '<tr><td colspan="19" class="px-4 py-4 text-center text-gray-500">Đang lọc dữ liệu...</td></tr>';
-		    }
-			
+			let url = '/api/subjects/';
             const params = [];
-            
-            if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
-            if (departmentId) params.push(`department_id=${departmentId}`);
-            if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
-			if (courseId) params.push(`course_id=${courseId}`);
 
-			const url = '/api/subjects/' + (params.length ? '?' + params.join('&') : '');
+            if (curriculumId) params.push(`curriculum=${curriculumId}`);
+            if (departmentId) params.push(`department=${departmentId}`);
+            if (subjectGroupId) params.push(`subject_group=${subjectGroupId}`);
+			if (courseId) params.push(`course=${courseId}`);
             
-            safeFetch(url, { timeout: 15000 })
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    monHocData = Array.isArray(data) ? data : [];
+                    monHocData = data;
             		renderTable();
-					updateStatistics();
+					
+                    if (curriculumId) {
+                        loadThongKe(curriculumId);
+                    } else {
+                        updateStatistics();
+                    }
 		        })
 		        .catch(error => {
 		            console.error('Error loading data:', error);
-		            // Fallback: hiển thị dữ liệu hiện có
-		            renderTable();
+		            const tableBody = document.getElementById('table-body');
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="19" class="px-4 py-4 text-center text-red-500">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Không thể tải dữ liệu. Vui lòng thử lại.
+                                <br>
+                                <small class="text-gray-500">${error.message}</small>
+                            </td>
+                        </tr>
+                    `;
+                    
+                    // Reset thống kê
+                    document.getElementById('tong-tin-chi').textContent = '0';
+                    document.getElementById('tong-gio').textContent = '0';
+                    document.getElementById('ty-le-ly-thuyet').textContent = '0%';
+                    document.getElementById('ty-le-thuc-hanh').textContent = '0%';
 		        });
         }
 
@@ -3774,14 +3759,8 @@
                 input.removeAttribute('readonly');
                 input.removeAttribute('disabled');
                 
-                // Thêm event listener để debug
-                input.addEventListener('focus', function() {
-                    console.log('Input focused:', this.name);
-                });
-                
-                input.addEventListener('input', function() {
-                    console.log('Input changed:', this.name, 'Value:', this.value);
-                });
+                // Thiết lập lại kiểu dáng để đảm bảo có thể tương tác
+                input.style.pointerEvents = 'auto';
             });
 
             // Cập nhật sự kiện cho dropdown chính sử dụng jQuery
@@ -3795,26 +3774,77 @@
                 
                 // Load subject groups theo department
                 if (departmentId) {
-                    fetch(`/api/subject-groups/?department_id=${departmentId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            // Cập nhật dropdown tổ bộ môn
-                            const select = $('#to-bo-mon');
-                            select.empty();
-                            select.append($('<option>', {
-                                value: '',
-                                text: '-- Chọn tổ bộ môn --'
-                            }));
-                            
-                            data.forEach(item => {
+                    const localSubjectGroups = allSubjectGroups.filter(subject_group => {
+			            // Kiểm tra cả số và chuỗi để đảm bảo matching
+			            return subject_group.department_id == departmentId ||
+			                   (subject_group.department && subject_group.department.id == departmentId) ||
+			                   (typeof subject_group.department_id !== 'undefined' && subject_group.department_id == departmentId);
+			        });
+
+                    const subjectGroupSelect = $('#to-bo-mon');
+			        subjectGroupSelect.empty();
+			        
+			        if (localSubjectGroups.length > 0) {
+			            subjectGroupSelect.append($('<option>', {
+			                value: '',
+			                text: '-- Chọn bộ môn --'
+			            }));
+			            
+			            localSubjectGroups.forEach(item => {
+			                const displayText = item.code ? 
+			                    `${item.name} (${item.code})` : 
+			                    item.name;
+			                
+			                subjectGroupSelect.append($('<option>', {
+			                    value: item.id,
+			                    text: displayText
+			                }));
+			            });
+			            
+			            subjectGroupSelect.trigger('change');
+			        } else {
+			            // 2. Nếu không có dữ liệu cục bộ, mới gọi API
+			            subjectGroupSelect.append($('<option>', {
+			                value: '',
+			                text: 'Đang tải...'
+			            }));
+			            subjectGroupSelect.prop('disabled', true);
+
+                        fetch(`/api/subject-groups/?department=${departmentId}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                // Cập nhật dropdown tổ bộ môn
+                                const select = $('#to-bo-mon');
+                                select.empty();
                                 select.append($('<option>', {
-                                    value: item.id,
-                                    text: item.name
+                                    value: '',
+                                    text: '-- Chọn tổ bộ môn --'
                                 }));
+                                
+                                data.forEach(item => {
+                                    select.append($('<option>', {
+                                        value: item.id,
+                                        text: item.name
+                                    }));
+                                });
+                                
+                                select.trigger('change');
+                            })
+                            .catch(error => {
+                                console.error('Error loading subject groups:', error);
+                                const select = $('#to-bo-mon');
+                                select.empty();
+                                select.append($('<option>', {
+                                    value: '',
+                                    text: '-- Lỗi tải dữ liệu --',
+                                    disabled: true
+                                }));
+                                select.trigger('change');
+                            })
+                            .finally(() => {
+                                subjectGroupSelect.prop('disabled', false);
                             });
-                            
-                            select.trigger('change');
-                        });
+                    }
                 }
                 
                 loadFilteredData();
@@ -3917,6 +3947,8 @@
 			});
             
             $(document).on('change', '#khoa-hoc', loadFilteredData);
+
+            $(document).on('change', '#to-bo-mon', loadFilteredData);
             
             // Cập nhật sự kiện cho dropdown chọn môn học có sẵn
             $(document).on('change', '#select-existing-subject', function() {
