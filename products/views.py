@@ -1193,6 +1193,7 @@ def api_subjects(request):
     curriculum_id = request.GET.get('curriculum_id')
     department_id = request.GET.get('department_id')
     subject_group_id = request.GET.get('subject_group_id')
+	course_id = request.GET.get('course_id')
     
     # subjects = Subject.objects.all()
     curriculum_subjects = Subject.objects.select_related(
@@ -1205,6 +1206,8 @@ def api_subjects(request):
         curriculum_subjects = curriculum_subjects.filter(department_id=department_id)
     if subject_group_id:
         curriculum_subjects = curriculum_subjects.filter(subject_group_id=subject_group_id)
+	if course_id:
+        curriculum_subjects = curriculum_subjects.filter(course_id=course_id)
     
     # Sắp xếp theo loại môn và thứ tự
     curriculum_subjects = curriculum_subjects.order_by('order_number')
