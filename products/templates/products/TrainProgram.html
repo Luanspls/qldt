@@ -1505,14 +1505,6 @@
 		    console.error('Promise:', e.promise);
 		    return false;
 		});
-		
-        // Biến toàn cục lưu trữ dữ liệu
-        //let allDepartments = {% if departments %}{{ departments|safe }}{% else %}[]{% endif %};
-		//let allSubjectGroups = {% if subject_groups %}{{ subject_groups|safe }}{% else %}[]{% endif %};
-		//let allCurricula = {% if curricula %}{{ curricula|safe }}{% else %}[]{% endif %};
-		//let allCourses = {% if courses %}{{ courses|safe }}{% else %}[]{% endif %};
-		//let allSubjectTypes = {% if subject_types %}{{ subject_types|safe }}{% else %}[]{% endif %};
-		//let allMajors = {% if majors %}{{ majors|safe }}{% else %}[]{% endif %};
 
         let allDepartments = [];
 		let allSubjectGroups = [];
@@ -1544,11 +1536,6 @@
 		    console.error('Error parsing monHocData:', e);
 		    monHocData = [];
 		}
-		
-		// Vẫn giữ biến này để tương thích
-		{% comment %} let allSubjects = monHocData; // Sử dụng dữ liệu từ template làm fallback
-		let isSubjectsLoaded = true; {% endcomment %}
-		
 
         function loadInitialData() {
             const loadPromises = [
@@ -2340,8 +2327,8 @@
 
 				// Tìm thông tin khóa học từ filteredCourses
 		        let courseInfo = '';
-		        if (monHoc.course_id && filteredCourses.length > 0) {
-		            const course = filteredCourses.find(c => c.id == monHoc.course_id);
+		        if (monHoc.course_id && allCourses.length > 0) {
+		            const course = allCourses.find(c => c.id == monHoc.course_id);
 		            if (course) {
 		                courseInfo = `${course.name} (${course.code || ''})`;
 		            }
