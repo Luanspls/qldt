@@ -1317,7 +1317,21 @@ def api_all_subjects(request):
                 }
                 
                 # Xử lý các foreign key có thể None
-                if subject.department:
+                if subject.curriculum:
+                    subject_dict['curriculum_id'] = subject.curriculum.id
+                    subject_dict['curriculum_name'] = subject.curriculum.name
+                else:
+                    subject_dict['curriculum_id'] = None
+                    subject_dict['curriculum_name'] = ''
+
+				if subject.course:
+                    subject_dict['course_id'] = subject.course.id
+                    subject_dict['course_name'] = subject.course.name
+                else:
+                    subject_dict['course_id'] = None
+                    subject_dict['course_name'] = ''
+					
+				if subject.department:
                     subject_dict['department_id'] = subject.department.id
                     subject_dict['department_name'] = subject.department.name
                 else:
