@@ -81,7 +81,7 @@ class TrainProgramManagerView(View):
             context = {
                 'departments': [],
                 'subject_groups': [],
-                'curriculum': [],
+                'curricula': [],
                 'courses': [],
                 'subject_types': [],
                 'majors': [],

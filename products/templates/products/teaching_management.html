@@ -1184,6 +1184,16 @@
                         dropdownAutoWidth: true,
                         minimumResultsForSearch: 0
                     });
+
+                    // Tự động focus vào ô tìm kiếm khi mở dropdown
+	                $(document).on('select2:open', function(e) {
+	                    setTimeout(function() {
+	                        const searchInput = document.querySelector('.select2-search__field');
+	                        if (searchInput) {
+	                            searchInput.focus();
+	                        }
+	                    }, 100);
+	                });
                 } catch (e) {
                     console.error('Error initializing Select2 for:', this, e);
                 }

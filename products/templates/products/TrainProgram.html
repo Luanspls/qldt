@@ -1167,7 +1167,7 @@
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Ngành đào tạo *</label>
-                        <select name="major_id" 
+                        <select id="them-chuong-trinh-major" name="major_id" 
                                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                 required>
                             <option value="">-- Chọn ngành --</option>
@@ -1507,13 +1507,21 @@
 		});
 		
         // Biến toàn cục lưu trữ dữ liệu
-        let allDepartments = {% if departments %}{{ departments|safe }}{% else %}[]{% endif %};
-		let allSubjectGroups = {% if subject_groups %}{{ subject_groups|safe }}{% else %}[]{% endif %};
-		let allCurricula = {% if curricula %}{{ curricula|safe }}{% else %}[]{% endif %};
-		let allCourses = {% if courses %}{{ courses|safe }}{% else %}[]{% endif %};
-		let allSubjectTypes = {% if subject_types %}{{ subject_types|safe }}{% else %}[]{% endif %};
-		let allMajors = {% if majors %}{{ majors|safe }}{% else %}[]{% endif %};
-		
+        //let allDepartments = {% if departments %}{{ departments|safe }}{% else %}[]{% endif %};
+		//let allSubjectGroups = {% if subject_groups %}{{ subject_groups|safe }}{% else %}[]{% endif %};
+		//let allCurricula = {% if curricula %}{{ curricula|safe }}{% else %}[]{% endif %};
+		//let allCourses = {% if courses %}{{ courses|safe }}{% else %}[]{% endif %};
+		//let allSubjectTypes = {% if subject_types %}{{ subject_types|safe }}{% else %}[]{% endif %};
+		//let allMajors = {% if majors %}{{ majors|safe }}{% else %}[]{% endif %};
+
+        let allDepartments = [];
+		let allSubjectGroups = [];
+		let allCurricula = [];
+		let allCourses = [];
+		let allSubjectTypes = [];
+		let allMajors = [];
+		let allSubjects = [];
+        let isSubjectsLoaded = false;
 		
 		let monHocData = [];
 
@@ -1541,6 +1549,278 @@
 		let allSubjects = monHocData; // Sử dụng dữ liệu từ template làm fallback
 		let isSubjectsLoaded = true;
 		
+
+        function loadInitialData() {
+            const loadPromises = [
+                loadSelect2Data('/api/curricula/', 'chuong-trinh-dao-tao', 'name', ['code', 'name']),
+                loadSelect2Data('/api/curricula/', 'import-curriculum', 'name', ['code', 'name']),
+                loadSelect2Data('/api/curricula/', 'them-mon-hoc-curriculum', 'name', ['code', 'name', 'academic_year']),
+                
+                loadSelect2Data('/api/all-subjects/', 'select-existing-subject', 'name', ['code', 'name']),
+                
+                loadSelect2Data('/api/courses/', 'khoa-hoc', 'name', ['code', 'name']),
+                loadSelect2Data('/api/courses/', 'import-course', 'name', ['code', 'name']),
+                loadSelect2Data('/api/courses/', 'them-mon-hoc-course', 'name', ['code', 'name']),
+
+                loadSelect2Data('/api/majors/', 'them-mon-hoc-major', 'name', ['code', 'name']),
+                loadSelect2Data('/api/majors/', 'them-chuong-trinh-major', 'name', ['code', 'name']),
+
+                loadSelect2Data('/api/departments/', 'khoa-dao-tao', 'name', ['code', 'name']),
+                loadSelect2Data('/api/departments/', 'them-mon-hoc-department', 'name', ['code', 'name']),
+                
+                loadSelect2Data('/api/subject-groups/', 'to-bo-mon', 'name', ['code', 'name']),
+                loadSelect2Data('/api/subject-groups/', 'them-mon-hoc-subject-group', 'name', ['code', 'name']),
+				
+                loadSelect2Data('/api/subject-types/', 'them-mon-hoc-subject-type', 'name', ['code', 'name']),
+				
+            ];
+
+            const promises = [
+                // Tải danh sách chương trình
+                new Promise((resolve) => {
+                    // Tải danh sách chương trình
+                    fetch('/api/curricula/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allCurricula = data;
+                            console.log('Loaded curricula:', data.length);
+                            resolve();
+                        })
+                        .catch(error => {
+                            console.error('Error loading curricula:', error);
+                            allCurricula = [];
+                            resolve();
+                        });
+                }),
+                new Promise((resolve) => {
+                    // Tải danh sách khóa học
+                    fetch('/api/courses/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allCourses = data;
+                            console.log('Loaded courses:', data.length);
+                            resolve();
+                        })
+                        .catch(error => {
+                            console.error('Error loading courses:', error);
+                            allCourses = [];
+                            resolve();
+                        });
+                }),
+                new Promise((resolve) => {
+                    // Tải danh sách Đơn vị
+                    fetch('/api/departments/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allDepartments = data;
+							allDepartmentTeachers = data;
+                            console.log('Loaded Departments:', data.length);
+                            resolve();
+                        })
+                        .catch(error => {
+                            console.error('Error loading Departments:', error);
+                            allDepartments = [];
+							allDepartmentTeachers = [];
+                            resolve();
+                        });
+                }),
+                new Promise((resolve) => {
+                    // Tải danh sách tổ bộ môn
+                    fetch('/api/subject-groups/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allSubjectGroups = data;
+                            console.log('Loaded SubjectGroups:', data.length);
+                            resolve();
+                        })
+                        .catch(error => {
+                            console.error('Error loading SubjectGroups:', error);
+                            allSubjectGroups = [];
+                            resolve();
+                        });
+                }),
+                new Promise((resolve) => {
+                    // Tải danh sách môn học
+                    fetch('/api/all-subjects/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allSubjects = data;
+                            console.log('Loaded Subjects:', data.length);
+                            resolve();
+                        })
+                        .catch(error => {
+                            console.error('Error loading Subjects:', error);
+                            allSubjects = [];
+                            resolve();
+                        });
+                }),
+                new Promise((resolve) => {
+                    // Tải danh sách Giảng viên
+                    fetch('/api/instructors/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allInstructors = data;
+                            console.log('Loaded Instructors:', data.length);
+                            resolve();
+                        })
+                        .catch(error => {
+                            console.error('Error loading Instructors:', error);
+                            allInstructors = [];
+                            resolve();
+                        });
+                }),
+                new Promise((resolve) => {
+                    // Tải danh sách Giảng viên
+                    fetch('/api/majors/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allMajors = data;
+                            console.log('Loaded Majors:', data.length);
+                            resolve();
+                        })
+                        .catch(error => {
+                            console.error('Error loading Majors:', error);
+                            allMajors = [];
+                            resolve();
+                        });
+                }),
+                new Promise((resolve) => {
+                    // Tải danh sách Lớp học
+                    fetch('/api/subject-types/')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            allSubjectTypes = data;
+                            console.log('Loaded SubjectTypes:', data.length);
+                            resolve();
+                        })
+                        .catch(error => {
+                            console.error('Error loading SubjectTypes:', error);
+                            allSubjectTypes = [];
+                            resolve();
+                        });
+                })
+                
+            ];
+            return Promise.all(promises);
+        }
+
+        function loadSelect2Data(url, elementId, displayField, searchFields = []) {
+            console.log(`Loading data for ${elementId} from ${url}`);
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(`Data loaded for ${elementId}:`, data.length, 'items');
+                    populateSelect2Dropdown(elementId, data, displayField, searchFields);
+                })
+                .catch(error => {
+                    console.error(`Error loading data for ${elementId}:`, error);
+                    // Fallback: khởi tạo Select2 ngay cả khi không có dữ liệu
+                    setTimeout(() => {
+                        $(`#${elementId}`).select2({
+                            language: 'vi',
+                            placeholder: "Không có dữ liệu",
+                            allowClear: true,
+                            width: '100%',
+                            dropdownParent: $(`#${elementId}`).closest('.modal').length ? $(`#${elementId}`).closest('.modal') : $(document.body)
+                        });
+                    }, 100);
+                });
+        }
+
+        function populateSelect2Dropdown(elementId, data, displayField, searchFields = []) {
+            const dropdown = $(`#${elementId}`);
+            if (!dropdown.length) {
+                console.error(`Element #${elementId} not found`);
+                return;
+            }
+
+            // Hủy Select2 nếu đã được khởi tạo trước đó
+            if (dropdown.hasClass('select2-hidden-accessible')) {
+                dropdown.select2('destroy');
+            }
+
+            // Giữ option đầu tiên nếu có
+            const firstOption = dropdown.find('option').first();
+            dropdown.empty();
+            if (firstOption.length) {
+                dropdown.append(firstOption);
+            }
+
+            // Thêm dữ liệu
+            data.forEach(item => {
+                const displayText = item[displayField] + (item.academic_year ? ` (${item.academic_year})` : '');
+                const option = new Option(displayText, item.id, false, false);
+                
+                // Thêm dữ liệu tìm kiếm vào option
+                if (searchFields.length > 0) {
+                    const searchText = searchFields.map(field => item[field] || '').join(' ');
+                    $(option).data('search-text', searchText);
+                }
+                
+                dropdown.append(option);
+            });
+
+            // Khởi tạo lại Select2
+            dropdown.select2({
+                language: 'vi',
+                placeholder: "Chọn hoặc nhập để tìm kiếm...",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: dropdown.closest('.modal').length ? dropdown.closest('.modal') : $(document.body),
+                dropdownAutoWidth: true,
+                minimumResultsForSearch: 0,
+                matcher: function(params, data) {
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+                    
+                    if (data.text && data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
+                        return data;
+                    }
+                    
+                    const searchText = $(data.element).data('search-text');
+                    if (searchText && searchText.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
+                        return data;
+                    }
+                    
+                    return null;
+                }
+            });
+            
+            console.log(`Select2 initialized for ${elementId} with`, data.length, 'items');
+        }
+
+
 		// Hàm fetch an toàn với xử lý lỗi
 		async function safeFetch(url, options = {}) {
 		    const timeoutDuration = options.timeout || 10000;
@@ -1573,92 +1853,100 @@
 
         // Khởi tạo Select2 cho tất cả dropdown
         function initializeSelect2() {
-            setTimeout(() => {
-				try {
-	                // Các dropdown chính trên trang
-	                if ($('#khoa-dao-tao').length) {
-                		$('#khoa-dao-tao').select2({
-		                    width: '100%',
-		                    placeholder: '-- Chọn khoa --',
-		                    allowClear: true,
-		                    language: 'vi',
-							dropdownAutoWidth: true
-						});
-	                }
-					if ($('#to-bo-mon').length) {
-                		$('#to-bo-mon').select2({
-		                    width: '100%',
-		                    placeholder: '-- Chọn tổ bộ môn --',
-		                    allowClear: true,
-		                    language: 'vi',
-							dropdownAutoWidth: true
-						});
-	                }
-					if ($('#chuong-trinh-dao-tao').length) {
-                		$('#chuong-trinh-dao-tao').select2({
-		                    width: '100%',
-		                    placeholder: '-- Chọn chương trình --',
-		                    allowClear: true,
-		                    language: 'vi',
-							dropdownAutoWidth: true
-						});
-	                }
-					if ($('#khoa-hoc').length) {
-                		$('#khoa-hoc').select2({
-		                    width: '100%',
-		                    placeholder: '-- Chọn khóa học --',
-		                    allowClear: true,
-		                    language: 'vi',
-							dropdownAutoWidth: true
-						});
-	                }
-	                
-	                // Dropdown trong modal import
-	                //$('#import-curriculum, #import-course').select2({
-	                //    width: '100%',
-	                //    placeholder: '-- Chọn --',
-	                //    allowClear: true,
-	                //    language: 'vi',
-					//	  dropdownAutoWidth: true,
-	                //    dropdownParent: $('#modal-import')
-	                //});
-	                
-	                // Dropdown sheet select
-	                //$('#sheet-select').select2({
-	                //    width: '100%',
-	                //    placeholder: '-- Tự động chọn sheet đầu tiên --',
-	                //    allowClear: true,
-	                //    language: 'vi',
-					//	  dropdownAutoWidth: true,
-	                //    dropdownParent: $('#modal-import')
-	                //});
-	                
-	                // Dropdown trong modal thêm chương trình
-	                //if (!$('select[name="major_id"]').hasClass('select2-hidden-accessible')) {
-	                //    $('select[name="major_id"]').select2({
-	                //        width: '100%',
-	                //        placeholder: '-- Chọn ngành --',
-	                //        allowClear: true,
-	                //        language: 'vi',
-					//		  dropdownAutoWidth: true,
-	                //        dropdownParent: $('#modal-them-chuong-trinh')
-	                //    });
-	                //}
-	                console.log('Select2 initialized successfully');
-	
-	                // Tự động focus vào ô tìm kiếm khi mở dropdown
-	                $(document).on('select2:open', function(e) {
-	                    setTimeout(function() {
-	                        const searchInput = document.querySelector('.select2-search__field');
-	                        if (searchInput) {
-	                            searchInput.focus();
-	                        }
-	                    }, 100);
-	                });
-	            } catch (error) {
-	                console.error('Error initializing Select2:', error);
-	            }
-			}, 500);
+            
+            try {
+                // Đóng tất cả dropdown đang mở trước khi khởi tạo lại
+                $('.select2-container--open').select2('close');
+
+                // Khởi tạo cho các dropdown thông thường
+                $('select:not(.select2-hidden-accessible)').each(function() {
+                    try {
+                        const $select = $(this);
+                        const isInModal = $select.closest('.modal').length > 0;
+                        
+                        $select.select2({
+                            language: 'vi',
+                            placeholder: "Chọn hoặc nhập để tìm kiếm...",
+                            allowClear: true,
+                            width: '100%',
+                            dropdownParent: isInModal ? $select.closest('.modal') : $(document.body),
+                            dropdownAutoWidth: true,
+                            minimumResultsForSearch: 0
+                        });
+                    } catch (e) {
+                        console.error('Error initializing Select2 for:', this, e);
+                    }
+                });
+                
+                // Các dropdown chính trên trang
+                //$('#khoa-dao-tao, #to-bo-mon, #chuong-trinh-dao-tao, #khoa-hoc').each(function() {
+                //    const $this = $(this);
+                    
+                    // Destroy nếu đã tồn tại
+                //    if ($this.hasClass('select2-hidden-accessible')) {
+                //        $this.select2('destroy');
+                //    }
+                    
+                    // Khởi tạo với cấu hình tối ưu
+                //    $this.select2({
+                //        width: '100%',
+                //        placeholder: '-- Chọn --',
+                //        allowClear: true,
+                //        language: 'vi',
+                //        closeOnSelect: true, // Tự động đóng sau khi chọn
+                //        minimumResultsForSearch: 10, // Chỉ hiển thị search khi có >= 10 kết quả
+                //        dropdownAutoWidth: true,
+                //        selectOnClose: false
+                //    });
+                //});
+                
+                // Dropdown trong modal import
+                //$('#import-curriculum, #import-course').each(function() {
+                //    const $this = $(this);
+                //    if ($this.hasClass('select2-hidden-accessible')) {
+                //        $this.select2('destroy');
+                //    }
+                //    
+                //    $this.select2({
+                //        width: '100%',
+                //        placeholder: '-- Chọn --',
+                //        allowClear: true,
+                //        language: 'vi',
+                //        dropdownParent: $('#modal-import'),
+                //        closeOnSelect: true
+                //    });
+                //});
+                
+                // Dropdown sheet select
+                //$('#sheet-select').each(function() {
+                //    const $this = $(this);
+                //    if ($this.hasClass('select2-hidden-accessible')) {
+                //        $this.select2('destroy');
+                //    }
+                //
+                //    $this.select2({
+                //        width: '100%',
+                //        placeholder: '-- Tự động chọn sheet đầu tiên --',
+                //        allowClear: true,
+                //        language: 'vi',
+                //        dropdownParent: $('#modal-import'),
+                //        closeOnSelect: true
+                //    });
+                //});
+                console.log('Select2 initialized successfully');
+
+                // Tự động focus vào ô tìm kiếm khi mở dropdown
+                $(document).on('select2:open', function(e) {
+                    setTimeout(function() {
+                        const searchInput = document.querySelector('.select2-search__field');
+                        if (searchInput) {
+                            searchInput.focus();
+                        }
+                    }, 100);
+                });
+            } catch (error) {
+                console.error('Error initializing Select2:', error);
+            }
         }
 
 		// Khởi tạo Select2 cho modal chỉ khi cần
@@ -1751,6 +2039,11 @@
             try {
                 const chuongTrinhModal = $('#modal-them-chuong-trinh');
                 
+                if (!chuongTrinhModal) return;
+
+				// Đóng tất cả Select2 đang mở trước
+        		closeAllOpenSelect2();
+
                 $('select[name="major_id"]').select2({
                     width: '100%',
                     placeholder: '-- Chọn ngành --',
@@ -3727,11 +4020,8 @@
         
         // Xử lý sự kiện khi trang tải xong
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded - initializing...');
-			console.log('Initial monHocData from template:', monHocData.length);
-
 			// Khởi tạo dropdowns từ dữ liệu Django template
-            initializeDropdowns();
+            loadInitialData();
 			
 			// Render bảng với dữ liệu hiện có
             renderTable();
