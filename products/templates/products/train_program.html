@@ -1,0 +1,691 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Quản lý Chương trình Đào tạo</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'css/style_train_program.css' %}">
+    
+    <!-- External CSS Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="css/style_train_program.css">
+    
+    <!-- Favicon để tránh lỗi 404 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+    
+    <!-- Inline critical CSS -->
+    <style>
+        /* Minimal critical CSS for initial render */
+        body { margin: 0; padding: 0; }
+        .container { padding: 1rem; }
+        .loading { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    {% csrf_token %}
+    
+    <!-- Loading indicator -->
+    <div id="loading" class="loading fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="spinner mb-4"></div>
+            <p class="text-gray-700">Đang tải dữ liệu...</p>
+        </div>
+    </div>
+    
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8 text-blue-800">QUẢN LÝ CHƯƠNG TRÌNH ĐÀO TẠO</h1>
+            
+        <!-- Thông tin chung -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Khoa</label>
+                    <select id="khoa-dao-tao" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Chọn khoa --</option>
+                        {% for department in departments %}
+                        <option value="{{ department.id }}">{{ department.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Tổ bộ môn</label>
+                    <select id="to-bo-mon" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Chọn tổ bộ môn --</option>
+                        {% for group in subject_groups %}
+                        <option value="{{ group.id }}" data-department="{{ group.department_id }}">{{ group.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Chương trình đào tạo</label>
+                    <select id="chuong-trinh-dao-tao" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Chọn chương trình --</option>
+                        {% for curriculum in curricula %}
+                        <option value="{{ curriculum.id }}">{{ curriculum.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Khóa học</label>
+                    <select id="khoa-hoc" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Chọn khóa học --</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}" data-curriculum="{{ course.curriculum_id }}">{{ course.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Nút chức năng -->
+		<div class="flex flex-wrap justify-between mb-6">
+			<div class="flex space-x-2 mb-4">
+    			<button id="btn-them" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+        			<i class="fas fa-plus mr-2"></i> Thêm chương trình đào tạo
+    			</button>
+    			<button id="btn-them-mon-hoc" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+        			<i class="fas fa-book-medical mr-2"></i> Thêm môn học
+    			</button>
+    			<button id="btn-cap-nhat" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+        			<i class="fas fa-sync-alt mr-2"></i> Cập nhật
+    			</button>
+			</div>
+    
+			<div>
+    			<button id="btn-import" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+        			<i class="fas fa-file-excel mr-2"></i> Import Excel
+    			</button>
+			</div>
+		</div>
+
+        <!-- Modal import Excel -->
+        <div id="modal-import" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+            <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900">Import từ Excel</h3>
+                    <button id="btn-dong-import" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="form-import" class="space-y-4" enctype="multipart/form-data">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Chương trình đào tạo *</label>
+                        <select id="import-curriculum" name="curriculum_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                required>
+                            <option value="">-- Chọn chương trình --</option>
+                            {% for curriculum in curricula %}
+                            <option value="{{ curriculum.id }}">{{ curriculum.name }} ({{ curriculum.academic_year }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Khóa học *</label>
+                        <select id="import-course" name="course_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                required>
+                            <option value="">-- Chọn khóa học --</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}">{{ course.name }} ({{ course.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">File Excel *</label>
+                        <input type="file" id="excel-file" name="excel_file" accept=".xlsx, .xls" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            required>
+                        <p class="text-xs text-gray-500 mt-1">Chỉ chấp nhận file .xlsx hoặc .xls, tối đa 10MB</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Chọn sheet</label>
+                        <select id="sheet-select" name="sheet_name" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Tự động chọn sheet đầu tiên --</option>
+                            <!-- Các option sẽ được thêm bằng JavaScript -->
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Chọn sheet chứa dữ liệu môn học. Nếu không chọn, sheet đầu tiên sẽ được sử dụng.</p>
+                    </div>
+                    
+                    <div class="text-sm text-gray-600">
+                        <p>
+                            <a href="#" id="btn-download-template" class="text-blue-600 hover:text-blue-800 inline-flex items-center">
+                                <i class="fas fa-download mr-2"></i>Tải file mẫu
+                            </a>
+                        </p>
+                    </div>
+                    
+                    <div class="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+                        <h4 class="text-sm font-semibold text-yellow-800 mb-2">Lưu ý khi import:</h4>
+                        <ul class="text-sm text-yellow-700 list-disc list-inside space-y-1">
+                            <li>File Excel phải theo đúng định dạng mẫu</li>
+                            <li>Các cột bắt buộc: Mã môn học, Tên học phần, Số tín chỉ</li>
+                            <li>Mã môn học không được trùng trong cùng chương trình</li>
+                        </ul>
+                    </div>
+                </form>
+                
+                <div class="flex justify-end mt-6 space-x-3">
+                    <button id="btn-huy-import" type="button" 
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2.5 px-6 rounded-md transition duration-200">
+                        <i class="fas fa-times mr-2"></i>Hủy
+                    </button>
+                    <button id="btn-luu-import" type="button" 
+                            class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-6 rounded-md transition duration-200">
+                        <i class="fas fa-upload mr-2"></i>Import Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal hiển thị lỗi import -->
+        <div id="modal-import-errors" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+            <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900">Chi tiết lỗi khi import</h3>
+                    <button id="btn-dong-errors" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div id="import-errors-content" class="max-h-96 overflow-y-auto mb-4 p-4 bg-gray-100 rounded border">
+                    <!-- Nội dung lỗi sẽ được điền ở đây -->
+                </div>
+                <div class="flex justify-end">
+                    <button id="btn-close-errors" 
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-md transition duration-200">
+                        <i class="fas fa-check mr-2"></i>Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bảng dữ liệu -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="table-container">
+                <table class="min-w-full divide-y divide-gray-200 table-fixed">
+                    <thead class="bg-gray-50 sticky top-0" style="z-index: 10;">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">TT</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Mã môn học</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Tên học phần</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Số tín chỉ</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Tổng số giờ</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Lý thuyết</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Thực hành</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Kiểm tra</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Thi</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">HK1</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">HK2</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider wg-12">HK3</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider wg-12">HK4</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">HK5</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">HK6</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-60">Đơn vị</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Giảng viên</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Khóa học</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="bg-white divide-y divide-gray-200">
+                        {% if mon_hoc_data %}
+							<!-- {{ mon_hoc_data|json_script:"mon-hoc-data-json" }} -->
+						{% else %}
+		                    <tr>
+		                        <td colspan="19" class="px-4 py-4 text-center text-gray-500">
+		                            Không có dữ liệu môn học
+		                        </td>
+		                    </tr>
+		                {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Thông tin tổng kết -->
+        <div class="mt-6 bg-white rounded-lg shadow-md p-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <p class="text-gray-600">Tổng số tín chỉ</p>
+                    <p id="tong-tin-chi" class="text-xl font-bold text-blue-700">0</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-gray-600">Tổng số giờ</p>
+                    <p id="tong-gio" class="text-xl font-bold text-blue-700">0</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-gray-600">Tỷ lệ lý thuyết</p>
+                    <p id="ty-le-ly-thuyet" class="text-xl font-bold text-blue-700">0%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-gray-600">Tỷ lệ thực hành</p>
+                    <p id="ty-le-thuc-hanh" class="text-xl font-bold text-blue-700">0%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quản lý lớp học và phân công giảng dạy -->
+        <div class="mt-6 text-center">
+            <a href="{% url 'teaching_management' %}" 
+            class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-md inline-flex items-center text-lg">
+                <i class="fas fa-chalkboard-teacher mr-3"></i> 
+                Quản lý Phân công Giảng dạy
+            </a>
+        </div>
+    </div>
+
+    <!-- Modals (loaded lazily) -->
+    <!-- Modal thêm chương trình đào tạo -->
+	<div id="modal-them-chuong-trinh" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Thêm chương trình đào tạo mới</h3>
+                <button type="button" id="btn-dong-chuong-trinh" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="form-them-chuong-trinh" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Mã chương trình *</label>
+                        <input type="text" name="code" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Vd: CNTT_2022"
+                            required
+                            autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Tên chương trình *</label>
+                        <input type="text" name="name" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Vd: Chương trình Tin học ứng dụng"
+                            required
+                            autocomplete="off">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Năm học áp dụng *</label>
+                        <input type="text" name="academic_year" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Vd: 2022 - 2025"
+                            required
+                            autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Ngành đào tạo *</label>
+                        <select name="major_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                required>
+                            <option value="">-- Chọn ngành --</option>
+                            {% for major in majors %}
+                            <option value="{{ major.id }}">{{ major.name }} ({{ major.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Mô tả</label>
+                    <textarea name="description" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            rows="3"
+                            placeholder="Nhập mô tả về chương trình đào tạo..."
+                            autocomplete="off"></textarea>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-md">
+                    <h4 class="text-sm font-semibold text-blue-800 mb-2">Thông tin bổ sung:</h4>
+                    <p class="text-sm text-blue-700">
+                        • Chương trình sẽ được tạo với trạng thái "Bản nháp"<br>
+                        • Bạn có thể import môn học sau khi tạo chương trình
+                    </p>
+                </div>
+            </form>
+            
+            <div class="flex justify-end mt-6 space-x-3">
+                <button type="button" id="btn-huy-chuong-trinh" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2.5 px-6 rounded-md transition duration-200">
+                    <i class="fas fa-times mr-2"></i>Hủy
+                </button>
+                <button type="button" id="btn-luu-chuong-trinh" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-md transition duration-200">
+                    <i class="fas fa-save mr-2"></i>Lưu chương trình
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal thêm môn học -->
+    <div id="modal-them-mon-hoc" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white" style="z-index: 1001;">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Thêm môn học mới</h3>
+                <button type="button" id="btn-dong-mon-hoc" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-md mb-4">
+                <h4 class="text-sm font-semibold text-blue-800 mb-2">Chọn từ môn học có sẵn</h4>
+                <div class="flex space-x-2 mb-2">
+                    <select id="select-existing-subject" class="flex-1">
+                        <option value="">-- Tìm kiếm môn học có sẵn --</option>
+                        <!-- Options sẽ được điền bằng JavaScript -->
+                    </select>
+                    <button type="button" id="btn-use-existing" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md whitespace-nowrap">
+                        <i class="fas fa-check mr-1"></i> Chọn
+                    </button>
+                </div>
+                <p class="text-xs text-blue-600">Chọn môn học từ danh sách có sẵn để tự động điền thông tin</p>
+            </div>
+
+            <!-- Thêm phần hiển thị thông tin môn học đã chọn -->
+            <div id="existing-subject-info" class="bg-green-50 p-3 rounded-md border border-green-200 hidden mb-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="text-sm font-semibold text-green-800">Đã chọn môn học có sẵn</h4>
+                        <p class="text-sm text-green-700" id="selected-subject-name"></p>
+                    </div>
+                    <button type="button" id="btn-clear-selection" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <form id="form-them-mon-hoc" class="space-y-4">
+                <!-- Thông tin chương trình -->
+                <div class="bg-blue-50 p-4 rounded-md">
+                    <h4 class="text-sm font-semibold text-blue-800 mb-2">Thông tin chương trình đào tạo</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Chương trình đào tạo *</label>
+                            <select id="them-mon-hoc-curriculum" name="curriculum_id" 
+                                    class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    required>
+                                <option value="">-- Chọn chương trình --</option>
+                                {% for curriculum in curricula %}
+                                <option value="{{ curriculum.id }}">{{ curriculum.name }} ({{ curriculum.academic_year }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Khóa học *</label>
+                            <select id="them-mon-hoc-course" name="course_id" 
+                                    class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    required>
+                                <option value="">-- Chọn khóa học --</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.name }} ({{ course.code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Ngành đào tạo</label>
+                            <select id="them-mon-hoc-major" name="major_id"
+                            		class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        		<option value="">-- Chọn ngành --</option>
+                                {% for major in majors %}
+                                <option value="{{ major.id }}">{{ major.name }} ({{ major.code }})</option>
+                                {% endfor %}
+							</select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thông tin cơ bản môn học -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Mã môn học *</label>
+                        <input type="text" name="code" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Vd: MH01"
+                            required
+                            autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Tên môn học *</label>
+                        <input type="text" name="name" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Vd: Giáo dục chính trị"
+                            required
+                            autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- Số tín chỉ và giờ -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Số tín chỉ *</label>
+                        <input type="number" name="credits" step="0.5" min="0" max="10"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="0"
+                            required
+                            autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Tổng số giờ</label>
+                        <input type="number" name="total_hours" min="0"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="0"
+                            autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Lý thuyết</label>
+                        <input type="number" name="theory_hours" min="0"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="0"
+                            autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Thực hành</label>
+                        <input type="number" name="practice_hours" min="0"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="0"
+                            autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Kiểm tra</label>
+                        <input type="number" name="tests_hours" min="0"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="0"
+                            autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Thi</label>
+                        <input type="number" name="exam_hours" min="0"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="0"
+                            autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Thứ tự</label>
+                        <input type="number" name="order_number" min="0"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="0"
+                            autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- Phân bố học kỳ -->
+                <div class="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+                    <h4 class="text-sm font-semibold text-yellow-800 mb-3">Phân bố học kỳ (số tín chỉ)</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        {% for i in "123456" %}
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Học kỳ {{ i }}</label>
+                            <input type="number" name="hk{{ i }}" step="0.5" min="0" max="10"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center" 
+                                placeholder="-"
+                                autocomplete="off">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Thông tin bổ sung -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Đơn vị quản lý</label>
+                        <select id="them-mon-hoc-department" name="department_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Chọn đơn vị --</option>
+                            {% for department in departments %}
+                            <option value="{{ department.id }}">{{ department.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Loại môn *</label>
+                        <select id="them-mon-hoc-subject-type" name="subject_type_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                required>
+                            <option value="">-- Chọn loại môn --</option>
+                            {% for subject_type in subject_types %}
+                            <option value="{{ subject_type.id }}">{{ subject_type.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Tổ bộ môn</label>
+                        <select id="them-mon-hoc-subject-group" name="subject_group_id" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Chọn tổ bộ môn --</option>
+                            {% for subject_group in subject_groups %}
+                            <option value="{{ subject_group.id }}" data-department="{{ subject_group.department_id }}">{{ subject_group.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Học kỳ mặc định</label>
+                        <select id="them-mon-hoc-semester" name="semester" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Chọn học kỳ --</option>
+                            {% for i in "123456" %}
+                            <option value="{{ i }}">Học kỳ {{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Mô tả môn học</label>
+                    <textarea name="description" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            rows="3"
+                            placeholder="Nhập mô tả về môn học..."
+                            autocomplete="off"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Điều kiện tiên quyết</label>
+                    <textarea name="prerequisites" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            rows="2"
+                            placeholder="Nhập điều kiện tiên quyết (nếu có)..."
+                            autocomplete="off"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Chuẩn đầu ra</label>
+                    <textarea name="learning_outcomes" 
+                            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            rows="2"
+                            placeholder="Nhập chuẩn đầu ra của môn học..."
+                            autocomplete="off"></textarea>
+                </div>
+
+                <!-- Thông tin môn tự chọn -->
+                <div class="bg-green-50 p-4 rounded-md border border-green-200">
+                    <h4 class="text-sm font-semibold text-green-800 mb-3">Thông tin môn tự chọn (nếu có)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="is_elective" id="is_elective" 
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="is_elective" class="ml-2 block text-sm text-gray-700 font-medium">
+                                Là môn tự chọn
+                            </label>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Nhóm môn tự chọn</label>
+                            <input type="text" name="elective_group" 
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                placeholder="Vd: Nhóm 1"
+                                autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="flex justify-end mt-6 space-x-3">
+                <button type="button" id="btn-huy-mon-hoc" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2.5 px-6 rounded-md transition duration-200">
+                    <i class="fas fa-times mr-2"></i>Hủy
+                </button>
+                <button type="button" id="btn-luu-mon-hoc" 
+                        class="bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-6 rounded-md transition duration-200">
+                    <i class="fas fa-save mr-2"></i>Lưu môn học
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- External JS Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script> defer></script>
+    
+    <!-- Dữ liệu từ Django template -->
+    <script>
+        // Pass Django template data to JavaScript
+        window.appData = {
+            departments: {% if departments %}{{ departments|safe }}{% else %}[]{% endif %},
+            subject_groups: {% if subject_groups %}{{ subject_groups|safe }}{% else %}[]{% endif %},
+            curricula: {% if curricula %}{{ curricula|safe }}{% else %}[]{% endif %},
+            courses: {% if courses %}{{ courses|safe }}{% else %}[]{% endif %},
+            subject_types: {% if subject_types %}{{ subject_types|safe }}{% else %}[]{% endif %},
+            majors: {% if majors %}{{ majors|safe }}{% else %}[]{% endif %},
+            mon_hoc_data: {% if mon_hoc_data %}{{ mon_hoc_data|safe }}{% else %}[]{% endif %}
+        };
+    </script>
+    
+    <!-- Load main app with low priority -->
+    <script src="{% static 'js/ultils_train_program.js' %}"></script>
+    <script src="{% static 'js/train_program.js' %}"></script>
+    
+    <!-- Service worker for offline support -->
+    <script>
+        // Load non-critical resources after page load
+        window.addEventListener('load', function() {
+            // Load Tailwind CSS asynchronously
+            const tailwindLink = document.createElement('link');
+            tailwindLink.rel = 'stylesheet';
+            tailwindLink.href = 'https://cdn.tailwindcss.com';
+            document.head.appendChild(tailwindLink);
+            
+            // Hide loading indicator
+            document.getElementById('loading').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
