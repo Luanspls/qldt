@@ -1315,7 +1315,7 @@ def api_all_subjects(request):
                     'is_elective': bool(subject.is_elective),
                     'elective_group': subject.elective_group or '',
                 }
-                
+
 				# Xử lý các foreign key có thể None
 				if subject.curriculum:
 					subject_dict['curriculum_id'] = subject.curriculum.id
