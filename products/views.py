@@ -1316,43 +1316,43 @@ def api_all_subjects(request):
                     'elective_group': subject.elective_group or '',
                 }
 
-				# Xử lý các foreign key có thể None
-				if subject.curriculum:
-					subject_dict['curriculum_id'] = subject.curriculum.id
-					subject_dict['curriculum_name'] = subject.curriculum.name
-				else:
-					subject_dict['curriculum_id'] = None
-					subject_dict['curriculum_name'] = ''
-				
-				if subject.course:
-					subject_dict['course_id'] = subject.course.id
-					subject_dict['course_name'] = subject.course.name
-				else:
-					subject_dict['course_id'] = None
-					subject_dict['course_name'] = ''
-					
-				if subject.department:
-					subject_dict['department_id'] = subject.department.id
-					subject_dict['department_name'] = subject.department.name
-				else:
-					subject_dict['department_id'] = None
-					subject_dict['department_name'] = ''
-				
-				if subject.subject_type:
-					subject_dict['subject_type_id'] = subject.subject_type.id
-					subject_dict['subject_type_name'] = subject.subject_type.name
-				else:
-					subject_dict['subject_type_id'] = None
-					subject_dict['subject_type_name'] = ''
-				
-				if subject.subject_group:
-					subject_dict['subject_group_id'] = subject.subject_group.id
-					subject_dict['subject_group_name'] = subject.subject_group.name
-				else:
-					subject_dict['subject_group_id'] = None
-					subject_dict['subject_group_name'] = ''
-				
-				subjects_data.append(subject_dict)
+								# Xử lý các foreign key có thể None
+								if subject.curriculum:
+									subject_dict['curriculum_id'] = subject.curriculum.id
+									subject_dict['curriculum_name'] = subject.curriculum.name
+								else:
+									subject_dict['curriculum_id'] = None
+									subject_dict['curriculum_name'] = ''
+								
+								if subject.course:
+									subject_dict['course_id'] = subject.course.id
+									subject_dict['course_name'] = subject.course.name
+								else:
+									subject_dict['course_id'] = None
+									subject_dict['course_name'] = ''
+									
+								if subject.department:
+									subject_dict['department_id'] = subject.department.id
+									subject_dict['department_name'] = subject.department.name
+								else:
+									subject_dict['department_id'] = None
+									subject_dict['department_name'] = ''
+								
+								if subject.subject_type:
+									subject_dict['subject_type_id'] = subject.subject_type.id
+									subject_dict['subject_type_name'] = subject.subject_type.name
+								else:
+									subject_dict['subject_type_id'] = None
+									subject_dict['subject_type_name'] = ''
+								
+								if subject.subject_group:
+									subject_dict['subject_group_id'] = subject.subject_group.id
+									subject_dict['subject_group_name'] = subject.subject_group.name
+								else:
+									subject_dict['subject_group_id'] = None
+									subject_dict['subject_group_name'] = ''
+								
+								subjects_data.append(subject_dict)
                 
             except Exception as e:
                 print(f"Error processing subject {subject.id}: {e}")
