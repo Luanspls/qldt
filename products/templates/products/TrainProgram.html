@@ -1513,6 +1513,7 @@
 		let allSubjectTypes = [];
 		let allMajors = [];
 		let allSubjects = [];
+		let allInstructors = [];
         let isSubjectsLoaded = false;
 		
 		let monHocData = [];
@@ -1537,180 +1538,92 @@
 		    monHocData = [];
 		}
 
+		let dataCache = {
+		    departments: { data: null, timestamp: 0 },
+		    subjectGroups: { data: null, timestamp: 0 },
+		    curricula: { data: null, timestamp: 0 },
+		    courses: { data: null, timestamp: 0 },
+		    subjects: { data: null, timestamp: 0 },
+			instructors: { data: null, timestamp: 0}
+		};
+		
+		const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
+		
+		// Hàm fetch với cache
+		async function fetchWithCache(url, cacheKey) {
+		    const now = Date.now();
+		    
+		    // Kiểm tra cache
+		    if (dataCache[cacheKey] && 
+		        dataCache[cacheKey].data && 
+		        (now - dataCache[cacheKey].timestamp < CACHE_DURATION)) {
+		        console.log(`Using cache for ${cacheKey}`);
+		        return dataCache[cacheKey].data;
+		    }
+		    
+		    try {
+		        console.log(`Fetching fresh data for ${cacheKey}`);
+		        const response = await fetch(url);
+		        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		        
+		        const data = await response.json();
+		        
+		        // Lưu vào cache
+		        dataCache[cacheKey] = {
+		            data: data,
+		            timestamp: now
+		        };
+		        
+		        return data;
+		    } catch (error) {
+		        console.error(`Error fetching ${cacheKey}:`, error);
+		        // Trả về cache cũ nếu có, hoặc mảng rỗng
+		        return dataCache[cacheKey]?.data || [];
+		    }
+		}
+
+
         function loadInitialData() {
-            const loadPromises = [
-                loadSelect2Data('/api/curricula/', 'chuong-trinh-dao-tao', 'name', ['code', 'name']),
-                loadSelect2Data('/api/curricula/', 'import-curriculum', 'name', ['code', 'name']),
-                loadSelect2Data('/api/curricula/', 'them-mon-hoc-curriculum', 'name', ['code', 'name', 'academic_year']),
-                
-                loadSelect2Data('/api/all-subjects/', 'select-existing-subject', 'name', ['code', 'name']),
-                
-                loadSelect2Data('/api/courses/', 'khoa-hoc', 'name', ['code', 'name']),
-                loadSelect2Data('/api/courses/', 'import-course', 'name', ['code', 'name']),
-                loadSelect2Data('/api/courses/', 'them-mon-hoc-course', 'name', ['code', 'name']),
-
-                loadSelect2Data('/api/majors/', 'them-mon-hoc-major', 'name', ['code', 'name']),
-                loadSelect2Data('/api/majors/', 'them-chuong-trinh-major', 'name', ['code', 'name']),
-
-                loadSelect2Data('/api/departments/', 'khoa-dao-tao', 'name', ['code', 'name']),
-                loadSelect2Data('/api/departments/', 'them-mon-hoc-department', 'name', ['code', 'name']),
-                
-                loadSelect2Data('/api/subject-groups/', 'to-bo-mon', 'name', ['code', 'name']),
-                loadSelect2Data('/api/subject-groups/', 'them-mon-hoc-subject-group', 'name', ['code', 'name']),
-				
-                loadSelect2Data('/api/subject-types/', 'them-mon-hoc-subject-type', 'name', ['code', 'name']),
-				
-            ];
-
             const promises = [
-                // Tải danh sách chương trình
-                new Promise((resolve) => {
-                    // Tải danh sách chương trình
-                    fetch('/api/curricula/')
-                        .then(response => {
-                            if (!response.ok) throw new Error('Network response was not ok');
-                            return response.json();
-                        })
-                        .then(data => {
-                            allCurricula = data;
-                            console.log('Loaded curricula:', data.length);
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error('Error loading curricula:', error);
-                            allCurricula = [];
-                            resolve();
-                        });
-                }),
-                new Promise((resolve) => {
-                    // Tải danh sách khóa học
-                    fetch('/api/courses/')
-                        .then(response => {
-                            if (!response.ok) throw new Error('Network response was not ok');
-                            return response.json();
-                        })
-                        .then(data => {
-                            allCourses = data;
-                            console.log('Loaded courses:', data.length);
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error('Error loading courses:', error);
-                            allCourses = [];
-                            resolve();
-                        });
-                }),
-                new Promise((resolve) => {
-                    // Tải danh sách Đơn vị
-                    fetch('/api/departments/')
-                        .then(response => {
-                            if (!response.ok) throw new Error('Network response was not ok');
-                            return response.json();
-                        })
-                        .then(data => {
-                            allDepartments = data;
-							allDepartmentTeachers = data;
-                            console.log('Loaded Departments:', data.length);
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error('Error loading Departments:', error);
-                            allDepartments = [];
-							allDepartmentTeachers = [];
-                            resolve();
-                        });
-                }),
-                new Promise((resolve) => {
-                    // Tải danh sách tổ bộ môn
-                    fetch('/api/subject-groups/')
-                        .then(response => {
-                            if (!response.ok) throw new Error('Network response was not ok');
-                            return response.json();
-                        })
-                        .then(data => {
-                            allSubjectGroups = data;
-                            console.log('Loaded SubjectGroups:', data.length);
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error('Error loading SubjectGroups:', error);
-                            allSubjectGroups = [];
-                            resolve();
-                        });
-                }),
-                new Promise((resolve) => {
-                    // Tải danh sách môn học
-                    fetch('/api/all-subjects/')
-                        .then(response => {
-                            if (!response.ok) throw new Error('Network response was not ok');
-                            return response.json();
-                        })
-                        .then(data => {
-                            allSubjects = data;
-                            console.log('Loaded Subjects:', data.length);
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error('Error loading Subjects:', error);
-                            allSubjects = [];
-                            resolve();
-                        });
-                }),
-                new Promise((resolve) => {
-                    // Tải danh sách Giảng viên
-                    fetch('/api/instructors/')
-                        .then(response => {
-                            if (!response.ok) throw new Error('Network response was not ok');
-                            return response.json();
-                        })
-                        .then(data => {
-                            allInstructors = data;
-                            console.log('Loaded Instructors:', data.length);
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error('Error loading Instructors:', error);
-                            allInstructors = [];
-                            resolve();
-                        });
-                }),
-                new Promise((resolve) => {
-                    // Tải danh sách Giảng viên
-                    fetch('/api/majors/')
-                        .then(response => {
-                            if (!response.ok) throw new Error('Network response was not ok');
-                            return response.json();
-                        })
-                        .then(data => {
-                            allMajors = data;
-                            console.log('Loaded Majors:', data.length);
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error('Error loading Majors:', error);
-                            allMajors = [];
-                            resolve();
-                        });
-                }),
-                new Promise((resolve) => {
-                    // Tải danh sách Lớp học
-                    fetch('/api/subject-types/')
-                        .then(response => {
-                            if (!response.ok) throw new Error('Network response was not ok');
-                            return response.json();
-                        })
-                        .then(data => {
-                            allSubjectTypes = data;
-                            console.log('Loaded SubjectTypes:', data.length);
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error('Error loading SubjectTypes:', error);
-                            allSubjectTypes = [];
-                            resolve();
-                        });
-                })
-                
+                fetchWithCache('/api/curricula/', 'curricula').then(data => {
+		            allCurricula = data;
+		            console.log('Loaded curricula:', data.length);
+		        }),
+		        
+		        fetchWithCache('/api/courses/', 'courses').then(data => {
+		            allCourses = data;
+		            console.log('Loaded courses:', data.length);
+		        }),
+		        
+		        fetchWithCache('/api/departments/', 'departments').then(data => {
+		            allDepartments = data;
+		            console.log('Loaded Departments:', data.length);
+		        }),
+		        
+		        fetchWithCache('/api/subject-groups/', 'subjectGroups').then(data => {
+		            allSubjectGroups = data;
+		            console.log('Loaded SubjectGroups:', data.length);
+		        }),
+		        
+		        fetchWithCache('/api/all-subjects/', 'subjects').then(data => {
+		            allSubjects = data;
+		            console.log('Loaded Subjects:', data.length);
+		        }),
+		        
+		        fetchWithCache('/api/majors/', 'majors').then(data => {
+		            allMajors = data;
+		            console.log('Loaded Majors:', data.length);
+		        }),
+		        
+		        fetchWithCache('/api/subject-types/', 'subjectTypes').then(data => {
+		            allSubjectTypes = data;
+		            console.log('Loaded SubjectTypes:', data.length);
+		        })
+
+				fetchWithCache('/api/instructors/', 'instructors').then(data => {
+		            allInstructors = data;
+		            console.log('Loaded Instructors:', data.length);
+		        })
             ];
             return Promise.all(promises);
         }
@@ -1879,6 +1792,25 @@
                 console.error('Error initializing Select2:', error);
             }
         }
+
+		// Cleanup khi rời trang
+		window.addEventListener('beforeunload', function() {
+		    // Hủy tất cả Select2
+		    $('.select2-hidden-accessible').select2('destroy');
+		    
+		    // Clear tất cả timeout
+		    if (instructorSearchTimeout) clearTimeout(instructorSearchTimeout);
+		    if (filterTimeout) clearTimeout(filterTimeout);
+		    
+		    // Clear cache lớn
+		    dataCache = {};
+		    allDepartments = [];
+		    allSubjectGroups = [];
+		    allCurricula = [];
+		    allCourses = [];
+		    allSubjects = [];
+		    monHocData = [];
+		});
 
 		function setupAutoCloseSelect2() {
 		    // Đóng dropdown khi chọn item
@@ -2305,7 +2237,33 @@
 	            }
 			}
         }
-        
+
+		// Hàm khởi tạo Select2 cho các dropdown trong bảng
+		function initializeTableSelect2() {
+		    console.log('Initializing Select2 for table...');
+		    
+		    // Chỉ khởi tạo Select2 cho các dropdown trong bảng chưa được khởi tạo
+		    $('tbody select:not(.select2-hidden-accessible)').each(function() {
+		        const $select = $(this);
+		        
+		        // Chỉ khởi tạo cho dropdown có dữ liệu
+		        if ($select.find('option').length > 1) {
+		            try {
+		                $select.select2({
+		                    width: '100%',
+		                    placeholder: '-- Chọn --',
+		                    allowClear: false,
+		                    dropdownParent: $select.closest('.table-container') || $('body'),
+		                    minimumResultsForSearch: 5,
+		                    language: 'vi'
+		                });
+		            } catch (error) {
+		                console.error('Error initializing Select2 for table element:', error);
+		            }
+		        }
+		    });
+		}
+		
         // Render bảng dữ liệu
 		function renderTable() {
             const tableBody = document.getElementById('table-body');
@@ -2425,8 +2383,8 @@
 		                        data-field="department" data-id="${monHoc.id}" disabled
 		                        data-original-value="${monHoc.don_vi || ''}">
 		                    <option value="">-- Chọn đơn vị --</option>
-		                    ${allDepartments.map(dept => `
-		                        <option value="${dept.name}" ${dept.name === monHoc.don_vi ? 'selected' : ''}>
+		                    ${filteredDepartments.map(dept => `
+		                        <option value="${dept.id}" ${dept.id === monHoc.department_ ? 'selected' : ''}>
 		                            ${dept.name}
 		                        </option>
 		                    `).join('')}
@@ -2469,8 +2427,8 @@
 
 			// Khởi tạo autocomplete sau khi render
 		    setTimeout(() => {
-		        initializeInstructorAutocompleteForTable();
-		    }, 200);
+		        initializeTableSelect2();
+		    }, 100);
 		    
 		    // Cập nhật thống kê
 		    updateStatistics();
@@ -2683,7 +2641,20 @@
         }
 		
         // Load dữ liệu theo bộ lọc
+		let filterTimeout = null;
         function loadFilteredData() {
+			// Clear timeout cũ nếu có
+			if (filterTimeout) {
+		        clearTimeout(filterTimeout);
+		    }
+
+			// Đặt timeout mới với debounce 300ms
+		    filterTimeout = setTimeout(() => {
+		        _loadFilteredData();
+		    }, 300);
+		}
+		
+		function _loadFilteredData() {	
             const departmentId = document.getElementById('khoa-dao-tao').value;
             const subjectGroupId = document.getElementById('to-bo-mon').value;
             const curriculumId = document.getElementById('chuong-trinh-dao-tao').value;
@@ -2713,6 +2684,18 @@
 		            </td>
 		        </tr>
 		    `;
+
+			// Sử dụng cache nếu có
+		    const cacheKey = `subjects_${departmentId}_${subjectGroupId}_${curriculumId}_${courseId}`;
+		    const now = Date.now();
+		    
+		    if (dataCache[cacheKey] && (now - dataCache[cacheKey].timestamp < 30000)) { // 30 giây cache
+		        console.log('Using cached filtered data');
+		        monHocData = dataCache[cacheKey].data;
+		        renderTable();
+		        updateStatistics();
+		        return;
+		    }
             
             fetch(url)
                 .then(response => {
@@ -2723,9 +2706,14 @@
                 })
                 .then(data => {
                     monHocData = data;
-            		renderTable();
+
+					// Lưu vào cache
+		            dataCache[cacheKey] = {
+		                data: data,
+		                timestamp: now
+		            };
 					
-                    // Cập nhật thống kê
+            		renderTable();
 		            updateStatistics();
 		            
 		            // Nếu có curriculumId, có thể load thống kê chi tiết
@@ -2753,6 +2741,23 @@
                     document.getElementById('ty-le-thuc-hanh').textContent = '0%';
 		        });
         }
+
+		// Hàm clear cache khi cần
+		function clearCache(cacheKey = null) {
+		    if (cacheKey) {
+		        delete dataCache[cacheKey];
+		        console.log(`Cleared cache for ${cacheKey}`);
+		    } else {
+		        dataCache = {
+		            departments: { data: null, timestamp: 0 },
+		            subjectGroups: { data: null, timestamp: 0 },
+		            curricula: { data: null, timestamp: 0 },
+		            courses: { data: null, timestamp: 0 },
+		            subjects: { data: null, timestamp: 0 }
+		        };
+		        console.log('Cleared all cache');
+		    }
+		}
 
         // Thêm hàm để tải danh sách môn học có sẵn
         function loadExistingSubjects() {
@@ -3233,6 +3238,7 @@
 
         // Đóng modal thêm chương trình
         function closeThemChuongTrinhModal() {
+			cleanupModalResources();
             const chuongTrinhModal = document.getElementById('modal-them-chuong-trinh');
             if (chuongTrinhModal) {
                 chuongTrinhModal.classList.add('hidden');
@@ -3456,8 +3462,28 @@
 		    }, 100);
         }
 
+		// Hàm cleanup khi đóng modal
+		function cleanupModalResources() {
+		    // Hủy tất cả Select2 trong modal đang mở
+		    $('.modal:not(.hidden) .select2-hidden-accessible').each(function() {
+		        $(this).select2('destroy');
+		    });
+		    
+		    // Clear timeout
+		    if (instructorSearchTimeout) {
+		        clearTimeout(instructorSearchTimeout);
+		        instructorSearchTimeout = null;
+		    }
+		    
+		    if (filterTimeout) {
+		        clearTimeout(filterTimeout);
+		        filterTimeout = null;
+		    }
+		}
+		
         // Đóng modal thêm môn học
         function closeThemMonHocModal() {
+			cleanupModalResources();
 			// Enable Select2 bên ngoài
 		    $('body').removeClass('modal-open');
 		    $('.select2-container:not(.modal .select2-container)').css({
@@ -3842,7 +3868,7 @@
 		    
 		    // Lấy tất cả input và select trong hàng
 		    const inputs = row.querySelectorAll('input:not([type="hidden"])');
-		    const selects = row.querySelectorAll('select');
+		    const selects = row.querySelectorAll('select.editable');
 		    
 		    // Kích hoạt các trường có thể sửa
 		    inputs.forEach(input => {
@@ -3866,17 +3892,19 @@
 		    
 		    // Kích hoạt các dropdown
 		    selects.forEach(select => {
-		        if (select.classList.contains('editable')) {
-		            select.disabled = false;
-		            select.classList.add('border', 'border-blue-400', 'bg-blue-50');
-		            
-		            // Khởi tạo Select2 cho dropdown nếu có
-		            if ($(select).hasClass('select2-hidden-accessible')) {
-		                $(select).select2({
-		                    width: '100%',
-		                    dropdownParent: row.closest('.table-container') || document.body
-		                });
-		            }
+				select.disabled = false;
+		        select.classList.add('border', 'border-blue-400', 'bg-blue-50');
+		        
+		        // Khởi tạo Select2
+		        const $select = $(select);
+		        if (!$select.hasClass('select2-hidden-accessible')) {
+		            $select.select2({
+		                width: '100%',
+		                dropdownParent: row.closest('.table-container') || document.body,
+		                minimumResultsForSearch: 5
+		            });
+		        } else {
+		            $select.select2('enable');
 		        }
 		    });
 		}
@@ -3893,10 +3921,33 @@
 		    
 		    let hasChanges = false;
 		    const changes = {};
-		    
-		    // Lấy tất cả input và select đã thay đổi
-		    const editables = row.querySelectorAll('input.editable, select.editable');
-		    
+
+			const selects = row.querySelectorAll('select.editable.select2-hidden-accessible');
+			selects.forEach(select => {
+		        const $select = $(select);
+		        // Lấy giá trị từ Select2
+		        const value = $select.val();
+		        const field = select.getAttribute('data-field');
+		        const originalValue = select.getAttribute('data-original-value');
+		        
+		        // Kiểm tra thay đổi
+		        if (value !== originalValue) {
+		            hasChanges = true;
+		            changes[field] = {
+		                value: value,
+		                original: originalValue
+		            };
+		        }
+		        
+		        // Vô hiệu hóa Select2 và khôi phục trạng thái
+		        $select.select2('destroy');
+		        select.disabled = true;
+		        select.classList.remove('border', 'border-blue-400', 'bg-blue-50');
+		        select.setAttribute('data-original-value', value);
+		    });
+			
+		    // Lấy tất cả input đã thay đổi
+		    const editables = row.querySelectorAll('input.editable');
 		    editables.forEach(editable => {
 		        const field = editable.getAttribute('data-field');
 		        const value = editable.value;
@@ -4230,7 +4281,7 @@
 			                value: '',
 			                text: 'Đang tải...'
 			            }));
-			            subjectGroupSelect.prop('disabled', true);
+			            subjectGroupSelect.prop('disabled', false);
 
                         fetch(`/api/subject-groups/?department_id=${departmentId}`)
                             .then(response => response.json())
@@ -4263,6 +4314,35 @@
                             });
                     }
                 } else {
+					// Khi không chọn khoa, hiển thị tất cả tổ bộ môn
+			        const subjectGroupSelect = $('#to-bo-mon');
+			        subjectGroupSelect.empty();
+			        subjectGroupSelect.append($('<option>', {
+			            value: '',
+			            text: '-- Chọn tổ bộ môn --'
+			        }));
+			        
+			        allSubjectGroups.forEach(item => {
+			            const displayText = item.code ? 
+			                `${item.name} (${item.code})` : 
+			                item.name;
+			            
+			            subjectGroupSelect.append($('<option>', {
+			                value: item.id,
+			                text: displayText
+			            }));
+			        });
+			        
+			        subjectGroupSelect.prop('disabled', false);
+			        if (subjectGroupSelect.hasClass('select2-hidden-accessible')) {
+			            subjectGroupSelect.select2('destroy');
+			        }
+			        subjectGroupSelect.select2({
+			            width: '100%',
+			            placeholder: '-- Chọn tổ bộ môn --',
+			            allowClear: true,
+			            language: 'vi'
+			        });
 			        loadFilteredData();
 			    }
             });
@@ -4311,7 +4391,7 @@
 			                value: '',
 			                text: 'Đang tải...'
 			            }));
-			            courseSelect.prop('disabled', true);
+			            courseSelect.prop('disabled', false);
 			            
 			            // Gọi API với timeout ngắn hơn
 			            setTimeout(() => {
@@ -4529,8 +4609,9 @@
             
             // Xử lý nút cập nhật
             document.getElementById('btn-cap-nhat')?.addEventListener('click', function() {
-                loadFilteredData();
-                alert('Đã cập nhật dữ liệu');
+                clearCache();
+				loadFilteredData();
+                showNotification('Đã làm mới dữ liệu', 'success');
             });
             
             // Thiết lập các ô input ban đầu là readonly
