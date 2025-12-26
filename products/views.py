@@ -1,9 +1,11 @@
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Count, Sum, F, Q, Case, When, IntegerField
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.cache import cache_page
 import json
 import random
 import traceback
+from django.db.models import Prefetch
 from django.shortcuts import render, get_object_or_404
 from django.core.serializers import serialize
 from django.views import View
@@ -79,7 +81,7 @@ class TrainProgramManagerView(View):
             context = {
                 'departments': [],
                 'subject_groups': [],
-                'curriculum': [],
+                'curricula': [],
                 'courses': [],
                 'subject_types': [],
                 'majors': [],
@@ -1191,6 +1193,7 @@ def api_subjects(request):
     curriculum_id = request.GET.get('curriculum_id')
     department_id = request.GET.get('department_id')
     subject_group_id = request.GET.get('subject_group_id')
+	# course_id = request.GET.get('course_id')
     
     # subjects = Subject.objects.all()
     curriculum_subjects = Subject.objects.select_related(
@@ -1203,6 +1206,8 @@ def api_subjects(request):
         curriculum_subjects = curriculum_subjects.filter(department_id=department_id)
     if subject_group_id:
         curriculum_subjects = curriculum_subjects.filter(subject_group_id=subject_group_id)
+	# if course_id:
+    #    curriculum_subjects = curriculum_subjects.filter(course_id=course_id)
     
     # Sắp xếp theo loại môn và thứ tự
     curriculum_subjects = curriculum_subjects.order_by('order_number')
@@ -1267,11 +1272,19 @@ def serialize_curriculum_data(data):
         return data
     
 @csrf_exempt
+@cache_page(60 * 5)
 def api_all_subjects(request):
     """API lấy tất cả môn học (cho dropdown chọn môn học có sẵn)"""
     try:
         # Chỉ lấy các trường cần thiết, không cần select_related tất cả
-        subjects = Subject.objects.all().only(
+        subjects = Subject.objects.select_related(
+	        'curiculum',
+            'subject_type',
+	        'subject_group',
+	        'department'
+	    ).prefetch_related(
+	        Prefetch('instructors', queryset=Instructor.objects.only('id', 'code', 'full_name'))
+	    ).only(
             'id', 'code', 'name', 'credits', 'total_hours', 
             'theory_hours', 'practice_hours', 'tests_hours', 
             'exam_hours', 'order_number', 'department', 
@@ -1302,8 +1315,22 @@ def api_all_subjects(request):
                     'is_elective': bool(subject.is_elective),
                     'elective_group': subject.elective_group or '',
                 }
-                
+
                 # Xử lý các foreign key có thể None
+                if subject.curriculum:
+                    subject_dict['curriculum_id'] = subject.curriculum.id
+                    subject_dict['curriculum_name'] = subject.curriculum.name
+                else:
+                    subject_dict['curriculum_id'] = None
+                    subject_dict['curriculum_name'] = ''
+                
+                if subject.course:
+                    subject_dict['course_id'] = subject.course.id
+                    subject_dict['course_name'] = subject.course.name
+                else:
+                    subject_dict['course_id'] = None
+                    subject_dict['course_name'] = ''
+                    
                 if subject.department:
                     subject_dict['department_id'] = subject.department.id
                     subject_dict['department_name'] = subject.department.name
