@@ -3646,9 +3646,6 @@
             document.querySelector('input[name="name"]').value = '';
         }
 
-        // Biến lưu trữ timeout cho debounce
-        let instructorSearchTimeout = null;
-
         // Hàm tìm kiếm giảng viên với debounce
         function searchInstructors(query, targetInput) {
             if (instructorSearchTimeout) {
