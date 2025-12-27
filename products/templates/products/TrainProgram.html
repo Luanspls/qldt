@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
     <style>
         /* ===== RESET & BASE STYLES ===== */
         * {
@@ -1492,20 +1493,6 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script>
     <script>
-		window.addEventListener('error', function(e) {
-		    console.error('Global error caught:', e.message);
-		    console.error('Error at:', e.filename, 'line:', e.lineno, 'col:', e.colno);
-		    console.error('Error stack:', e.error?.stack);
-		    return false;
-		});
-		
-		// Bắt lỗi unhandled promise rejections
-		window.addEventListener('unhandledrejection', function(e) {
-		    console.error('Unhandled promise rejection:', e.reason);
-		    console.error('Promise:', e.promise);
-		    return false;
-		});
-
         let allDepartments = [];
 		let allSubjectGroups = [];
 		let allCurricula = [];
@@ -1518,114 +1505,90 @@
 		
 		let monHocData = [];
 
-        // Khởi tạo monHocData từ dữ liệu Django template
-		try {
-		    // Sửa cách lấy dữ liệu từ Django template
-		    const rawData = {% if mon_hoc_data %}{{ mon_hoc_data|safe }}{% else %}[]{% endif %};
-		    
-		    if (Array.isArray(rawData)) {
-		        monHocData = rawData;
-		    } else if (typeof rawData === 'string' && rawData.trim()) {
-		        // Nếu là string, thử parse JSON
-		        monHocData = JSON.parse(rawData);
-		    } else {
-		        monHocData = [];
-		    }
-		    
-		    console.log('MonHocData loaded from template:', monHocData.length);
-		} catch (e) {
-		    console.error('Error parsing monHocData:', e);
-		    monHocData = [];
-		}
+        const dataCache = new Map();
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-		let dataCache = {
-		    departments: { data: null, timestamp: 0 },
-		    subjectGroups: { data: null, timestamp: 0 },
-		    curricula: { data: null, timestamp: 0 },
-		    courses: { data: null, timestamp: 0 },
-		    subjects: { data: null, timestamp: 0 },
-			instructors: { data: null, timestamp: 0}
-		};
-		
-		const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
-		
-		// Hàm fetch với cache
-		async function fetchWithCache(url, cacheKey) {
-		    const now = Date.now();
-		    
-		    // Kiểm tra cache
-		    if (dataCache[cacheKey] && 
-		        dataCache[cacheKey].data && 
-		        (now - dataCache[cacheKey].timestamp < CACHE_DURATION)) {
-		        console.log(`Using cache for ${cacheKey}`);
-		        return dataCache[cacheKey].data;
-		    }
-		    
-		    try {
-		        console.log(`Fetching fresh data for ${cacheKey}`);
-		        const response = await fetch(url);
-		        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-		        
-		        const data = await response.json();
-		        
-		        // Lưu vào cache
-		        dataCache[cacheKey] = {
-		            data: data,
-		            timestamp: now
-		        };
-		        
-		        return data;
-		    } catch (error) {
-		        console.error(`Error fetching ${cacheKey}:`, error);
-		        // Trả về cache cũ nếu có, hoặc mảng rỗng
-		        return dataCache[cacheKey]?.data || [];
-		    }
-		}
+        // Timeout handlers
+        let instructorSearchTimeout = null;
+        let filterTimeout = null;
+
+        // ===== CACHE FUNCTIONS =====
+        async function fetchWithCache(url, cacheKey) {
+            console.log(`Fetching with cache: ${cacheKey}`);
+            
+            const now = Date.now();
+            const cached = dataCache.get(cacheKey);
+            
+            // Check cache validity
+            if (cached && (now - cached.timestamp < CACHE_DURATION)) {
+                console.log(`Using cached data for ${cacheKey}`);
+                return cached.data;
+            }
+            
+            try {
+                console.log(`Fetching fresh data for ${cacheKey}`);
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const data = await response.json();
+                
+                // Store in cache
+                dataCache.set(cacheKey, {
+                    data: data,
+                    timestamp: now
+                });
+                
+                return data;
+            } catch (error) {
+                console.error(`Error fetching ${cacheKey}:`, error);
+                // Return cached data if available, otherwise empty array
+                return cached ? cached.data : [];
+            }
+        }
 
 
         function loadInitialData() {
-            const promises = [
-                fetchWithCache('/api/curricula/', 'curricula').then(data => {
-		            allCurricula = data;
-		            console.log('Loaded curricula:', data.length);
-		        }),
-		        
-		        fetchWithCache('/api/courses/', 'courses').then(data => {
-		            allCourses = data;
-		            console.log('Loaded courses:', data.length);
-		        }),
-		        
-		        fetchWithCache('/api/departments/', 'departments').then(data => {
-		            allDepartments = data;
-		            console.log('Loaded Departments:', data.length);
-		        }),
-		        
-		        fetchWithCache('/api/subject-groups/', 'subjectGroups').then(data => {
-		            allSubjectGroups = data;
-		            console.log('Loaded SubjectGroups:', data.length);
-		        }),
-		        
-		        fetchWithCache('/api/all-subjects/', 'subjects').then(data => {
-		            allSubjects = data;
-		            console.log('Loaded Subjects:', data.length);
-		        }),
-		        
-		        fetchWithCache('/api/majors/', 'majors').then(data => {
-		            allMajors = data;
-		            console.log('Loaded Majors:', data.length);
-		        }),
-		        
-		        fetchWithCache('/api/subject-types/', 'subjectTypes').then(data => {
-		            allSubjectTypes = data;
-		            console.log('Loaded SubjectTypes:', data.length);
-		        })
-
-				fetchWithCache('/api/instructors/', 'instructors').then(data => {
-		            allInstructors = data;
-		            console.log('Loaded Instructors:', data.length);
-		        })
-            ];
-            return Promise.all(promises);
+            try {
+            // Load all data in parallel
+                const [
+                    curriculaData,
+                    coursesData,
+                    departmentsData,
+                    subjectGroupsData,
+                    subjectsData,
+                    majorsData,
+                    subjectTypesData
+                ] = await Promise.all([
+                    fetchWithCache('/api/curricula/', 'curricula'),
+                    fetchWithCache('/api/courses/', 'courses'),
+                    fetchWithCache('/api/departments/', 'departments'),
+                    fetchWithCache('/api/subject-groups/', 'subjectGroups'),
+                    fetchWithCache('/api/all-subjects/', 'subjects'),
+                    fetchWithCache('/api/majors/', 'majors'),
+                    fetchWithCache('/api/subject-types/', 'subjectTypes')
+                ]);
+                
+                // Assign to global variables
+                allCurricula = curriculaData || [];
+                allCourses = coursesData || [];
+                allDepartments = departmentsData || [];
+                allSubjectGroups = subjectGroupsData || [];
+                allSubjects = subjectsData || [];
+                allMajors = majorsData || [];
+                allSubjectTypes = subjectTypesData || [];
+                
+                console.log('Initial data loaded successfully');
+                console.log(`- Curricula: ${allCurricula.length}`);
+                console.log(`- Courses: ${allCourses.length}`);
+                console.log(`- Departments: ${allDepartments.length}`);
+                console.log(`- Subject Groups: ${allSubjectGroups.length}`);
+                
+                return true;
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+                return false;
+            }
         }
 
         function loadSelect2Data(url, elementId, displayField, searchFields = []) {
@@ -2107,161 +2070,197 @@
 
         // Khởi tạo dropdowns
         function initializeDropdowns() {
-            if (allDepartments && allDepartments.length > 0) {
-		        populateDropdown('khoa-dao-tao', allDepartments, 'name');
-		    }
-		    
-		    //if (allSubjectGroups && allSubjectGroups.length > 0) {
-		    //    populateDropdown('to-bo-mon', allSubjectGroups, 'name');
-		    //}
+            console.log('Initializing dropdowns...');
 
-			// Khởi tạo dropdown tổ bộ môn (tất cả)
-		    const toBoMon = document.getElementById('to-bo-mon');
-		    if (toBoMon) {
-		        toBoMon.innerHTML = '<option value="">-- Chọn tổ bộ môn --</option>';
-		        allSubjectGroups.forEach(group => {
-		            const option = document.createElement('option');
-		            option.value = group.id;
-		            option.textContent = group.name;
-		            option.setAttribute('data-department', group.department_id);
-		            toBoMon.appendChild(option);
-		        });
-		        filteredSubjectGroups = [...allSubjectGroups];
-		    }
-		    
-		    if (allCurricula && allCurricula.length > 0) {
-		        populateDropdown('chuong-trinh-dao-tao', allCurricula, 'name');
-		        populateDropdown('import-curriculum', allCurricula, 'name');
-		        populateDropdown('them-mon-hoc-curriculum', allCurricula, 'name');
-		    }
-		    
-		    //if (allCourses && allCourses.length > 0) {
-		    //    populateDropdown('khoa-hoc', allCourses, 'name');
-		    //    populateDropdown('import-course', allCourses, 'name');
-		    //    populateDropdown('them-mon-hoc-course', allCourses, 'name');
-		    //}
+            // Initialize main filter dropdowns
+            $('#khoa-dao-tao, #to-bo-mon, #chuong-trinh-dao-tao, #khoa-hoc').select2({
+                width: '100%',
+                placeholder: '-- Chọn --',
+                allowClear: true,
+                language: 'vi',
+                dropdownParent: $('body')
+            });
+            
+            // Initialize with data
+            populateDropdown('khoa-dao-tao', allDepartments, 'name');
+            populateDropdown('to-bo-mon', allSubjectGroups, 'name');
+            populateDropdown('chuong-trinh-dao-tao', allCurricula, 'name');
+            populateDropdown('khoa-hoc', allCourses, 'name');
+            
+            // Set up event handlers
+            setupDropdownEvents();
+        }
 
-			// Khởi tạo dropdown khóa học (tất cả)
-		    const khoaHoc = document.getElementById('khoa-hoc');
-		    if (khoaHoc) {
-		        khoaHoc.innerHTML = '<option value="">-- Chọn khóa học --</option>';
-		        allCourses.forEach(course => {
-		            const option = document.createElement('option');
-		            option.value = course.id;
-		            option.textContent = course.name;
-		            if (course.code) {
-		                option.textContent += ` (${course.code})`;
-		            }
-		            option.setAttribute('data-curriculum', course.curriculum_id);
-		            khoaHoc.appendChild(option);
-		        });
-		        filteredCourses = [...allCourses];
-		    }
-		    
-		    if (allMajors && allMajors.length > 0) {
-		        const majorSelect = document.querySelector('select[name="major_id"]');
-		        if (majorSelect) {
-		            majorSelect.innerHTML = '<option value="">-- Chọn ngành --</option>';
-		            allMajors.forEach(major => {
-		                const option = document.createElement('option');
-		                option.value = major.id;
-		                option.textContent = `${major.name} (${major.code})`;
-		                majorSelect.appendChild(option);
-		            });
-		        }
-		    }
-		    
-		    if (allSubjectTypes && allSubjectTypes.length > 0) {
-		        const typeSelect = document.querySelector('select[name="subject_type_id"]');
-		        if (typeSelect) {
-		            typeSelect.innerHTML = '<option value="">-- Chọn loại môn --</option>';
-		            allSubjectTypes.forEach(type => {
-		                const option = document.createElement('option');
-		                option.value = type.id;
-		                option.textContent = type.name;
-		                typeSelect.appendChild(option);
-		            });
-		        }
-		    }
-
-			// Khởi tạo Select2
-		    setTimeout(() => {
-		        $('#khoa-dao-tao, #to-bo-mon, #chuong-trinh-dao-tao, #khoa-hoc').select2({
-		            width: '100%',
-		            placeholder: '-- Chọn --',
-		            allowClear: true,
-		            language: 'vi',
-		            closeOnSelect: true
-		        });
-		        
-		        // Thiết lập auto-close cho Select2
-		        setupAutoCloseSelect2();
-		        
-		        // Thiết lập các sự kiện lọc
-		        resetDependentDropdowns();
-		    }, 100);
+        // ===== FIXED FILTER EVENTS =====
+        function setupDropdownEvents() {
+            // Khoa đào tạo change
+            $(document).off('change', '#khoa-dao-tao').on('change', '#khoa-dao-tao', function() {
+                const departmentId = this.value;
+                console.log('Khoa đào tạo changed:', departmentId);
+                
+                // Filter subject groups by department
+                const filteredGroups = departmentId 
+                    ? allSubjectGroups.filter(group => group.department_id == departmentId)
+                    : allSubjectGroups;
+                
+                // Update to-bo-mon dropdown
+                const subjectGroupSelect = $('#to-bo-mon');
+                subjectGroupSelect.empty();
+                subjectGroupSelect.append($('<option>', {
+                    value: '',
+                    text: '-- Chọn tổ bộ môn --'
+                }));
+                
+                filteredGroups.forEach(group => {
+                    subjectGroupSelect.append($('<option>', {
+                        value: group.id,
+                        text: group.name
+                    }));
+                });
+                
+                // Reinitialize Select2
+                if (subjectGroupSelect.hasClass('select2-hidden-accessible')) {
+                    subjectGroupSelect.select2('destroy');
+                }
+                subjectGroupSelect.select2({
+                    width: '100%',
+                    placeholder: '-- Chọn tổ bộ môn --',
+                    allowClear: true,
+                    language: 'vi',
+                    dropdownParent: $('body')
+                });
+                
+                // Load filtered data
+                debouncedLoadFilteredData();
+            });
+            
+            // Chương trình đào tạo change
+            $(document).off('change', '#chuong-trinh-dao-tao').on('change', '#chuong-trinh-dao-tao', function() {
+                const curriculumId = this.value;
+                console.log('Chương trình đào tạo changed:', curriculumId);
+                
+                // Filter courses by curriculum
+                const filteredCourses = curriculumId
+                    ? allCourses.filter(course => course.curriculum_id == curriculumId)
+                    : allCourses;
+                
+                // Update khoa-hoc dropdown
+                const courseSelect = $('#khoa-hoc');
+                courseSelect.empty();
+                courseSelect.append($('<option>', {
+                    value: '',
+                    text: '-- Chọn khóa học --'
+                }));
+                
+                filteredCourses.forEach(course => {
+                    const displayText = course.code 
+                        ? `${course.name} (${course.code})`
+                        : course.name;
+                    courseSelect.append($('<option>', {
+                        value: course.id,
+                        text: displayText
+                    }));
+                });
+                
+                // Reinitialize Select2
+                if (courseSelect.hasClass('select2-hidden-accessible')) {
+                    courseSelect.select2('destroy');
+                }
+                courseSelect.select2({
+                    width: '100%',
+                    placeholder: '-- Chọn khóa học --',
+                    allowClear: true,
+                    language: 'vi',
+                    dropdownParent: $('body')
+                });
+                
+                // Load filtered data
+                debouncedLoadFilteredData();
+            });
+            
+            // Tổ bộ môn change
+            $(document).off('change', '#to-bo-mon').on('change', '#to-bo-mon', debouncedLoadFilteredData);
+            
+            // Khóa học change
+            $(document).off('change', '#khoa-hoc').on('change', '#khoa-hoc', debouncedLoadFilteredData);
         }
         
+        // ===== DEBOUNCED DATA LOADING =====
+        function debouncedLoadFilteredData() {
+            if (filterTimeout) {
+                clearTimeout(filterTimeout);
+            }
+            
+            filterTimeout = setTimeout(() => {
+                loadFilteredData();
+            }, 300);
+        }
+
+        // Hàm tải dữ liệu dựa trên bộ lọc hiện tại
         function populateDropdown(elementId, data, displayField) {
-            const dropdown = document.getElementById(elementId);
-            if (!dropdown) return;
+            const dropdown = $(`#${elementId}`);
+            if (!dropdown.length) return;
             
-            dropdown.innerHTML = '<option value="">-- Chọn --</option>';
+            // Clear existing options except first
+            const firstOption = dropdown.find('option').first();
+            dropdown.empty();
+            if (firstOption.length) {
+                dropdown.append(firstOption);
+            }
             
+            // Add data options
             if (data && Array.isArray(data)) {
-		        data.forEach(item => {
-		            const option = document.createElement('option');
-		            option.value = item.id;
-		            
-		            let displayText = item[displayField] || '';
-		            if (item.academic_year) {
-		                displayText += ` (${item.academic_year})`;
-		            }
-		            if (item.code) {
-		                displayText = `${item.code} - ${displayText}`;
-		            }
-		            
-		            option.textContent = displayText;
-		            option.setAttribute('data-name', item[displayField] || '');
-		            option.setAttribute('data-code', item.code || '');
-		            
-		            // Lưu toàn bộ object dưới dạng data attribute
-		            option.setAttribute('data-object', JSON.stringify(item));
-		            
-		            dropdown.appendChild(option);
-		        });
+                data.forEach(item => {
+                    let displayText = item[displayField] || '';
+                    if (item.code && displayField !== 'code') {
+                        displayText = `${item.code} - ${displayText}`;
+                    }
+                    if (item.academic_year) {
+                        displayText += ` (${item.academic_year})`;
+                    }
+                    
+                    const option = new Option(displayText, item.id, false, false);
+                    dropdown.append(option);
+                });
+            }
             
-	            // Cập nhật Select2 nếu đã được khởi tạo
-	            if ($(dropdown).hasClass('select2-hidden-accessible')) {
-	                $(dropdown).trigger('change');
-	            }
-			}
+            // Refresh Select2
+            if (dropdown.hasClass('select2-hidden-accessible')) {
+                dropdown.trigger('change');
+            }
         }
 
 		// Hàm khởi tạo Select2 cho các dropdown trong bảng
 		function initializeTableSelect2() {
 		    console.log('Initializing Select2 for table...');
-		    
-		    // Chỉ khởi tạo Select2 cho các dropdown trong bảng chưa được khởi tạo
-		    $('tbody select:not(.select2-hidden-accessible)').each(function() {
-		        const $select = $(this);
-		        
-		        // Chỉ khởi tạo cho dropdown có dữ liệu
-		        if ($select.find('option').length > 1) {
-		            try {
-		                $select.select2({
-		                    width: '100%',
-		                    placeholder: '-- Chọn --',
-		                    allowClear: false,
-		                    dropdownParent: $select.closest('.table-container') || $('body'),
-		                    minimumResultsForSearch: 5,
-		                    language: 'vi'
-		                });
-		            } catch (error) {
-		                console.error('Error initializing Select2 for table element:', error);
-		            }
-		        }
-		    });
+            
+            // Destroy existing Select2 instances in table
+            $('tbody .select2-hidden-accessible').select2('destroy');
+            
+            // Initialize new Select2 for select elements in table
+            $('tbody select.editable').each(function() {
+                const $select = $(this);
+                
+                if (!$select.hasClass('select2-hidden-accessible') && $select.find('option').length > 0) {
+                    try {
+                        $select.select2({
+                            width: '100%',
+                            placeholder: '-- Chọn --',
+                            allowClear: false,
+                            dropdownParent: $('body'), // Use body as parent for proper positioning
+                            minimumResultsForSearch: 3,
+                            language: 'vi'
+                        });
+                        
+                        // Disable by default (only enabled in edit mode)
+                        if ($select.prop('disabled')) {
+                            $select.select2('disable');
+                        }
+                    } catch (error) {
+                        console.error('Error initializing Select2 in table:', error);
+                    }
+                }
+            });
 		}
 		
         // Render bảng dữ liệu
@@ -2272,40 +2271,40 @@
             tableBody.innerHTML = '';
             
             if (!monHocData || monHocData.length === 0) {
-		        const row = document.createElement('tr');
-		        row.innerHTML = `<td colspan="19" class="px-4 py-4 text-center text-gray-500">Không có dữ liệu môn học</td>`;
-		        tableBody.appendChild(row);
-				//updateStatistics();
-		        return;
-		    }
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="19" class="px-4 py-4 text-center text-gray-500">Không có dữ liệu môn học</td>`;
+                tableBody.appendChild(row);
+                updateStatistics();
+                return;
+            }
 
-			monHocData.forEach((monHoc, index) => {
-		        const row = document.createElement('tr');
-		        row.className = 'hover:bg-gray-50';
-
-				// Tìm thông tin khóa học từ filteredCourses
-		        let courseInfo = '';
-		        if (monHoc.course_id && allCourses.length > 0) {
-		            const course = allCourses.find(c => c.id == monHoc.course_id);
-		            if (course) {
-		                courseInfo = `${course.name} (${course.code || ''})`;
-		            }
-		        }
-				
-		        row.innerHTML = `
-		            <td class="px-2 py-2 text-center text-sm col-tt">${index + 1}</td>
-		            <td class="px-2 py-2 col-ma">
-		                <input type="text" value="${monHoc.ma_mon_hoc || ''}"
-		                    class="editable w-full bg-transparent border-none text-sm text-center"
-		                    data-field="code" data-id="${monHoc.id}" readonly
-		                    data-original-value="${monHoc.ma_mon_hoc || ''}">
-		            </td>
-		            <td class="px-2 py-2 col-ten wrap-cell">
-		                <input type="text" value="${monHoc.ten_mon_hoc || 0}"
-		                    class="editable w-full bg-transparent border-none text-sm text-center"
-		                    data-field="name" data-id="${monHoc.id}" readonly
-		                    data-original-value="${monHoc.ten_mon_hoc || ''}">
-		            </td>
+            monHocData.forEach((monHoc, index) => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                // Find course info
+                let courseInfo = '';
+                if (monHoc.course_id && allCourses.length > 0) {
+                    const course = allCourses.find(c => c.id == monHoc.course_id);
+                    if (course) {
+                        courseInfo = `${course.name} (${course.code || ''})`;
+                    }
+                }
+                
+                row.innerHTML = `
+                    <td class="px-2 py-2 text-center text-sm col-tt">${index + 1}</td>
+                    <td class="px-2 py-2 col-ma">
+                        <input type="text" value="${escapeHtml(monHoc.ma_mon_hoc || '')}"
+                            class="editable w-full bg-transparent border-none text-sm text-center"
+                            data-field="code" data-id="${monHoc.id}" readonly
+                            data-original-value="${escapeHtml(monHoc.ma_mon_hoc || '')}">
+                    </td>
+                    <td class="px-2 py-2 col-ten wrap-cell">
+                        <input type="text" value="${escapeHtml(monHoc.ten_mon_hoc || '')}"
+                            class="editable w-full bg-transparent border-none text-sm"
+                            data-field="name" data-id="${monHoc.id}" readonly
+                            data-original-value="${escapeHtml(monHoc.ten_mon_hoc || '')}">
+                    </td>
 		            <td class="px-2 py-2 text-center col-tinchi">
 		                <input type="number" value="${monHoc.so_tin_chi || 0}" 
 		                    class="editable w-full bg-transparent border-none text-sm text-center" 
@@ -2379,59 +2378,48 @@
 		                    data-original-value="${monHoc.hk6 || ''}">
 		            </td>
 		            <td class="px-2 py-2 col-donvi">
-		                <select class="editable select department-select w-full bg-transparent border-none text-sm" 
-		                        data-field="department" data-id="${monHoc.id}" disabled
-		                        data-original-value="${monHoc.don_vi || ''}">
-		                    <option value="">-- Chọn đơn vị --</option>
-		                    ${filteredDepartments.map(dept => `
-		                        <option value="${dept.id}" ${dept.id === monHoc.department_ ? 'selected' : ''}>
-		                            ${dept.name}
-		                        </option>
-		                    `).join('')}
-		                </select>
-		            </td>
-		            <td class="px-2 py-2 col-giangvien">
-		                <input type="text" value="${monHoc.giang_vien || ''}" 
-		                    class="editable instructor-autocomplete w-full bg-transparent border-none text-sm" 
-		                    data-field="instructor" data-id="${monHoc.id}" readonly
-		                    data-original-value="${monHoc.giang_vien || ''}"
-		                    placeholder="Nhập tên giảng viên..."
-							list="instructor-suggestions-${monHoc.id}">
-		                <datalist id="instructor-suggestions-${monHoc.id}">
-		                    <!-- Suggestions will be populated dynamically -->
-		                </datalist>
-		            </td>
-		            <td class="px-2 py-2 col-course">
-		                <select class="editable w-full bg-transparent border-none text-sm" 
-		                        data-field="course" data-id="${monHoc.id}" disabled
-		                        data-original-value="${monHoc.course_id || ''}">
-		                    <option value="">-- Chọn khóa học --</option>
-		                    ${filteredCourses.map(course => `
-		                        <option value="${course.id}" ${course.id == monHoc.course_id ? 'selected' : ''}>
-		                            ${course.name} (${course.code})
-		                        </option>
-		                    `).join('')}
-		                </select>
-		            </td>
-		            <td class="px-2 py-2 text-center col-thaotac">
-		                <button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" data-id="${monHoc.id}" title="Sửa">
-		                    <i class="fas fa-edit"></i>
-		                </button>
-		                <button class="btn-xoa text-red-600 hover:text-red-900" data-id="${monHoc.id}" title="Xóa">
-		                    <i class="fas fa-trash"></i>
-		                </button>
-		            </td>
-		        `;
-		        tableBody.appendChild(row);
-		    });
-
-			// Khởi tạo autocomplete sau khi render
-		    setTimeout(() => {
-		        initializeTableSelect2();
-		    }, 100);
-		    
-		    // Cập nhật thống kê
-		    updateStatistics();
+                        <select class="editable select department-select w-full bg-transparent border-none text-sm" 
+                                data-field="department" data-id="${monHoc.id}" disabled
+                                data-original-value="${monHoc.department_id || ''}">
+                            <option value="">-- Chọn đơn vị --</option>
+                            ${allDepartments.map(dept => `
+                                <option value="${dept.id}" ${dept.id == monHoc.department_id ? 'selected' : ''}>
+                                    ${escapeHtml(dept.name)}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </td>
+                    <td class="px-2 py-2 col-course">
+                        <select class="editable w-full bg-transparent border-none text-sm" 
+                                data-field="course" data-id="${monHoc.id}" disabled
+                                data-original-value="${monHoc.course_id || ''}">
+                            <option value="">-- Chọn khóa học --</option>
+                            ${allCourses.map(course => `
+                                <option value="${course.id}" ${course.id == monHoc.course_id ? 'selected' : ''}>
+                                    ${escapeHtml(course.name)} ${course.code ? '(' + escapeHtml(course.code) + ')' : ''}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </td>
+                    <td class="px-2 py-2 text-center col-thaotac">
+                        <button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" data-id="${monHoc.id}" title="Sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-xoa text-red-600 hover:text-red-900" data-id="${monHoc.id}" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Initialize Select2 for table
+            setTimeout(() => {
+                initializeTableSelect2();
+            }, 100);
+            
+            // Update statistics
+            updateStatistics();
         }
 
 		// Hàm escape HTML để tránh XSS
@@ -2640,123 +2628,73 @@
             });
         }
 		
-        // Load dữ liệu theo bộ lọc
-		let filterTimeout = null;
-        function loadFilteredData() {
-			// Clear timeout cũ nếu có
-			if (filterTimeout) {
-		        clearTimeout(filterTimeout);
-		    }
-
-			// Đặt timeout mới với debounce 300ms
-		    filterTimeout = setTimeout(() => {
-		        _loadFilteredData();
-		    }, 300);
-		}
-		
-		function _loadFilteredData() {	
-            const departmentId = document.getElementById('khoa-dao-tao').value;
-            const subjectGroupId = document.getElementById('to-bo-mon').value;
-            const curriculumId = document.getElementById('chuong-trinh-dao-tao').value;
-            const courseId = document.getElementById('khoa-hoc').value;
-			//const instructor = document.getElementById('instructor').value;
-
-			let url = '/api/subjects/';
-            const params = [];
-
-            if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
-            if (departmentId) params.push(`department_id=${departmentId}`);
-            if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
-			if (courseId) params.push(`course_id=${courseId}`);
-
-			if (params.length > 0) {
-		        url += '?' + params.join('&');
-		    }
-
-			const tableBody = document.getElementById('table-body');
-    
-		    // Hiển thị loading
-		    tableBody.innerHTML = `
-		        <tr>
-		            <td colspan="19" class="px-4 py-8 text-center">
-		                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
-		                <p class="mt-2 text-gray-600">Đang tải dữ liệu...</p>
-		            </td>
-		        </tr>
-		    `;
-
-			// Sử dụng cache nếu có
-		    const cacheKey = `subjects_${departmentId}_${subjectGroupId}_${curriculumId}_${courseId}`;
-		    const now = Date.now();
-		    
-		    if (dataCache[cacheKey] && (now - dataCache[cacheKey].timestamp < 30000)) { // 30 giây cache
-		        console.log('Using cached filtered data');
-		        monHocData = dataCache[cacheKey].data;
-		        renderTable();
-		        updateStatistics();
-		        return;
-		    }
+        async function loadFilteredData() {
+            const departmentId = $('#khoa-dao-tao').val();
+            const subjectGroupId = $('#to-bo-mon').val();
+            const curriculumId = $('#chuong-trinh-dao-tao').val();
+            const courseId = $('#khoa-hoc').val();
             
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    monHocData = data;
-
-					// Lưu vào cache
-		            dataCache[cacheKey] = {
-		                data: data,
-		                timestamp: now
-		            };
-					
-            		renderTable();
-		            updateStatistics();
-		            
-		            // Nếu có curriculumId, có thể load thống kê chi tiết
-		            if (curriculumId) {
-		                loadThongKe(curriculumId);
-		            }
-		        })
-		        .catch(error => {
-		            console.error('Error loading data:', error);
-                    tableBody.innerHTML = `
-                        <tr>
-                            <td colspan="19" class="px-4 py-4 text-center text-red-500">
-                                <i class="fas fa-exclamation-triangle mr-2"></i>
-                                Không thể tải dữ liệu. Vui lòng thử lại.
-                                <br>
-                                <small class="text-gray-500">${error.message}</small>
-                            </td>
-                        </tr>
-                    `;
-                    
-                    // Reset thống kê
-                    document.getElementById('tong-tin-chi').textContent = '0';
-                    document.getElementById('tong-gio').textContent = '0';
-                    document.getElementById('ty-le-ly-thuyet').textContent = '0%';
-                    document.getElementById('ty-le-thuc-hanh').textContent = '0%';
-		        });
+            console.log('Loading filtered data:', { departmentId, subjectGroupId, curriculumId, courseId });
+            
+            const tableBody = $('#table-body');
+            tableBody.html(`
+                <tr>
+                    <td colspan="19" class="px-4 py-8 text-center">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
+                        <p class="mt-2 text-gray-600">Đang tải dữ liệu...</p>
+                    </td>
+                </tr>
+            `);
+            
+            try {
+                // Build URL with filters
+                const params = new URLSearchParams();
+                if (curriculumId) params.append('curriculum_id', curriculumId);
+                if (departmentId) params.append('department_id', departmentId);
+                if (subjectGroupId) params.append('subject_group_id', subjectGroupId);
+                if (courseId) params.append('course_id', courseId);
+                
+                const url = `/api/subjects/${params.toString() ? '?' + params.toString() : ''}`;
+                
+                // Generate cache key
+                const cacheKey = `filtered_${departmentId}_${subjectGroupId}_${curriculumId}_${courseId}`;
+                
+                const data = await fetchWithCache(url, cacheKey);
+                monHocData = data || [];
+                
+                renderTable();
+                updateStatistics();
+                
+                if (curriculumId) {
+                    loadThongKe(curriculumId);
+                }
+                
+            } catch (error) {
+                console.error('Error loading filtered data:', error);
+                tableBody.html(`
+                    <tr>
+                        <td colspan="19" class="px-4 py-4 text-center text-red-500">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Không thể tải dữ liệu. Vui lòng thử lại.
+                        </td>
+                    </tr>
+                `);
+                
+                // Reset statistics
+                $('#tong-tin-chi, #tong-gio').text('0');
+                $('#ty-le-ly-thuyet, #ty-le-thuc-hanh').text('0%');
+            }
         }
 
 		// Hàm clear cache khi cần
 		function clearCache(cacheKey = null) {
 		    if (cacheKey) {
-		        delete dataCache[cacheKey];
-		        console.log(`Cleared cache for ${cacheKey}`);
-		    } else {
-		        dataCache = {
-		            departments: { data: null, timestamp: 0 },
-		            subjectGroups: { data: null, timestamp: 0 },
-		            curricula: { data: null, timestamp: 0 },
-		            courses: { data: null, timestamp: 0 },
-		            subjects: { data: null, timestamp: 0 }
-		        };
-		        console.log('Cleared all cache');
-		    }
+                dataCache.delete(cacheKey);
+                console.log(`Cleared cache for: ${cacheKey}`);
+            } else {
+                dataCache.clear();
+                console.log('Cleared all cache');
+            }
 		}
 
         // Thêm hàm để tải danh sách môn học có sẵn
@@ -3858,127 +3796,103 @@
 
 		// ===== ENTER EDIT MODE FUNCTION =====
 		function enterEditMode(row, button) {
-		    console.log('Entering edit mode for row');
-		    
-		    // Thay đổi nút
-		    button.innerHTML = '<i class="fas fa-check"></i>';
-		    button.classList.remove('text-blue-600');
-		    button.classList.add('text-green-600');
-		    button.title = 'Lưu thay đổi';
-		    
-		    // Lấy tất cả input và select trong hàng
-		    const inputs = row.querySelectorAll('input:not([type="hidden"])');
-		    const selects = row.querySelectorAll('select.editable');
-		    
-		    // Kích hoạt các trường có thể sửa
-		    inputs.forEach(input => {
-		        if (input.classList.contains('editable')) {
-		            // Không bỏ readonly cho các trường không cho phép sửa
-		            const field = input.getAttribute('data-field');
-		            const allowedFields = ['instructor', 'department', 'course'];
-		            
-		            if (allowedFields.includes(field)) {
-		                input.removeAttribute('readonly');
-		                input.removeAttribute('disabled');
-		                input.classList.add('border', 'border-blue-400', 'bg-blue-50');
-		                
-		                // Đặc biệt xử lý autocomplete cho giảng viên
-		                if (field === 'instructor') {
-		                    initializeInstructorAutocompleteForInput(input);
-		                }
-		            }
-		        }
-		    });
-		    
-		    // Kích hoạt các dropdown
-		    selects.forEach(select => {
-				select.disabled = false;
-		        select.classList.add('border', 'border-blue-400', 'bg-blue-50');
-		        
-		        // Khởi tạo Select2
-		        const $select = $(select);
-		        if (!$select.hasClass('select2-hidden-accessible')) {
-		            $select.select2({
-		                width: '100%',
-		                dropdownParent: row.closest('.table-container') || document.body,
-		                minimumResultsForSearch: 5
-		            });
-		        } else {
-		            $select.select2('enable');
-		        }
-		    });
+		    console.log('Entering edit mode');
+            
+            // Update button
+            button.innerHTML = '<i class="fas fa-check"></i>';
+            button.classList.remove('text-blue-600');
+            button.classList.add('text-green-600');
+            button.title = 'Lưu thay đổi';
+            
+            // Enable and initialize Select2 for dropdowns
+            const selects = row.querySelectorAll('select.editable');
+            selects.forEach(select => {
+                select.disabled = false;
+                select.classList.add('border', 'border-blue-400', 'bg-blue-50');
+                
+                const $select = $(select);
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('enable');
+                } else {
+                    $select.select2({
+                        width: '100%',
+                        dropdownParent: $('body'),
+                        minimumResultsForSearch: 3
+                    });
+                }
+            });
+            
+            // Enable input fields
+            const inputs = row.querySelectorAll('input.editable');
+            inputs.forEach(input => {
+                const field = input.getAttribute('data-field');
+                if (field === 'instructor') {
+                    input.removeAttribute('readonly');
+                    input.classList.add('border', 'border-blue-400', 'bg-blue-50');
+                }
+            });
 		}
 		
 		// ===== EXIT EDIT MODE FUNCTION =====
 		function exitEditMode(row, button, id) {
-		    console.log('Exiting edit mode for row', id);
-		    
-		    // Thay đổi nút
-		    button.innerHTML = '<i class="fas fa-edit"></i>';
-		    button.classList.remove('text-green-600');
-		    button.classList.add('text-blue-600');
-		    button.title = 'Sửa';
-		    
-		    let hasChanges = false;
-		    const changes = {};
-
-			const selects = row.querySelectorAll('select.editable.select2-hidden-accessible');
-			selects.forEach(select => {
-		        const $select = $(select);
-		        // Lấy giá trị từ Select2
-		        const value = $select.val();
-		        const field = select.getAttribute('data-field');
-		        const originalValue = select.getAttribute('data-original-value');
-		        
-		        // Kiểm tra thay đổi
-		        if (value !== originalValue) {
-		            hasChanges = true;
-		            changes[field] = {
-		                value: value,
-		                original: originalValue
-		            };
-		        }
-		        
-		        // Vô hiệu hóa Select2 và khôi phục trạng thái
-		        $select.select2('destroy');
-		        select.disabled = true;
-		        select.classList.remove('border', 'border-blue-400', 'bg-blue-50');
-		        select.setAttribute('data-original-value', value);
-		    });
-			
-		    // Lấy tất cả input đã thay đổi
-		    const editables = row.querySelectorAll('input.editable');
-		    editables.forEach(editable => {
-		        const field = editable.getAttribute('data-field');
-		        const value = editable.value;
-		        const originalValue = editable.getAttribute('data-original-value');
-		        
-		        // Kiểm tra thay đổi
-		        if (value !== originalValue) {
-		            hasChanges = true;
-		            changes[field] = {
-		                value: value,
-		                original: originalValue
-		            };
-		        }
-		        
-		        // Khôi phục trạng thái xem
-		        if (editable.tagName === 'SELECT') {
-		            editable.disabled = true;
-		        } else {
-		            editable.setAttribute('readonly', true);
-		        }
-		        editable.classList.remove('border', 'border-blue-400', 'bg-blue-50');
-		        
-		        // Cập nhật giá trị gốc mới
-		        editable.setAttribute('data-original-value', value);
-		    });
-		    
-		    // Gửi tất cả thay đổi nếu có
-		    if (hasChanges && id) {
-		        console.log('Saving changes for ID:', id, changes);
-		        saveChanges(id, changes);
-		    }
+		    console.log('Exiting edit mode for ID:', id);
+            
+            // Update button
+            button.innerHTML = '<i class="fas fa-edit"></i>';
+            button.classList.remove('text-green-600');
+            button.classList.add('text-blue-600');
+            button.title = 'Sửa';
+            
+            let hasChanges = false;
+            const changes = {};
+            
+            // Process dropdowns
+            const selects = row.querySelectorAll('select.editable');
+            selects.forEach(select => {
+                const $select = $(select);
+                const value = $select.val();
+                const field = select.getAttribute('data-field');
+                const originalValue = select.getAttribute('data-original-value');
+                
+                if (value !== originalValue) {
+                    hasChanges = true;
+                    changes[field] = {
+                        value: value,
+                        original: originalValue
+                    };
+                }
+                
+                // Disable and update original value
+                $select.select2('destroy');
+                select.disabled = true;
+                select.classList.remove('border', 'border-blue-400', 'bg-blue-50');
+                select.setAttribute('data-original-value', value);
+            });
+            
+            // Process inputs
+            const inputs = row.querySelectorAll('input.editable');
+            inputs.forEach(input => {
+                const field = input.getAttribute('data-field');
+                const value = input.value;
+                const originalValue = input.getAttribute('data-original-value');
+                
+                if (value !== originalValue) {
+                    hasChanges = true;
+                    changes[field] = {
+                        value: value,
+                        original: originalValue
+                    };
+                }
+                
+                input.setAttribute('readonly', true);
+                input.classList.remove('border', 'border-blue-400', 'bg-blue-50');
+                input.setAttribute('data-original-value', value);
+            });
+            
+            // Save changes if any
+            if (hasChanges && id) {
+                saveChanges(id, changes);
+            }
 		}
 		
 		// ===== SAVE CHANGES FUNCTION =====
@@ -4117,34 +4031,6 @@
 		        });
 		    }
 		}
-		
-		// ===== SHOW NOTIFICATION FUNCTION =====
-		function showNotification(message, type = 'info') {
-		    // Tạo thông báo
-		    const notification = document.createElement('div');
-		    notification.className = `fixed top-4 right-4 px-4 py-3 rounded-md shadow-lg z-50 ${
-		        type === 'success' ? 'bg-green-500 text-white' :
-		        type === 'error' ? 'bg-red-500 text-white' :
-		        'bg-blue-500 text-white'
-		    }`;
-		    notification.innerHTML = `
-		        <div class="flex items-center">
-		            <i class="fas ${
-		                type === 'success' ? 'fa-check-circle' :
-		                type === 'error' ? 'fa-exclamation-circle' :
-		                'fa-info-circle'
-		            } mr-2"></i>
-		            <span>${message}</span>
-		        </div>
-		    `;
-		    
-		    document.body.appendChild(notification);
-		    
-		    // Tự động ẩn sau 3 giây
-		    setTimeout(() => {
-		        notification.remove();
-		    }, 3000);
-		}
 
 		// ===== UPDATE LOCAL DATA FUNCTION =====
 		function updateLocalData(id, changes) {
@@ -4198,618 +4084,114 @@
             }
         }
         
-        // Xử lý sự kiện khi trang tải xong
-        document.addEventListener('DOMContentLoaded', function() {
-			// Khởi tạo dropdowns từ dữ liệu Django template
-            loadInitialData();
-
-            initializeDropdowns();
-			
-			// Render bảng với dữ liệu hiện có
-            renderTable();
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('DOM loaded, initializing application...');
             
-            // Khởi tạo Select2 sau khi DOM đã sẵn sàng
-            setTimeout(() => {
-                initializeSelect2();
-				setupAutoCloseSelect2();
-            }, 100);
-            
-            // Pre-load danh sách môn học nhưng không block render
-			setTimeout(() => {
-		        loadAllSubjects().then(() => {
-		            console.log('Subjects loaded for dropdown');
-		        });
-		    }, 500);
-			    
-            // Kiểm tra các input trong modal
-            const modalInputs = document.querySelectorAll('#modal-them-chuong-trinh input, #modal-them-chuong-trinh select, #modal-them-chuong-trinh textarea');
-            console.log('Found inputs in modal:', modalInputs.length);
-            
-            modalInputs.forEach(input => {
-                console.log('Input:', input.name, 'Type:', input.type, 'Readonly:', input.readOnly, 'Disabled:', input.disabled);
+            try {
+                // Load initial data
+                await loadInitialData();
                 
-                // Xóa các attribute có thể chặn input
-                input.removeAttribute('readonly');
-                input.removeAttribute('disabled');
+                // Initialize dropdowns
+                initializeDropdowns();
                 
-                // Thiết lập lại kiểu dáng để đảm bảo có thể tương tác
-                input.style.pointerEvents = 'auto';
-            });
-
-            // Cập nhật sự kiện cho dropdown chính sử dụng jQuery
-            $(document).on('change', '#khoa-dao-tao', function() {
-                const departmentId = this.value;
+                // Render table with initial data
+                renderTable();
                 
-                // Reset các dropdown phía sau
-                $('#to-bo-mon').val('').trigger('change');
-                $('#chuong-trinh-dao-tao').val('').trigger('change');
-                $('#khoa-hoc').val('').trigger('change');
+                // Set up event listeners
+                setupEventListeners();
                 
-                // Load subject groups theo department
-                if (departmentId) {
-                    const localSubjectGroups = allSubjectGroups.filter(subject_group => {
-			            // Kiểm tra cả số và chuỗi để đảm bảo matching
-			            return subject_group.department_id == departmentId ||
-			                   (subject_group.department && subject_group.department.id == departmentId) ||
-			                   (typeof subject_group.department_id !== 'undefined' && subject_group.department_id == departmentId);
-			        });
-
-                    const subjectGroupSelect = $('#to-bo-mon');
-			        subjectGroupSelect.empty();
-			        
-			        if (localSubjectGroups.length > 0) {
-			            subjectGroupSelect.append($('<option>', {
-			                value: '',
-			                text: '-- Chọn bộ môn --'
-			            }));
-			            
-			            localSubjectGroups.forEach(item => {
-			                const displayText = item.code ? 
-			                    `${item.name} (${item.code})` : 
-			                    item.name;
-			                
-			                subjectGroupSelect.append($('<option>', {
-			                    value: item.id,
-			                    text: displayText
-			                }));
-			            });
-			            
-			            subjectGroupSelect.trigger('change');
-			        } else {
-			            // 2. Nếu không có dữ liệu cục bộ, mới gọi API
-			            subjectGroupSelect.append($('<option>', {
-			                value: '',
-			                text: 'Đang tải...'
-			            }));
-			            subjectGroupSelect.prop('disabled', false);
-
-                        fetch(`/api/subject-groups/?department_id=${departmentId}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                // Cập nhật dropdown tổ bộ môn
-                                const select = $('#to-bo-mon');
-                                select.empty();
-                                select.append($('<option>', {
-                                    value: '',
-                                    text: '-- Chọn tổ bộ môn --'
-                                }));
-                                
-                                data.forEach(item => {
-                                    select.append($('<option>', {
-                                        value: item.id,
-                                        text: item.name
-                                    }));
-                                });
-                                
-                                select.trigger('change');
-
-								// Load dữ liệu sau khi cập nhật dropdown
-				                setTimeout(() => {
-				                    loadFilteredData();
-				                }, 100);
-                            })
-                            .catch(error => {
-                                console.error('Error loading subject groups:', error);
-                				loadFilteredData();
-                            });
-                    }
-                } else {
-					// Khi không chọn khoa, hiển thị tất cả tổ bộ môn
-			        const subjectGroupSelect = $('#to-bo-mon');
-			        subjectGroupSelect.empty();
-			        subjectGroupSelect.append($('<option>', {
-			            value: '',
-			            text: '-- Chọn tổ bộ môn --'
-			        }));
-			        
-			        allSubjectGroups.forEach(item => {
-			            const displayText = item.code ? 
-			                `${item.name} (${item.code})` : 
-			                item.name;
-			            
-			            subjectGroupSelect.append($('<option>', {
-			                value: item.id,
-			                text: displayText
-			            }));
-			        });
-			        
-			        subjectGroupSelect.prop('disabled', false);
-			        if (subjectGroupSelect.hasClass('select2-hidden-accessible')) {
-			            subjectGroupSelect.select2('destroy');
-			        }
-			        subjectGroupSelect.select2({
-			            width: '100%',
-			            placeholder: '-- Chọn tổ bộ môn --',
-			            allowClear: true,
-			            language: 'vi'
-			        });
-			        loadFilteredData();
-			    }
-            });
-            
-            $(document).on('change', '#chuong-trinh-dao-tao', function() {
-			    const curriculumId = this.value;
-			    $('#khoa-hoc').val('').trigger('change');
-			    
-			    if (curriculumId) {
-			        // 1. Đầu tiên, thử filter từ dữ liệu đã có (allCourses từ template)
-			        const localCourses = allCourses.filter(course => {
-			            // Kiểm tra cả số và chuỗi để đảm bảo matching
-			            return course.curriculum_id == curriculumId || 
-			                   (course.curriculum && course.curriculum.id == curriculumId) ||
-			                   (typeof course.curriculum_id !== 'undefined' && course.curriculum_id == curriculumId);
-			        });
-			        
-			        const courseSelect = $('#khoa-hoc');
-			        courseSelect.empty();
-			        
-			        if (localCourses.length > 0) {
-			            console.log('Using local courses data:', localCourses.length);
-			            
-			            courseSelect.append($('<option>', {
-			                value: '',
-			                text: '-- Chọn khóa học --'
-			            }));
-			            
-			            localCourses.forEach(item => {
-			                const displayText = item.code ? 
-			                    `${item.name} (${item.code})` : 
-			                    item.name;
-			                
-			                courseSelect.append($('<option>', {
-			                    value: item.id,
-			                    text: displayText
-			                }));
-			            });
-			            
-			            courseSelect.trigger('change');
-			        } else {
-			            // 2. Nếu không có dữ liệu cục bộ, mới gọi API
-			            console.log('No local courses, fetching from API...');
-			            
-			            courseSelect.append($('<option>', {
-			                value: '',
-			                text: 'Đang tải...'
-			            }));
-			            courseSelect.prop('disabled', false);
-			            
-			            // Gọi API với timeout ngắn hơn
-			            setTimeout(() => {
-			                safeFetch(`/api/courses/?curriculum_id=${curriculumId}`)
-			                    .then(result => {
-			                        courseSelect.empty();
-			                        courseSelect.append($('<option>', {
-			                            value: '',
-			                            text: '-- Chọn khóa học --'
-			                        }));
-			                        
-			                        if (result.success && Array.isArray(result.data)) {
-			                            result.data.forEach(item => {
-			                                const displayText = item.code ? 
-			                                    `${item.name} (${item.code})` : 
-			                                    item.name;
-			                                
-			                                courseSelect.append($('<option>', {
-			                                    value: item.id,
-			                                    text: displayText
-			                                }));
-			                            });
-			                        } else {
-			                            console.warn('No courses from API:', result.message);
-			                            courseSelect.append($('<option>', {
-			                                value: '',
-			                                text: '-- Không có khóa học --',
-			                                disabled: true
-			                            }));
-			                        }
-			                    })
-			                    .catch(error => {
-			                        console.error('Error loading courses:', error);
-			                        courseSelect.empty();
-			                        courseSelect.append($('<option>', {
-			                            value: '',
-			                            text: '-- Lỗi tải dữ liệu --',
-			                            disabled: true
-			                        }));
-			                    })
-			                    .finally(() => {
-			                        courseSelect.prop('disabled', false);
-			                        courseSelect.trigger('change');
-			                    });
-			            }, 100);
-			        }
-			    }
-			    
-			    loadFilteredData();
-			});
-            
-            $(document).on('change', '#khoa-hoc', loadFilteredData);
-
-            $(document).on('change', '#to-bo-mon', loadFilteredData);
-            
-            // Cập nhật sự kiện cho dropdown chọn môn học có sẵn
-            $(document).on('change', '#select-existing-subject', function() {
-                if (this.value) {
-                    handleUseExistingSubject();
-                }
-            });
-
-            // Thêm cho chức năng chọn môn học có sẵn
-            document.getElementById('btn-use-existing')?.addEventListener('click', function() {
-		        const select = document.getElementById('select-existing-subject');
-		        if (select && select.value) {
-		            const selectedOption = select.options[select.selectedIndex];
-		            const subjectData = selectedOption.getAttribute('data-subject');
-		            
-		            if (subjectData) {
-		                try {
-		                    const subject = JSON.parse(subjectData);
-		                    fillSubjectFormFromExisting(subject);
-		                } catch (e) {
-		                    console.error('Error parsing subject data:', e);
-		                }
-		            }
-		        } else {
-		            alert('Vui lòng chọn một môn học từ danh sách');
-		        }
-		    });
-			
-            // Sự kiện cho nút Xóa lựa chọn
-		    document.getElementById('btn-clear-selection')?.addEventListener('click', clearSubjectSelection);
-
-            // Xử lý sự kiện cho nút sửa
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.btn-sua')) {
-                    const button = e.target.closest('.btn-sua');
-                    const row = button.closest('tr');
-                    //const inputs = row.querySelectorAll('input');
-                    const id = button.getAttribute('data-id');
-                    //const editables = row.querySelectorAll('input, select');
-					const isEditMode = button.innerHTML.includes('fa-edit');
-
-					if (isEditMode) {
-			            // Chuyển sang chế độ sửa
-			            enterEditMode(row, button);
-			        } else {
-			            // Chuyển sang chế độ xem và lưu thay đổi
-			            exitEditMode(row, button, id);
-			        }    
-                }
+                console.log('Application initialized successfully');
                 
-                // Xử lý xóa môn học
-                if (e.target.closest('.btn-xoa')) {
-                    const button = e.target.closest('.btn-xoa');
-                    const id = button.getAttribute('data-id');
-                    if (id) {
-                        deleteMonHoc(id);
-                    }
-                }
-            });
+            } catch (error) {
+                console.error('Failed to initialize application:', error);
+                showNotification('Lỗi khởi tạo ứng dụng. Vui lòng tải lại trang.', 'error');
+            }
+        });
 
-            // Xử lý thêm chương trình đào tạo
-            document.getElementById('btn-them')?.addEventListener('click', openThemChuongTrinhModal);
-            
-            // Đóng modal bằng nút hủy
-            document.getElementById('btn-huy-chuong-trinh')?.addEventListener('click', closeThemChuongTrinhModal);
-            
-            // Đóng modal bằng nút X
-            document.getElementById('btn-dong-chuong-trinh')?.addEventListener('click', closeThemChuongTrinhModal);
-            
-            // Lưu chương trình
-            document.getElementById('btn-luu-chuong-trinh')?.addEventListener('click', createCurriculum);
-            
-            // Đóng modal khi click outside
-            document.getElementById('modal-them-chuong-trinh').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeThemChuongTrinhModal();
-                }
-            });
-
-            // Ngăn sự kiện click trong modal lan ra ngoài
-            document.getElementById('form-them-chuong-trinh').addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-            
-            // Kiểm tra modal sau khi load
-            //setTimeout(fixModalInputs, 1000);
-            
-            /// Xử lý import Excel
-            document.getElementById('btn-import').addEventListener('click', function() {
-                console.log('Button Import clicked');
-                openImportModal();
-            });
-
-            // Cập nhật dropdown sheet khi chọn file
-            document.getElementById('excel-file').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                const sheetSelect = document.getElementById('sheet-select');
-                
-                if (file) {
-                    // Hiển thị loading
-                    const originalHTML = sheetSelect.innerHTML;
-                    sheetSelect.innerHTML = '<option value="">Đang tải danh sách sheet...</option>';
-                    
-                    getSheetNamesFromFile(file)
-                        .then(sheetNames => {
-                            sheetSelect.innerHTML = '<option value="">-- Tự động chọn sheet đầu tiên --</option>';
-                            
-                            sheetNames.forEach(sheetName => {
-                                const option = document.createElement('option');
-                                option.value = sheetName;
-                                option.textContent = sheetName;
-                                sheetSelect.appendChild(option);
-                            });
-                            
-                            // Tự động chọn sheet đầu tiên nếu chỉ có một sheet
-                            if (sheetNames.length === 1) {
-                                sheetSelect.value = sheetNames[0];
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error loading sheet names:', error);
-                            sheetSelect.innerHTML = originalHTML;
-                            alert('Không thể đọc danh sách sheet từ file. Vui lòng kiểm tra định dạng file.');
-                        });
-                } else {
-                    // Reset dropdown nếu không có file
-                    sheetSelect.innerHTML = '<option value="">-- Tự động chọn sheet đầu tiên --</option>';
-                }
-            });
-            
-            // Đóng modal import bằng nút hủy
-            document.getElementById('btn-huy-import')?.addEventListener('click', closeImportModal);
-            // Đóng modal import bằng nút X
-            document.getElementById('btn-dong-import')?.addEventListener('click', closeImportModal);
-            
-            // Lưu import
-            document.getElementById('btn-luu-import')?.addEventListener('click', importExcel);
-
-            // Đóng modal lỗi
-            document.getElementById('btn-close-errors')?.addEventListener('click', closeImportErrorsModal);
-            document.getElementById('btn-dong-errors')?.addEventListener('click', closeImportErrorsModal);
-
-            // Đóng modal khi click outside
-            document.getElementById('modal-import').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeImportModal();
-                }
-            });
-
-            document.getElementById('modal-import-errors').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeImportErrorsModal();
-                }
-            });
-            
-            // Tải file mẫu
-            document.getElementById('btn-download-template')?.addEventListener('click', function(e) {
-                e.preventDefault();
-                downloadTemplate();
-            });
-            
-            // Xử lý nút cập nhật
-            document.getElementById('btn-cap-nhat')?.addEventListener('click', function() {
+        // ===== EVENT LISTENERS SETUP =====
+        function setupEventListeners() {
+            // Cập nhật button
+            $('#btn-cap-nhat').off('click').on('click', function() {
                 clearCache();
-				loadFilteredData();
+                loadFilteredData();
                 showNotification('Đã làm mới dữ liệu', 'success');
             });
             
-            // Thiết lập các ô input ban đầu là readonly
-            document.querySelectorAll('input').forEach(input => {
-                input.setAttribute('readonly', true);
-            });
-
-            // Xử lý thêm môn học
-            document.getElementById('btn-them-mon-hoc')?.addEventListener('click', openThemMonHocModal);
-            // Đóng modal bằng nút hủy
-            document.getElementById('btn-huy-mon-hoc')?.addEventListener('click', closeThemMonHocModal);
-            
-            // Đóng modal bằng nút X
-            document.getElementById('btn-dong-mon-hoc')?.addEventListener('click', closeThemMonHocModal);
-            
-            // Lưu môn học
-            document.getElementById('btn-luu-mon-hoc').addEventListener('click', function(e) {
-		        e.preventDefault();
-		        e.stopPropagation();
-		        createMonHoc();
-		    });
-
-			// Đóng Select2 khi click ra ngoài
-		    document.addEventListener('click', function(e) {
-		        const $target = $(e.target);
-		        
-		        // Nếu click ra ngoài Select2 container và không phải trong modal
-		        if (!$target.closest('.select2-container').length && 
-		            !$target.closest('.modal:not(.hidden)').length) {
-		            closeAllOpenSelect2();
-		        }
-		    });
-			
-            // Đóng modal khi click outside
-            const modalThemMonHoc = document.getElementById('modal-them-mon-hoc');
-            modalThemMonHoc.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeThemMonHocModal();
-                }
-            });
-
-			// Ngăn sự kiện click trong modal lan ra ngoài
-		    document.querySelectorAll('.modal').forEach(modalEl => {
-		        modalEl.addEventListener('click', function(e) {
-		            if (e.target === this) {
-		                // Nếu click vào backdrop, đóng modal
-		                if (this.id === 'modal-them-mon-hoc') closeThemMonHocModal();
-		                if (this.id === 'modal-them-chuong-trinh') closeThemChuongTrinhModal();
-		                if (this.id === 'modal-import') closeImportModal();
-		                if (this.id === 'modal-import-errors') closeImportErrorsModal();
-		            }
-		        });
-			});
-            // Prevent modal content clicks from closing modal
-		    const modalContent = document.querySelector('#modal-them-mon-hoc > div');
-		    if (modalContent) {
-		        modalContent.addEventListener('click', function(e) {
-		            e.stopPropagation();
-		        });
-		    }
-
-			
-			// ===== CRITICAL FIX: Force enable inputs when modal opens =====
-		    // Observer to detect when modal becomes visible
-		    const modalObserver = new MutationObserver(function(mutations) {
-		        mutations.forEach(function(mutation) {
-		            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-		                const monHocModal = document.getElementById('modal-them-mon-hoc');
-		                if (monHocModal && !monHocModal.classList.contains('hidden')) {
-		                    console.log('Modal opened, enabling inputs...');
-		                    
-		                    // Small delay to ensure DOM is ready
-		                    setTimeout(() => {
-		                        enableModalInputs();
-		                        
-		                        // Also force select2 reinitialization
-		                        if (typeof initializeSelect2ForSubjectModal === 'function') {
-		                            setTimeout(initializeSelect2ForSubjectModal, 100);
-		                        }
-		                    }, 100);
-		                }
-		            }
-		        });
-		    });
-		    
-		    // Start observing the modal
-		    const monHocModal = document.getElementById('modal-them-mon-hoc');
-		    if (monHocModal) {
-		        modalObserver.observe(monHocModal, { attributes: true });
-		    }
-			
-            
-            // Cập nhật thông tin ngành khi chọn chương trình trong modal
-            const themMonHocCurriculum = document.getElementById('them-mon-hoc-curriculum');
-            if (themMonHocCurriculum) {
-                themMonHocCurriculum.addEventListener('change', function() {
-                    updateMajorInfo(this.value);
-                });
-            }
-            
-            // Lọc tổ bộ môn khi chọn đơn vị
-            const departmentSelect = document.querySelector('select[name="department_id"]');
-            if (departmentSelect) {
-                departmentSelect.addEventListener('change', function() {
-                    filterSubjectGroupsByDepartment(this.value);
-                });
-            }
-            
-            // Tự động tính tổng số giờ
-            const hourInputs = ['theory_hours', 'practice_hours', 'tests_hours', 'exam_hours'];
-            hourInputs.forEach(field => {
-                const input = document.querySelector(`input[name="${field}"]`);
-                if (input) {
-                    input.addEventListener('input', function() {
-                        calculateTotalHours();
-                    });
+            // Edit button in table
+            $(document).off('click', '.btn-sua').on('click', '.btn-sua', function(e) {
+                e.stopPropagation();
+                const button = $(this);
+                const row = button.closest('tr');
+                const id = button.data('id');
+                const isEditMode = button.find('i').hasClass('fa-edit');
+                
+                if (isEditMode) {
+                    enterEditMode(row[0], button[0]);
+                } else {
+                    exitEditMode(row[0], button[0], id);
                 }
             });
             
-            function calculateTotalHours() {
-                const theory = parseInt(document.querySelector('input[name="theory_hours"]')?.value) || 0;
-                const practice = parseInt(document.querySelector('input[name="practice_hours"]')?.value) || 0;
-                const test = parseInt(document.querySelector('input[name="tests_hours"]')?.value) || 0;
-                const exam = parseInt(document.querySelector('input[name="exam_hours"]')?.value) || 0;
-                const total = theory + practice + test + exam;
-                const totalInput = document.querySelector('input[name="total_hours"]');
-                if (totalInput) {
-                    totalInput.value = total || '';
+            // Delete button
+            $(document).off('click', '.btn-xoa').on('click', '.btn-xoa', function(e) {
+                e.stopPropagation();
+                const id = $(this).data('id');
+                if (id && confirm('Bạn có chắc chắn muốn xóa môn học này?')) {
+                    deleteMonHoc(id);
                 }
-            }
-
-            // Xử lý phím Enter trong modal
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-		            const activeEditButton = document.querySelector('.btn-sua.text-green-600');
-		            if (activeEditButton) {
-		                activeEditButton.click();
-		            }
-		        }
-
-				// ESC để đóng tất cả modal
+            });
+            
+            // ESC key to exit edit mode
+            $(document).on('keydown', function(e) {
                 if (e.key === 'Escape') {
-					const activeEditButton = document.querySelector('.btn-sua.text-green-600');
-		            if (activeEditButton) {
-		                const row = activeEditButton.closest('tr');
-		                const button = activeEditButton;
-		                const id = button.getAttribute('data-id');
-		                
-		                // Thoát chế độ sửa không lưu
-		                button.innerHTML = '<i class="fas fa-edit"></i>';
-		                button.classList.remove('text-green-600');
-		                button.classList.add('text-blue-600');
-		                button.title = 'Sửa';
-		                
-		                // Khôi phục giá trị gốc
-		                const editables = row.querySelectorAll('input.editable, select.editable');
-		                editables.forEach(editable => {
-		                    const originalValue = editable.getAttribute('data-original-value');
-		                    editable.value = originalValue;
-		                    
-		                    if (editable.tagName === 'SELECT') {
-		                        editable.disabled = true;
-		                    } else {
-		                        editable.setAttribute('readonly', true);
-		                    }
-		                    editable.classList.remove('border', 'border-blue-400', 'bg-blue-50');
-		                });
-		                
-		                showNotification('Đã hủy thay đổi', 'info');
-		            }
-					
-                    closeThemMonHocModal();
-                    closeThemChuongTrinhModal();
-                    closeImportModal();
-                    closeImportErrorsModal();
-                    document.body.classList.remove('overflow-hidden');
-                }
-                
-                // Enter trong modal import (với Ctrl)
-                if (!document.getElementById('modal-import').classList.contains('hidden')) {
-                    if (e.key === 'Enter' && e.ctrlKey) {
-                        importExcel();
-                    }
-                }
-                
-                // Enter trong modal thêm chương trình (với Ctrl)
-                if (!document.getElementById('modal-them-chuong-trinh').classList.contains('hidden')) {
-                    if (e.key === 'Enter' && e.ctrlKey) {
-                        createCurriculum();
-                    }
-                }
-                            
-                if (!document.getElementById('modal-them-mon-hoc').classList.contains('hidden')) {
-                    if (e.key === 'Enter' && e.ctrlKey) {
-                        createMonHoc();
+                    const activeEditButton = $('.btn-sua.text-green-600');
+                    if (activeEditButton.length) {
+                        const row = activeEditButton.closest('tr');
+                        const id = activeEditButton.data('id');
+                        exitEditMode(row[0], activeEditButton[0], id);
                     }
                 }
             });
+        }
+
+        // ===== SHOW NOTIFICATION FUNCTION =====
+		function showNotification(message, type = 'info') {
+		    const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-4 py-3 rounded-md shadow-lg z-50 transition-all duration-300 ${
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                'bg-blue-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${
+                        type === 'success' ? 'fa-check-circle' :
+                        type === 'error' ? 'fa-exclamation-circle' :
+                        'fa-info-circle'
+                    } mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+		}
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            // Destroy all Select2 instances
+            $('.select2-hidden-accessible').select2('destroy');
+            
+            // Clear timeouts
+            if (instructorSearchTimeout) clearTimeout(instructorSearchTimeout);
+            if (filterTimeout) clearTimeout(filterTimeout);
+            
+            // Clear cache
+            clearCache();
         });
     </script>
 	
