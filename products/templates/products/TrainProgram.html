@@ -345,6 +345,54 @@
             border-bottom: none;
         }
 
+
+        /* ===== FIX SELECT2 IN TABLE ===== */
+        /* Đảm bảo dropdown Select2 không bị cắt */
+        .table-container {
+            overflow: auto !important;
+            position: relative;
+        }
+
+        /* Fix vị trí Select2 trong table cell */
+        table td .select2-container {
+            z-index: 1000 !important;
+            position: relative !important;
+        }
+
+        table td .select2-container--open {
+            z-index: 1001 !important;
+        }
+
+        table td .select2-dropdown {
+            position: fixed !important;
+            z-index: 1002 !important;
+            min-width: 200px !important;
+            max-width: 300px !important;
+        }
+
+        /* Đảm bảo Select2 trong bảng hiển thị đúng */
+        td .select2-container {
+            width: 100% !important;
+        }
+
+        td .select2-selection {
+            border: 1px solid transparent !important;
+            background: transparent !important;
+            height: 28px !important;
+            min-height: 28px !important;
+        }
+
+        td .select2-selection:focus {
+            border-color: #3b82f6 !important;
+            background-color: #f0f9ff !important;
+        }
+
+        td .select2-selection__rendered {
+            line-height: 26px !important;
+            font-size: 0.875rem !important;
+            padding-left: 4px !important;
+        }
+
         /* ===== ANIMATIONS ===== */
         @keyframes modalSlideIn {
             from {
@@ -1559,7 +1607,7 @@
                     subjectsData,
                     majorsData,
                     subjectTypesData
-                ] = await Promise.all([
+                ] = Promise.all([
                     fetchWithCache('/api/curricula/', 'curricula'),
                     fetchWithCache('/api/courses/', 'courses'),
                     fetchWithCache('/api/departments/', 'departments'),
