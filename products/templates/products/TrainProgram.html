@@ -349,23 +349,24 @@
         /* ===== FIX SELECT2 IN TABLE ===== */
         /* Đảm bảo dropdown Select2 không bị cắt */
         .table-container {
-            overflow: auto !important;
             position: relative;
+            overflow: auto;
         }
 
         /* Fix vị trí Select2 trong table cell */
         table td .select2-container {
-            z-index: 1000 !important;
+            z-index: 10 !important;
             position: relative !important;
+            width: 100% !important;
         }
 
         table td .select2-container--open {
-            z-index: 1001 !important;
+            z-index: 9999 !important;
         }
 
         table td .select2-dropdown {
             position: fixed !important;
-            z-index: 1002 !important;
+            z-index: 99999 !important;
             min-width: 200px !important;
             max-width: 300px !important;
         }
@@ -376,8 +377,8 @@
         }
 
         td .select2-selection {
-            border: 1px solid transparent !important;
             background: transparent !important;
+            border: 1px solid transparent !important;
             height: 28px !important;
             min-height: 28px !important;
         }
@@ -391,6 +392,11 @@
             line-height: 26px !important;
             font-size: 0.875rem !important;
             padding-left: 4px !important;
+        }
+
+        /* Fix cho dropdown khi table có overflow */
+        .table-container .select2-dropdown {
+            position: absolute !important;
         }
 
         /* ===== ANIMATIONS ===== */
@@ -1561,6 +1567,19 @@
         let instructorSearchTimeout = null;
         let filterTimeout = null;
 
+        // ===== ERROR HANDLING FUNCTIONS =====
+        function handleApiError(error, endpoint) {
+            console.error(`❌ API Error for ${endpoint}:`, error.message);
+            
+            // Không hiển thị alert cho người dùng với lỗi 500
+            if (error.message.includes('500')) {
+                console.log(`↻ Server error for ${endpoint}, using fallback data`);
+                return [];
+            }
+            
+            return [];
+        }
+
         // ===== CACHE FUNCTIONS =====
         async function fetchWithCache(url, cacheKey) {
             console.log(`Fetching: ${url}`);
@@ -1570,16 +1589,26 @@
             
             // Check cache
             if (cached && (now - cached.timestamp < CACHE_DURATION)) {
-                console.log(`Using cache for: ${cacheKey}`);
+                console.log(`✓ Using cache: ${cacheKey}`);
                 return cached.data;
             }
             
             try {
-                console.log(`Fetching fresh data for: ${cacheKey}`);
-                const response = await fetch(url);
+                console.log(`⟳ Fetching: ${cacheKey}`);
+
+                // Thêm timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                const response = await fetch(url, { 
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                clearTimeout(timeoutId);
                 
                 if (!response.ok) {
-                    console.warn(`API error ${response.status}: ${url}`);
                     throw new Error(`HTTP ${response.status}`);
                 }
                 
@@ -1591,13 +1620,14 @@
                     timestamp: now
                 });
                 
+                console.log(`✓ Loaded: ${cacheKey} (${data.length || 0} items)`);
                 return data;
             } catch (error) {
-                console.error(`Fetch error for ${cacheKey}:`, error.message);
+                console.warn(`⚠ Fetch failed for ${cacheKey}:`, error.message);
                 
                 // Return cached data if available
                 if (cached) {
-                    console.log('Returning cached data');
+                    console.log(`↻ Using cached data for ${cacheKey}`);
                     return cached.data;
                 }
                 
@@ -1609,45 +1639,51 @@
 
         async function loadInitialData() {
             try {
-                // Load data in parallel
-                const [
-                    curriculaData,
-                    coursesData,
-                    departmentsData,
-                    subjectGroupsData,
-                    subjectsData,
-                    majorsData,
-                    subjectTypesData
-                ] = await Promise.all([
-                    fetchWithCache('/api/curricula/', 'curricula'),
-                    fetchWithCache('/api/courses/', 'courses'),
-                    fetchWithCache('/api/departments/', 'departments'),
-                    fetchWithCache('/api/subject-groups/', 'subjectGroups'),
-                    fetchWithCache('/api/all-subjects/', 'subjects'),
-                    fetchWithCache('/api/majors/', 'majors'),
+                const sampleData = getSampleData();
+                
+                // Thử tải từ API, nếu lỗi thì dùng sample data
+                const loadPromises = [
+                    fetchWithCache('/api/curricula/', 'curricula')
+                        .then(data => allCurricula = data.length ? data : sampleData.curricula)
+                        .catch(() => allCurricula = sampleData.curricula),
+                        
+                    fetchWithCache('/api/courses/', 'courses')
+                        .then(data => allCourses = data.length ? data : sampleData.courses)
+                        .catch(() => allCourses = sampleData.courses),
+                        
+                    fetchWithCache('/api/departments/', 'departments')
+                        .then(data => allDepartments = data.length ? data : sampleData.departments)
+                        .catch(() => allDepartments = sampleData.departments),
+                        
+                    fetchWithCache('/api/subject-groups/', 'subjectGroups')
+                        .then(data => allSubjectGroups = data.length ? data : sampleData.subjectGroups)
+                        .catch(() => allSubjectGroups = sampleData.subjectGroups),
+                        
+                    fetchWithCache('/api/all-subjects/', 'subjects')
+                        .then(data => allSubjects = data.length ? data : sampleData.subjects)
+                        .catch(() => allSubjects = sampleData.subjects),
+                        
+                    fetchWithCache('/api/majors/', 'majors')
+                        .then(data => allMajors = data.length ? data : sampleData.majors)
+                        .catch(() => allMajors = sampleData.majors),
+                        
                     fetchWithCache('/api/subject-types/', 'subjectTypes')
-                ]);
+                        .then(data => allSubjectTypes = data.length ? data : sampleData.subjectTypes)
+                        .catch(() => allSubjectTypes = sampleData.subjectTypes)
+                ];
                 
-                // Assign to global variables
-                allCurricula = curriculaData || [];
-                allCourses = coursesData || [];
-                allDepartments = departmentsData || [];
-                allSubjectGroups = subjectGroupsData || [];
-                allSubjects = subjectsData || [];
-                allMajors = majorsData || [];
-                allSubjectTypes = subjectTypesData || [];
+                await Promise.all(loadPromises);
                 
-                console.log('Data loaded:', {
-                    curricula: allCurricula.length,
-                    courses: allCourses.length,
-                    departments: allDepartments.length,
-                    subjectGroups: allSubjectGroups.length,
-                    subjects: allSubjects.length
-                });
+                console.log('✅ Data loaded successfully');
+                console.log(`- Departments: ${allDepartments.length}`);
+                console.log(`- Subject Groups: ${allSubjectGroups.length}`);
+                console.log(`- Curricula: ${allCurricula.length}`);
+                console.log(`- Courses: ${allCourses.length}`);
                 
                 return true;
+                
             } catch (error) {
-                console.error('Error loading initial data:', error);
+                console.error('❌ Error loading initial data:', error);
                 return false;
             }
         }
@@ -2133,67 +2169,146 @@
         function initializeDropdowns() {
             console.log('Initializing dropdowns...');
     
-            // Initialize with Select2
-            const dropdowns = ['#khoa-dao-tao', '#to-bo-mon', '#chuong-trinh-dao-tao', '#khoa-hoc'];
-            
-            dropdowns.forEach(selector => {
-                $(selector).select2({
+            // Khởi tạo Select2 cho các dropdown chính
+            const initSelect2 = (selector, placeholder) => {
+                const $element = $(selector);
+                if (!$element.length) return;
+                
+                // Destroy nếu đã có Select2
+                if ($element.hasClass('select2-hidden-accessible')) {
+                    $element.select2('destroy');
+                }
+                
+                // Initialize Select2
+                $element.select2({
                     width: '100%',
-                    placeholder: '-- Chọn --',
+                    placeholder: placeholder,
                     allowClear: true,
                     language: 'vi',
                     dropdownParent: $('body')
                 });
-            });
+                
+                return $element;
+            };
+            
+            // Initialize main dropdowns
+            const $khoaDaoTao = initSelect2('#khoa-dao-tao', '-- Chọn khoa --');
+            const $toBoMon = initSelect2('#to-bo-mon', '-- Chọn tổ bộ môn --');
+            const $chuongTrinh = initSelect2('#chuong-trinh-dao-tao', '-- Chọn chương trình --');
+            const $khoaHoc = initSelect2('#khoa-hoc', '-- Chọn khóa học --');
             
             // Populate data
             populateDropdown('khoa-dao-tao', allDepartments, 'name');
             populateDropdown('to-bo-mon', allSubjectGroups, 'name');
             populateDropdown('chuong-trinh-dao-tao', allCurricula, 'name');
             populateDropdown('khoa-hoc', allCourses, 'name');
-            
-            // Setup events
-            setupDropdownEvents();
         }
 
         // ===== FIXED FILTER EVENTS =====
         function setupDropdownEvents() {
+            console.log('Setting up dropdown events...');
+            
+            // Remove existing events to avoid duplicates
+            $(document).off('change', '#khoa-dao-tao');
+            $(document).off('change', '#chuong-trinh-dao-tao');
+            $(document).off('change', '#to-bo-mon');
+            $(document).off('change', '#khoa-hoc');
+            
             // Khoa -> To bo mon filter
             $(document).on('change', '#khoa-dao-tao', function() {
                 const departmentId = $(this).val();
-                console.log('Khoa changed:', departmentId);
+                console.log('Khoa selected:', departmentId);
                 
                 // Filter subject groups
-                const filtered = departmentId 
-                    ? allSubjectGroups.filter(g => g.department_id == departmentId)
+                const filteredGroups = departmentId 
+                    ? allSubjectGroups.filter(group => group.department_id == departmentId)
                     : allSubjectGroups;
                 
-                // Update dropdown
-                populateDropdown('to-bo-mon', filtered, 'name');
+                // Update to-bo-mon dropdown
+                const $subjectGroupSelect = $('#to-bo-mon');
                 
-                // Load data
+                // Save current value
+                const currentValue = $subjectGroupSelect.val();
+                
+                // Clear and repopulate
+                $subjectGroupSelect.empty();
+                $subjectGroupSelect.append($('<option>', {
+                    value: '',
+                    text: '-- Chọn tổ bộ môn --'
+                }));
+                
+                filteredGroups.forEach(group => {
+                    $subjectGroupSelect.append($('<option>', {
+                        value: group.id,
+                        text: group.name
+                    }));
+                });
+                
+                // Restore value if still valid
+                if (currentValue && filteredGroups.some(g => g.id == currentValue)) {
+                    $subjectGroupSelect.val(currentValue);
+                }
+                
+                // Update Select2
+                if ($subjectGroupSelect.hasClass('select2-hidden-accessible')) {
+                    $subjectGroupSelect.trigger('change');
+                }
+                
+                // Load filtered data
                 debouncedLoadFilteredData();
             });
             
             // Chuong trinh -> Khoa hoc filter
             $(document).on('change', '#chuong-trinh-dao-tao', function() {
                 const curriculumId = $(this).val();
-                console.log('Chuong trinh changed:', curriculumId);
+                console.log('Chương trình selected:', curriculumId);
                 
                 // Filter courses
-                const filtered = curriculumId
-                    ? allCourses.filter(c => c.curriculum_id == curriculumId)
+                const filteredCourses = curriculumId
+                    ? allCourses.filter(course => course.curriculum_id == curriculumId)
                     : allCourses;
                 
-                // Update dropdown
-                populateDropdown('khoa-hoc', filtered, 'name');
+                // Update khoa-hoc dropdown
+                const $courseSelect = $('#khoa-hoc');
                 
-                // Load data
+                // Save current value
+                const currentValue = $courseSelect.val();
+                
+                // Clear and repopulate
+                $courseSelect.empty();
+                $courseSelect.append($('<option>', {
+                    value: '',
+                    text: '-- Chọn khóa học --'
+                }));
+                
+                filteredCourses.forEach(course => {
+                    const displayText = course.code 
+                        ? `${course.name} (${course.code})`
+                        : course.name;
+                        
+                    $courseSelect.append($('<option>', {
+                        value: course.id,
+                        text: displayText
+                    }));
+                });
+                
+                // Restore value if still valid
+                if (currentValue && filteredCourses.some(c => c.id == currentValue)) {
+                    $courseSelect.val(currentValue);
+                }
+                
+                // Update Select2
+                if ($courseSelect.hasClass('select2-hidden-accessible')) {
+                    $courseSelect.trigger('change');
+                }
+                
+                // Load filtered data
                 debouncedLoadFilteredData();
             });
             
             // Other dropdown changes
-            $(document).on('change', '#to-bo-mon, #khoa-hoc', debouncedLoadFilteredData);
+            $(document).on('change', '#to-bo-mon', debouncedLoadFilteredData);
+            $(document).on('change', '#khoa-hoc', debouncedLoadFilteredData);
         }
         
         // ===== DEBOUNCED DATA LOADING =====
@@ -2219,11 +2334,11 @@
             dropdown.empty();
             dropdown.append($('<option>', {
                 value: '',
-                text: '-- Chọn --'
+                text: dropdown.attr('placeholder') || '-- Chọn --'
             }));
             
             // Add data options
-            if (Array.isArray(data)) {
+            if (Array.isArray(data) && data.length > 0) {
                 data.forEach(item => {
                     let text = item[displayField] || '';
                     if (item.code) {
@@ -2233,15 +2348,25 @@
                         text += ` (${item.academic_year})`;
                     }
                     
-                    dropdown.append($('<option>', {
+                    const option = $('<option>', {
                         value: item.id,
                         text: text
-                    }));
+                    });
+                    
+                    // Add data attributes for filtering
+                    if (item.department_id) {
+                        option.attr('data-department', item.department_id);
+                    }
+                    if (item.curriculum_id) {
+                        option.attr('data-curriculum', item.curriculum_id);
+                    }
+                    
+                    dropdown.append(option);
                 });
             }
             
-            // Restore previous value
-            if (currentValue) {
+            // Restore previous value if still valid
+            if (currentValue && dropdown.find(`option[value="${currentValue}"]`).length) {
                 dropdown.val(currentValue);
             }
             
@@ -2253,20 +2378,36 @@
 
 		// Hàm khởi tạo Select2 cho các dropdown trong bảng
 		function initializeTableSelect2() {
-		    // Initialize Select2 for table dropdowns
-            $('tbody select.editable').each(function() {
+		    // Destroy existing Select2 instances in table to avoid conflicts
+            $('tbody select.select2-hidden-accessible').each(function() {
+                try {
+                    $(this).select2('destroy');
+                } catch (e) {
+                    console.log('Could not destroy Select2:', e);
+                }
+            });
+            
+            // Initialize Select2 for new selects
+            $('tbody select.editable:not(.select2-hidden-accessible)').each(function() {
                 const $select = $(this);
                 
-                if (!$select.hasClass('select2-hidden-accessible')) {
-                    $select.select2({
-                        width: '100%',
-                        dropdownParent: $('body'),
-                        minimumResultsForSearch: 3
-                    });
-                    
-                    // Disable by default
-                    if ($select.prop('disabled')) {
-                        $select.select2('disable');
+                // Only initialize if there are options
+                if ($select.find('option').length > 0) {
+                    try {
+                        // Use body as parent for proper positioning
+                        $select.select2({
+                            width: '100%',
+                            dropdownParent: $('body'),
+                            minimumResultsForSearch: 3,
+                            language: 'vi'
+                        });
+                        
+                        // Disable if the select is disabled
+                        if ($select.prop('disabled')) {
+                            $select.select2('disable');
+                        }
+                    } catch (error) {
+                        console.error('Error initializing Select2 in table:', error);
                     }
                 }
             });
@@ -2295,20 +2436,6 @@
             monHocData.forEach((item, index) => {
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50';
-                
-                // Find course name
-                let courseName = '';
-                const course = allCourses.find(c => c.id == item.course_id);
-                if (course) {
-                    courseName = `${course.name} ${course.code ? '(' + course.code + ')' : ''}`;
-                }
-                
-                // Find department name
-                let departmentName = '';
-                const dept = allDepartments.find(d => d.id == item.department_id);
-                if (dept) {
-                    departmentName = dept.name;
-                }
                 
                 row.innerHTML = `
                     <td class="px-2 py-2 text-center">${index + 1}</td>
@@ -2363,9 +2490,9 @@
                     `).join('')}
                     <!-- Department select -->
                     <td class="px-2 py-2">
-                        <select class="editable department-select w-full text-sm" 
+                        <select class="editable w-full text-sm" 
                                 data-field="department" data-id="${item.id}" disabled>
-                            <option value="">-- Chọn --</option>
+                            <option value="">-- Chọn đơn vị --</option>
                             ${allDepartments.map(dept => `
                                 <option value="${dept.id}" ${dept.id == item.department_id ? 'selected' : ''}>
                                     ${escapeHtml(dept.name)}
@@ -2376,7 +2503,7 @@
                     <!-- Instructor input -->
                     <td class="px-2 py-2">
                         <input type="text" value="${escapeHtml(item.giang_vien || '')}" 
-                            class="editable instructor-input w-full bg-transparent border-none text-sm"
+                            class="editable w-full bg-transparent border-none text-sm"
                             data-field="instructor" data-id="${item.id}" readonly>
                     </td>
                     <!-- Course select -->
@@ -2446,38 +2573,42 @@
         }
 
         function getSampleData() {
-            return [
-                {
-                    id: 1,
-                    ma_mon_hoc: 'MH001',
-                    ten_mon_hoc: 'Toán cao cấp',
-                    so_tin_chi: 3,
-                    tong_so_gio: 45,
-                    ly_thuyet: 30,
-                    thuc_hanh: 15,
-                    kiem_tra: 0,
-                    thi: 0,
-                    hk1: 3,
-                    department_id: 1,
-                    giang_vien: 'Nguyễn Văn A',
-                    course_id: 1
-                },
-                {
-                    id: 2,
-                    ma_mon_hoc: 'MH002',
-                    ten_mon_hoc: 'Lập trình cơ bản',
-                    so_tin_chi: 4,
-                    tong_so_gio: 60,
-                    ly_thuyet: 30,
-                    thuc_hanh: 30,
-                    kiem_tra: 0,
-                    thi: 0,
-                    hk1: 4,
-                    department_id: 1,
-                    giang_vien: 'Trần Thị B',
-                    course_id: 1
-                }
-            ];
+            return {
+                departments: [
+                    { id: 1, code: 'CNTT', name: 'Công nghệ Thông tin' },
+                    { id: 2, code: 'DTVT', name: 'Điện tử Viễn thông' },
+                    { id: 3, code: 'CK', name: 'Cơ khí' },
+                    { id: 4, code: 'XD', name: 'Xây dựng' }
+                ],
+                subjectGroups: [
+                    { id: 1, name: 'Tổ Tin học', department_id: 1 },
+                    { id: 2, name: 'Tổ Mạng máy tính', department_id: 1 },
+                    { id: 3, name: 'Tổ Điện tử', department_id: 2 },
+                    { id: 4, name: 'Tổ Cơ khí chế tạo', department_id: 3 }
+                ],
+                curricula: [
+                    { id: 1, code: 'CT1', name: 'Chương trình CNTT 2023', academic_year: '2023-2024' },
+                    { id: 2, code: 'CT2', name: 'Chương trình ĐTVT 2023', academic_year: '2023-2024' }
+                ],
+                courses: [
+                    { id: 1, code: 'K2023', name: 'Khóa 2023', curriculum_id: 1 },
+                    { id: 2, code: 'K2024', name: 'Khóa 2024', curriculum_id: 1 },
+                    { id: 3, code: 'K2023D', name: 'Khóa 2023 ĐTVT', curriculum_id: 2 }
+                ],
+                subjects: [
+                    { id: 1, code: 'MH001', name: 'Toán cao cấp', credits: 3, total_hours: 45 },
+                    { id: 2, code: 'MH002', name: 'Lập trình cơ bản', credits: 4, total_hours: 60 },
+                    { id: 3, code: 'MH003', name: 'Cơ sở dữ liệu', credits: 3, total_hours: 45 }
+                ],
+                majors: [
+                    { id: 1, code: '7480201', name: 'Công nghệ thông tin' },
+                    { id: 2, code: '7510302', name: 'Công nghệ kỹ thuật điện tử - viễn thông' }
+                ],
+                subjectTypes: [
+                    { id: 1, code: 'BB', name: 'Bắt buộc' },
+                    { id: 2, code: 'TC', name: 'Tự chọn' }
+                ]
+            };
         }
 
         // Load thống kê
@@ -2674,40 +2805,66 @@
             `);
             
             try {
-                // Build API URL - ĐIỀU CHỈNH THEO API THỰC TẾ
-                let apiUrl = '/api/subjects/';
-                const params = [];
+                // Build API URL
+                const params = new URLSearchParams();
+                if (curriculumId) params.append('curriculum_id', curriculumId);
+                if (departmentId) params.append('department_id', departmentId);
+                if (subjectGroupId) params.append('subject_group_id', subjectGroupId);
+                if (courseId) params.append('course_id', courseId);
                 
-                if (curriculumId) params.push(`curriculum_id=${curriculumId}`);
-                if (departmentId) params.push(`department_id=${departmentId}`);
-                if (subjectGroupId) params.push(`subject_group_id=${subjectGroupId}`);
-                if (courseId) params.push(`course_id=${courseId}`);
+                const url = `/api/subjects/${params.toString() ? '?' + params.toString() : ''}`;
                 
-                if (params.length > 0) {
-                    apiUrl += '?' + params.join('&');
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
                 }
                 
-                console.log('API URL:', apiUrl);
-                
-                // Fetch data
-                const data = await fetch(apiUrl)
-                    .then(response => {
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        return response.json();
-                    })
-                    .catch(error => {
-                        console.error('API error:', error);
-                        // Fallback to sample data
-                        return getSampleData();
-                    });
-                
+                const data = await response.json();
                 monHocData = Array.isArray(data) ? data : [];
+                
                 renderTable();
                 updateStatistics();
                 
             } catch (error) {
                 console.error('Error loading data:', error);
-                showNotification('Không thể tải dữ liệu', 'error');
+                // Show error message
+                $('#table-body').html(`
+                    <tr>
+                        <td colspan="19" class="px-4 py-4 text-center text-red-500">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Không thể tải dữ liệu. ${error.message}
+                        </td>
+                    </tr>
+                `);
+                
+                // Use sample data for demo
+                monHocData = getSampleData().subjects.map((subject, index) => ({
+                    id: index + 1,
+                    ma_mon_hoc: subject.code,
+                    ten_mon_hoc: subject.name,
+                    so_tin_chi: subject.credits,
+                    tong_so_gio: subject.total_hours,
+                    ly_thuyet: Math.floor(subject.total_hours * 0.7),
+                    thuc_hanh: Math.floor(subject.total_hours * 0.3),
+                    kiem_tra: 0,
+                    thi: 0,
+                    hk1: subject.credits,
+                    hk2: '',
+                    hk3: '',
+                    hk4: '',
+                    hk5: '',
+                    hk6: '',
+                    don_vi: 'Khoa Công nghệ thông tin',
+                    department_id: 1,
+                    giang_vien: 'Giảng viên mẫu',
+                    course_id: 1
+                }));
+                
+                renderTable();
+                updateStatistics();
+                
+                showNotification('Đang hiển thị dữ liệu mẫu', 'warning');
             }
         }
 
@@ -2980,17 +3137,14 @@
         
         // Mở modal import Excel
         function openImportModal() {
-            document.getElementById('modal-import').classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
+            $('#modal-import').removeClass('hidden');
+            $('body').addClass('overflow-hidden');
         }
 
         // Đóng modal import Excel
         function closeImportModal() {
-            const importmodal = document.getElementById('modal-import');
-		    if (importmodal) {
-		        importmodal.classList.add('hidden');
-		    }
-		    document.body.classList.remove('overflow-hidden');
+            $('#modal-import').addClass('hidden');
+            $('body').removeClass('overflow-hidden');
         }
 
         // Mở modal lỗi import
@@ -3170,53 +3324,14 @@
         
         // Mở modal thêm chương trình
         function openThemChuongTrinhModal() {
-			closeAllOpenSelect2();
-            console.log('Opening curriculum modal...');
-            const chuongTrinhModal = document.getElementById('modal-them-chuong-trinh');
-            if (chuongTrinhModal) {
-                chuongTrinhModal.classList.remove('hidden');
-                document.body.classList.add('overflow-hidden');
-            
-                // Đảm bảo các input có thể nhập
-                setTimeout(() => {
-                    initializeSelect2ForCurriculumModal();
-            
-                    // Đảm bảo các input có thể nhập
-                    const inputs = chuongTrinhModal.querySelectorAll('input, select, textarea');
-                    inputs.forEach(input => {
-                        input.removeAttribute('readonly');
-                        input.removeAttribute('disabled');
-                        input.style.pointerEvents = 'auto';
-                        input.style.userSelect = 'auto';
-                    });
-                    
-                    // Focus vào input đầu tiên
-                    const firstInput = chuongTrinhModal.querySelector('input[name="code"]');
-                    if (firstInput) {
-                        firstInput.focus();
-                    }
-                }, 100);
-            }
+			$('#modal-them-chuong-trinh').removeClass('hidden');
+            $('body').addClass('overflow-hidden');
         }
 
         // Đóng modal thêm chương trình
         function closeThemChuongTrinhModal() {
-			cleanupModalResources();
-            const chuongTrinhModal = document.getElementById('modal-them-chuong-trinh');
-            if (chuongTrinhModal) {
-                chuongTrinhModal.classList.add('hidden');
-            }
-
-			if (!document.querySelector('.modal:not(.hidden)')) {
-		        document.body.classList.remove('modal-open');
-		    }
-			document.body.classList.remove('overflow-hidden');
-			
-			// Reset form
-			//const form = document.getElementById('form-them-chuong-trinh');
-			//if (form) {
-			//	form.reset();
-			//}
+			$('#modal-them-chuong-trinh').addClass('hidden');
+            $('body').removeClass('overflow-hidden');
         }
 
         // Hàm kiểm tra và sửa lỗi input trong modal
@@ -3337,92 +3452,8 @@
 		
         // Mở modal thêm môn học
         function openThemMonHocModal() {
-			// Disable Select2 bên ngoài
-		    $('body').addClass('modal-open');
-		    $('.select2-container:not(.modal .select2-container)').css({
-		        'opacity': '0.5',
-		        'pointer-events': 'none'
-		    });
-			
-			// Đóng tất cả Select2 đang mở trước
-    		closeAllOpenSelect2();
-			
-            const monHocModal = document.getElementById('modal-them-mon-hoc');
-            if (!monHocModal) {
-                console.error('Modal them mon hoc not found');
-                return;
-            }
-
-			// Đóng các modal khác nếu đang mở
-		    closeThemChuongTrinhModal();
-		    closeImportModal();
-
-			// Reset form
-		    const form = document.getElementById('form-them-mon-hoc');
-		    if (form) {
-		        form.reset();
-		        clearSubjectSelection();
-		    }
-
-			// Lấy giá trị từ dropdown chính
-		    const curriculumSelect = document.getElementById('chuong-trinh-dao-tao');
-		    const courseSelect = document.getElementById('khoa-hoc');
-		    
-		    let selectedCurriculumId = '';
-		    let selectedCourseId = '';
-		    
-		    if (curriculumSelect) {
-		        selectedCurriculumId = curriculumSelect.value;
-		    }
-		    
-		    if (courseSelect) {
-		        selectedCourseId = courseSelect.value;
-		    }
-		    
-		    // Hiển thị modal
-		    monHocModal.classList.remove('hidden');
-		    document.body.classList.add('overflow-hidden');
-			
-			setTimeout(() => {
-		        // Khởi tạo Select2
-		        initializeSelect2ForSubjectModal();
-		        
-		        // Set giá trị mặc định nếu có
-		        if (selectedCurriculumId) {
-		            const curriculumSelectInModal = document.getElementById('them-mon-hoc-curriculum');
-		            if (curriculumSelectInModal) {
-		                curriculumSelectInModal.value = selectedCurriculumId;
-		                $(curriculumSelectInModal).trigger('change');
-		                updateMajorInfo(selectedCurriculumId);
-		            }
-		        }
-		        
-		        if (selectedCourseId) {
-		            const courseSelectInModal = document.getElementById('them-mon-hoc-course');
-		            if (courseSelectInModal) {
-		                courseSelectInModal.value = selectedCourseId;
-		                $(courseSelectInModal).trigger('change');
-		            }
-		        }
-
-				// Tải danh sách môn học có sẵn từ dữ liệu hiện tại
-        		loadExistingSubjectsFromCurrentData();
-		        
-		        // Load danh sách môn học có sẵn
-		        //setTimeout(() => {
-		        //    loadExistingSubjects();
-		        //}, 300);
-		        
-		        // Focus vào input đầu tiên
-		        setTimeout(() => {
-		            const firstInput = monHocModal.querySelector('input[name="code"]');
-		            if (firstInput) {
-		                firstInput.focus();
-		                //firstInput.select();
-		            }
-		        }, 200);
-		        
-		    }, 100);
+			$('#modal-them-mon-hoc').removeClass('hidden');
+            $('body').addClass('overflow-hidden');
         }
 
 		// Hàm cleanup khi đóng modal
@@ -3446,30 +3477,8 @@
 		
         // Đóng modal thêm môn học
         function closeThemMonHocModal() {
-			cleanupModalResources();
-			// Enable Select2 bên ngoài
-		    $('body').removeClass('modal-open');
-		    $('.select2-container:not(.modal .select2-container)').css({
-		        'opacity': '1',
-		        'pointer-events': 'auto'
-		    });
-			
-			const monHocModal = document.getElementById('modal-them-mon-hoc');
-		    if (monHocModal) {
-		        monHocModal.classList.add('hidden');
-		    }
-			// Chỉ xóa modal-open nếu không còn modal nào mở
-		    if (!document.querySelector('.modal:not(.hidden)')) {
-		        document.body.classList.remove('modal-open');
-		    }
-		    document.body.classList.remove('overflow-hidden');
-		    
-		    // Reset form
-		    //const form = document.getElementById('form-them-mon-hoc');
-		    //if (form) {
-		    //    form.reset();
-		    //    clearSubjectSelection();
-		    //}
+			$('#modal-them-mon-hoc').addClass('hidden');
+            $('body').removeClass('overflow-hidden');
         }
 
         // Cập nhật thông tin ngành đào tạo khi chọn chương trình
@@ -3824,7 +3833,7 @@
             button.innerHTML = '<i class="fas fa-check"></i>';
             button.classList.remove('btn-sua', 'text-blue-600');
             button.classList.add('btn-luu', 'text-green-600');
-            button.title = 'Lưu';
+            button.title = 'Lưu thay đổi';
             
             // Enable selects and initialize Select2
             const selects = row.querySelectorAll('select.editable');
@@ -3834,20 +3843,14 @@
                 const $select = $(select);
                 if ($select.hasClass('select2-hidden-accessible')) {
                     $select.select2('enable');
-                } else {
-                    $select.select2({
-                        width: '100%',
-                        dropdownParent: $('body'),
-                        minimumResultsForSearch: 3
-                    });
                 }
             });
             
             // Enable instructor input
-            const instructorInput = row.querySelector('.instructor-input');
-            if (instructorInput) {
-                instructorInput.readOnly = false;
-            }
+            const inputs = row.querySelectorAll('input.editable[data-field="instructor"]');
+            inputs.forEach(input => {
+                input.readOnly = false;
+            });
 		}
 		
 		// ===== EXIT EDIT MODE FUNCTION =====
@@ -3856,35 +3859,39 @@
     
             // Update button
             button.innerHTML = '<i class="fas fa-edit"></i>';
-            button.classList.remove('btn-luu', 'text-green-600');
-            button.classList.add('btn-sua', 'text-blue-600');
+            button.classList.remove('text-green-600');
+            button.classList.add('text-blue-600');
             button.title = 'Sửa';
             
             // Collect changes
             const changes = {};
-            const elements = row.querySelectorAll('[data-field]');
             
-            elements.forEach(el => {
-                const field = el.getAttribute('data-field');
-                const value = el.tagName === 'SELECT' ? $(el).val() : el.value;
-                const original = el.getAttribute('data-original-value') || '';
+            // Process selects
+            const selects = row.querySelectorAll('select.editable');
+            selects.forEach(select => {
+                const $select = $(select);
+                const field = select.getAttribute('data-field');
+                const value = $select.val();
                 
-                if (value !== original) {
-                    changes[field] = value;
-                    el.setAttribute('data-original-value', value);
-                }
+                changes[field] = value;
                 
-                // Disable elements
-                if (el.tagName === 'SELECT') {
-                    el.disabled = true;
-                    $(el).select2('disable');
-                } else {
-                    el.readOnly = true;
-                }
+                // Disable and update
+                $select.select2('disable');
+                select.disabled = true;
             });
             
-            // Save changes if any
-            if (Object.keys(changes).length > 0 && id) {
+            // Process inputs
+            const inputs = row.querySelectorAll('input.editable');
+            inputs.forEach(input => {
+                const field = input.getAttribute('data-field');
+                const value = input.value;
+                
+                changes[field] = value;
+                input.readOnly = true;
+            });
+            
+            // Save changes
+            if (Object.keys(changes).length > 0) {
                 saveChanges(id, changes);
             }
 		}
@@ -4084,25 +4091,55 @@
         $(document).ready(function() {
             console.log('Document ready, initializing...');
             
-            loadInitialData()
-                .then(success => {
-                    if (success) {
-                        // Initialize dropdowns
-                        initializeDropdowns();
-                        
-                        // Render table with initial data
-                        renderTable();
-                        
-                        // Set up event listeners
-                        setupEventListeners();
-                        
-                        console.log('Application initialized successfully');
-                    }
-                })
-                .catch(error => {
-                    console.error('Failed to initialize application:', error);
-                    showNotification('Lỗi khởi tạo ứng dụng. Vui lòng tải lại trang.', 'error');
-                });
+            // First, render table with any existing data
+            renderTable();
+
+            // Then load data asynchronously
+            setTimeout(() => {
+                loadInitialData()
+                    .then((success) => {
+                        if (success) {
+                            // Initialize dropdowns
+                            initializeDropdowns();
+                            
+                            // Setup dropdown events
+                            setupDropdownEvents();
+                            
+                            // Setup other event listeners
+                            setupEventListeners();
+                            
+                            console.log('✅ Application initialized successfully');
+                            
+                            // Load filtered data if any filter is selected
+                            const hasFilter = $('#khoa-dao-tao').val() || 
+                                            $('#chuong-trinh-dao-tao').val() ||
+                                            $('#to-bo-mon').val() || 
+                                            $('#khoa-hoc').val();
+                            
+                            if (hasFilter) {
+                                loadFilteredData();
+                            }
+                        } else {
+                            console.warn('⚠ Using sample data due to initialization errors');
+                            showNotification('Đang sử dụng dữ liệu mẫu', 'warning');
+                            
+                            // Initialize with sample data
+                            const sampleData = getSampleData();
+                            allDepartments = sampleData.departments;
+                            allSubjectGroups = sampleData.subjectGroups;
+                            allCurricula = sampleData.curricula;
+                            allCourses = sampleData.courses;
+                            
+                            initializeDropdowns();
+                            setupDropdownEvents();
+                            setupEventListeners();
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('❌ Initialization error:', error);
+                        showNotification('Lỗi khởi tạo ứng dụng', 'error');
+                    });
+            }, 100);
         });
 
         // Cleanup on page unload
@@ -4117,20 +4154,35 @@
 
         // ===== EVENT LISTENERS SETUP =====
         function setupEventListeners() {
-            // Cập nhật button
-            $('#btn-cap-nhat').on('click', function() {
-                clearCache();
+            console.log('Setting up event listeners...');
+            
+            // Update button
+            $('#btn-cap-nhat').off('click').on('click', function() {
                 loadFilteredData();
-                showNotification('Đã làm mới dữ liệu', 'success');
+                showNotification('Đã cập nhật dữ liệu', 'success');
             });
             
-            // Edit/Save button
-            $(document).on('click', '.btn-sua, .btn-luu', function(e) {
+            // Thêm chương trình
+            $('#btn-them').off('click').on('click', openThemChuongTrinhModal);
+            
+            // Thêm môn học
+            $('#btn-them-mon-hoc').off('click').on('click', openThemMonHocModal);
+            
+            // Import Excel
+            $('#btn-import').off('click').on('click', openImportModal);
+            
+            // Close modals
+            $('#btn-dong-chuong-trinh, #btn-huy-chuong-trinh').off('click').on('click', closeThemChuongTrinhModal);
+            $('#btn-dong-mon-hoc, #btn-huy-mon-hoc').off('click').on('click', closeThemMonHocModal);
+            $('#btn-dong-import, #btn-huy-import').off('click').on('click', closeImportModal);
+            
+            // Edit/Save buttons in table
+            $(document).off('click', '.btn-sua').on('click', '.btn-sua', function(e) {
                 e.stopPropagation();
                 const button = this;
                 const row = button.closest('tr');
                 const id = button.getAttribute('data-id');
-                const isEditButton = button.classList.contains('btn-sua');
+                const isEditButton = button.innerHTML.includes('fa-edit');
                 
                 if (isEditButton) {
                     enterEditMode(row, button);
@@ -4139,32 +4191,7 @@
                 }
             });
             
-            // Delete button
-            $(document).on('click', '.btn-xoa', function(e) {
-                e.stopPropagation();
-                const id = $(this).data('id');
-                if (id && confirm('Bạn có chắc chắn muốn xóa môn học này?')) {
-                    // Implement delete function
-                    console.log('Delete item:', id);
-                    showNotification('Chức năng xóa đang được phát triển', 'info');
-                }
-            });
-            
-            // ESC key to cancel edit
-            $(document).on('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    const saveButton = $('.btn-luu');
-                    if (saveButton.length) {
-                        const row = saveButton.closest('tr')[0];
-                        const button = saveButton[0];
-                        const id = button.getAttribute('data-id');
-                        exitEditMode(row, button, id);
-                        showNotification('Đã hủy thay đổi', 'info');
-                    }
-                }
-            });
-            
-            // Delete button
+            // Delete buttons in table
             $(document).off('click', '.btn-xoa').on('click', '.btn-xoa', function(e) {
                 e.stopPropagation();
                 const id = $(this).data('id');
@@ -4172,30 +4199,44 @@
                     deleteMonHoc(id);
                 }
             });
+            
+            // ESC to close modals
+            $(document).on('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeThemChuongTrinhModal();
+                    closeThemMonHocModal();
+                    closeImportModal();
+                    $('body').removeClass('overflow-hidden');
+                }
+            });
         }
 
         // ===== SHOW NOTIFICATION FUNCTION =====
-		function showNotification(message, type = 'info') {
-		    // Create notification element
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-4 py-3 rounded shadow-lg z-50 ${
+		function showNotification(message, type = 'info', duration = 3000) {
+		    const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-4 py-3 rounded-md shadow-lg z-50 ${
                 type === 'success' ? 'bg-green-500 text-white' :
                 type === 'error' ? 'bg-red-500 text-white' :
+                type === 'warning' ? 'bg-yellow-500 text-white' :
                 'bg-blue-500 text-white'
             }`;
             notification.innerHTML = `
                 <div class="flex items-center">
-                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>
+                    <i class="fas ${
+                        type === 'success' ? 'fa-check-circle' :
+                        type === 'error' ? 'fa-exclamation-circle' :
+                        type === 'warning' ? 'fa-exclamation-triangle' :
+                        'fa-info-circle'
+                    } mr-2"></i>
                     <span>${message}</span>
                 </div>
             `;
             
             document.body.appendChild(notification);
             
-            // Remove after 3 seconds
             setTimeout(() => {
                 notification.remove();
-            }, 3000);
+            }, duration);
 		}
 
         // Cleanup on page unload
