@@ -1283,8 +1283,6 @@ def api_all_subjects(request):
             'subject_type',
 	        'subject_group',
 	        'department'
-	    ).prefetch_related(
-	        Prefetch('instructors', queryset=Instructor.objects.only('id', 'code', 'full_name'))
 	    ).only(
             'id', 'code', 'name', 'credits', 'total_hours', 
             'theory_hours', 'practice_hours', 'tests_hours', 
