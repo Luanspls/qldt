@@ -2392,7 +2392,7 @@
                 const $select = $(this);
                 
                 // Only initialize if there are options
-                if ($select.find('option').length > 0) {
+                if ($select.length && $select.find('option').length > 0) {
                     try {
                         // Use body as parent for proper positioning
                         $select.select2({
@@ -2408,6 +2408,8 @@
                         }
                     } catch (error) {
                         console.error('Error initializing Select2 in table:', error);
+                        $select.removeClass('select2-hidden-accessible');
+                        $select.show();
                     }
                 }
             });
@@ -2814,7 +2816,19 @@
                 
                 const url = `/api/subjects/${params.toString() ? '?' + params.toString() : ''}`;
                 
-                const response = await fetch(url);
+                // Sử dụng AbortController để timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 giây
+                
+                const response = await fetch(url, {
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache',
+                    }
+                });
+
+                clearTimeout(timeoutId);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
@@ -2828,43 +2842,30 @@
                 
             } catch (error) {
                 console.error('Error loading data:', error);
+
+                // Hiển thị thông báo lỗi cụ thể
+                let errorMessage = 'Không thể tải dữ liệu';
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Yêu cầu timeout. Vui lòng thử lại';
+                } else if (error.message.includes('502') || error.message.includes('503')) {
+                    errorMessage = 'Server đang quá tải. Vui lòng thử lại sau';
+                }
                 // Show error message
                 $('#table-body').html(`
                     <tr>
                         <td colspan="19" class="px-4 py-4 text-center text-red-500">
                             <i class="fas fa-exclamation-triangle mr-2"></i>
                             Không thể tải dữ liệu. ${error.message}
+                            <button class="mt-2 ml-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" 
+                                    onclick="loadFilteredData()">
+                                <i class="fas fa-redo mr-1"></i> Thử lại
+                            </button>
                         </td>
                     </tr>
                 `);
                 
-                // Use sample data for demo
-                monHocData = getSampleData().subjects.map((subject, index) => ({
-                    id: index + 1,
-                    ma_mon_hoc: subject.code,
-                    ten_mon_hoc: subject.name,
-                    so_tin_chi: subject.credits,
-                    tong_so_gio: subject.total_hours,
-                    ly_thuyet: Math.floor(subject.total_hours * 0.7),
-                    thuc_hanh: Math.floor(subject.total_hours * 0.3),
-                    kiem_tra: 0,
-                    thi: 0,
-                    hk1: subject.credits,
-                    hk2: '',
-                    hk3: '',
-                    hk4: '',
-                    hk5: '',
-                    hk6: '',
-                    don_vi: 'Khoa Công nghệ thông tin',
-                    department_id: 1,
-                    giang_vien: 'Giảng viên mẫu',
-                    course_id: 1
-                }));
-                
-                renderTable();
-                updateStatistics();
-                
-                showNotification('Đang hiển thị dữ liệu mẫu', 'warning');
+                // Fallback: sử dụng dữ liệu mẫu
+                showNotification(errorMessage, 'error');
             }
         }
 

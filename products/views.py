@@ -1190,74 +1190,109 @@ def api_courses(request):
 @csrf_exempt
 def api_subjects(request):
     """API lấy danh sách môn học theo bộ lọc"""
-    curriculum_id = request.GET.get('curriculum_id')
-    department_id = request.GET.get('department_id')
-    subject_group_id = request.GET.get('subject_group_id')
-	# course_id = request.GET.get('course_id')
-    
-    # subjects = Subject.objects.all()
-    curriculum_subjects = Subject.objects.select_related(
-        'subject_type', 'department', 'curriculum', 'course' 
-    ).all()
-    
-    if curriculum_id:
-        curriculum_subjects = curriculum_subjects.filter(curriculum_id=curriculum_id)
-    if department_id:
-        curriculum_subjects = curriculum_subjects.filter(department_id=department_id)
-    if subject_group_id:
-        curriculum_subjects = curriculum_subjects.filter(subject_group_id=subject_group_id)
-	# if course_id:
-    #    curriculum_subjects = curriculum_subjects.filter(course_id=course_id)
-    
-    # Sắp xếp theo loại môn và thứ tự
-    curriculum_subjects = curriculum_subjects.order_by('order_number')
-    
-    subject_data = []
-    for cs in curriculum_subjects:
-        semester_allocations = SemesterAllocation.objects.filter(base_subject=cs)
-        semester_data = {f'hk{alloc.semester}': float(alloc.credits) for alloc in semester_allocations}
-
-        giang_vien = ""
-        try:
-            teaching_assignments = TeachingAssignment.objects.filter(curriculum_subject=cs)
-            if teaching_assignments.exists():
-                instructor_names = [ta.instructor.full_name for ta in teaching_assignments if ta.instructor]
-                giang_vien = ", ".join(instructor_names)
-        except Exception:
-            pass
+    try:
+        curriculum_id = request.GET.get('curriculum_id')
+        department_id = request.GET.get('department_id')
+        subject_group_id = request.GET.get('subject_group_id')
+        # course_id = request.GET.get('course_id')
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 50))  # Giới hạn 50 bản ghi mỗi trang
         
-        subject_data.append({
-            'id': cs.id,  # Sử dụng ID của CurriculumSubject
-            'curriculum_id': cs.curriculum.id if cs.curriculum else None,
-            'curriculum_name': cs.curriculum.name if cs.curriculum else '',
-            'curriculum_code': cs.curriculum.code if cs.curriculum else '',
-            'course_id': cs.course.id if cs.course else '',
-            'course_code': cs.course.code if cs.course else '',
-            'course_name': cs.course.name if cs.course else '',
-            'ma_mon_hoc': cs.code,
-            'ten_mon_hoc': cs.name,
-            'so_tin_chi': float(cs.credits),
-            'tong_so_gio': cs.total_hours,
-            'ly_thuyet': cs.theory_hours,
-            'thuc_hanh': cs.practice_hours,
-            'kiem_tra': cs.tests_hours,
-            'thi': cs.exam_hours,
-            'hk1': semester_data.get('hk1', ''),
-            'hk2': semester_data.get('hk2', ''),
-            'hk3': semester_data.get('hk3', ''),
-            'hk4': semester_data.get('hk4', ''),
-            'hk5': semester_data.get('hk5', ''),
-            'hk6': semester_data.get('hk6', ''),
-            'don_vi': cs.department.name if cs.department else '',
-            'bo_mon': cs.subject_group.name if cs.subject_group else '',
-            'order_number': cs.order_number,
-            'original_code': cs.original_code if cs.original_code else '',
-            'giang_vien': giang_vien,
-            'loai_mon': cs.subject_type.name if cs.subject_type else '',
-            'subject_id': cs.id
-        })
-    
-    return JsonResponse(subject_data, safe=False)
+        # Sử dụng select_related và prefetch_related để tối ưu
+        curriculum_subjects = Subject.objects.select_related(
+            'subject_type', 'department', 'curriculum', 'course'
+        ).prefetch_related(
+            Prefetch(
+                'semester_allocations', 
+                queryset=SemesterAllocation.objects.only('semester', 'credits', 'base_subject')
+            ),
+            Prefetch(
+                'teaching_assignments',
+                queryset=TeachingAssignment.objects.select_related('instructor')
+            )
+        ).order_by('order_number')
+        
+        # Chỉ lấy các trường cần thiết
+        curriculum_subjects = curriculum_subjects.only(
+            'id', 'code', 'name', 'credits', 'total_hours',
+            'theory_hours', 'practice_hours', 'tests_hours', 'exam_hours',
+            'order_number', 'original_code',
+            'curriculum__id', 'curriculum__name', 'curriculum__code',
+            'course__id', 'course__name', 'course__code',
+            'department__name', 'subject_group__name', 'subject_type__name'
+        )
+        
+        # Phân trang
+        total_count = curriculum_subjects.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        curriculum_subjects = curriculum_subjects[start:end]
+        
+        # Xử lý dữ liệu
+        subject_data = []
+        for cs in curriculum_subjects:
+            # Lấy dữ liệu học kỳ từ prefetched
+            semester_data = {}
+            for alloc in cs.semesterallocation_set.all():
+                semester_data[f'hk{alloc.semester}'] = float(alloc.credits) if alloc.credits else ''
+            
+            # Lấy danh sách giảng viên từ prefetched
+            giang_vien_list = []
+            for ta in cs.teachingassignment_set.all():
+                if ta.instructor and ta.instructor.full_name:
+                    giang_vien_list.append(ta.instructor.full_name)
+            giang_vien = ", ".join(giang_vien_list) if giang_vien_list else ""
+            
+            subject_data.append({
+                'id': cs.id,  # Sử dụng ID của CurriculumSubject
+                'curriculum_id': cs.curriculum.id if cs.curriculum else None,
+                'curriculum_name': cs.curriculum.name if cs.curriculum else '',
+                'curriculum_code': cs.curriculum.code if cs.curriculum else '',
+                'course_id': cs.course.id if cs.course else '',
+                'course_code': cs.course.code if cs.course else '',
+                'course_name': cs.course.name if cs.course else '',
+                'ma_mon_hoc': cs.code or '',
+                'ten_mon_hoc': cs.name or '',
+                'so_tin_chi': float(cs.credits) if cs.credits else 0,
+                'tong_so_gio': cs.total_hours or 0,
+                'ly_thuyet': cs.theory_hours or 0,
+                'thuc_hanh': cs.practice_hours or 0,
+                'kiem_tra': cs.tests_hours or 0,
+                'thi': cs.exam_hours or 0,
+                'hk1': semester_data.get('hk1', ''),
+                'hk2': semester_data.get('hk2', ''),
+                'hk3': semester_data.get('hk3', ''),
+                'hk4': semester_data.get('hk4', ''),
+                'hk5': semester_data.get('hk5', ''),
+                'hk6': semester_data.get('hk6', ''),
+                'don_vi': cs.department.name if cs.department else '',
+                'bo_mon': cs.subject_group.name if cs.subject_group else '',
+                'order_number': cs.order_number or 0,
+                'original_code': cs.original_code if cs.original_code else '',
+                'giang_vien': giang_vien,
+                'loai_mon': cs.subject_type.name if cs.subject_type else '',
+                'subject_id': cs.id
+            })
+        
+        return JsonResponse({
+            'status': 'success',
+            'data': subject_data,
+            'pagination': {
+                'page': page,
+                'page_size': page_size,
+                'total_count': total_count,
+                'total_pages': (total_count + page_size - 1) // page_size
+            }
+        }, safe=False, json_dumps_params={'ensure_ascii': False})
+    except Exception as e:
+        error_details = traceback.format_exc()
+        print(f"Error in api_subjects: {e}\n{error_details}")
+        
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Lỗi server khi lấy danh sách môn học',
+            'detail': str(e)
+        }, status=500, json_dumps_params={'ensure_ascii': False})
 
 def serialize_curriculum_data(data):
     """Serialize curriculum data to ensure JSON compatibility"""
