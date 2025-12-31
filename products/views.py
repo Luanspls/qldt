@@ -1278,7 +1278,8 @@ def api_all_subjects(request):
     try:
         # Chỉ lấy các trường cần thiết, không cần select_related tất cả
         subjects = Subject.objects.select_related(
-	        'curiculum',
+	        'curriculum',
+            'course',
             'subject_type',
 	        'subject_group',
 	        'department'
@@ -1290,7 +1291,7 @@ def api_all_subjects(request):
             'exam_hours', 'order_number', 'department', 
             'subject_type', 'subject_group', 'semester',
             'description', 'prerequisites', 'learning_outcomes',
-            'is_elective', 'elective_group'
+            'is_elective', 'elective_group', 'curriculum', 'course'
         ).order_by('code')
         
         subjects_data = []
@@ -1547,7 +1548,7 @@ def api_classes(request):
 @csrf_exempt
 def api_combined_classes(request):
     """API lấy danh sách lớp học ghép"""
-    subject_id = request.GET.get('curiculum_subject_id') or request.GET.get('subject_id')
+    subject_id = request.GET.get('curriculum_subject_id') or request.GET.get('subject_id')
     
     combined_classes = CombinedClass.objects.select_related('subject').prefetch_related('classes')
     
