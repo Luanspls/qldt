@@ -1606,37 +1606,7 @@
 
         // Cache system
         const dataCache = new Map();
-        const CACHE_DURATION = 1 * 60 * 1000; // 1 minutes
-
-        async function cachedFetch(url, options = {}) {
-            const now = Date.now();
-            const cached = apiCache.get(url);
-            
-            if (cached && (now - cached.timestamp < CACHE_TTL)) {
-                console.log('Using cached response for:', url);
-                return cached.response;
-            }
-            
-            try {
-                const response = await fetch(url, options);
-                if (response.ok) {
-                    const data = await response.json();
-                    apiCache.set(url, {
-                        response: data,
-                        timestamp: now
-                    });
-                    return data;
-                }
-                throw new Error(`HTTP ${response.status}`);
-            } catch (error) {
-                // Nếu có lỗi nhưng có cache cũ, dùng cache
-                if (cached) {
-                    console.log('Using stale cache due to error:', error.message);
-                    return cached.response;
-                }
-                throw error;
-            }
-        }
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
         // Timeout handlers
         let instructorSearchTimeout = null;
@@ -1760,6 +1730,40 @@
             } catch (error) {
                 console.error('❌ Error loading initial data:', error);
                 return false;
+            }
+        }
+
+        // Cache cho API responses
+        const apiCache = new Map();
+        const CACHE_TTL = 2 * 60 * 1000; // 2 phút
+
+        async function cachedFetch(url, options = {}) {
+            const now = Date.now();
+            const cached = apiCache.get(url);
+            
+            if (cached && (now - cached.timestamp < CACHE_TTL)) {
+                console.log('Using cached response for:', url);
+                return cached.response;
+            }
+            
+            try {
+                const response = await fetch(url, options);
+                if (response.ok) {
+                    const data = await response.json();
+                    apiCache.set(url, {
+                        response: data,
+                        timestamp: now
+                    });
+                    return data;
+                }
+                throw new Error(`HTTP ${response.status}`);
+            } catch (error) {
+                // Nếu có lỗi nhưng có cache cũ, dùng cache
+                if (cached) {
+                    console.log('Using stale cache due to error:', error.message);
+                    return cached.response;
+                }
+                throw error;
             }
         }
 
