@@ -1,8 +1,6 @@
 import os
 import sys
 import dj_database_url
-# from decouple import Config, RepositoryEnv, AutoConfig
-# from decouple import config
 import dj_database_url
 from urllib.parse import urlparse
 from pathlib import Path
