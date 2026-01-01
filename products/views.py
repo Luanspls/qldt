@@ -1233,15 +1233,20 @@ def api_subjects(request):
         for cs in curriculum_subjects:
             # Lấy dữ liệu học kỳ từ prefetched
             semester_data = {}
-            for alloc in cs.semesterallocation_set.all():
+            for alloc in cs.semester_allocations.all():
                 semester_data[f'hk{alloc.semester}'] = float(alloc.credits) if alloc.credits else ''
             
             # Lấy danh sách giảng viên từ prefetched
             giang_vien_list = []
-            for ta in cs.teachingassignment_set.all():
+            for ta in cs.teaching_assignments.all():
                 if ta.instructor and ta.instructor.full_name:
                     giang_vien_list.append(ta.instructor.full_name)
             giang_vien = ", ".join(giang_vien_list) if giang_vien_list else ""
+            
+            # Xử lý trường course có thể là None
+            course_id = cs.course.id if cs.course else None
+            course_code = cs.course.code if cs.course else ''
+            course_name = cs.course.name if cs.course else ''
             
             subject_data.append({
                 'id': cs.id,  # Sử dụng ID của CurriculumSubject
