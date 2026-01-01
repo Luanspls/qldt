@@ -1,7 +1,8 @@
 import os
 import sys
 import dj_database_url
-from decouple import config
+# from decouple import Config, RepositoryEnv, AutoConfig
+# from decouple import config
 import dj_database_url
 from urllib.parse import urlparse
 from pathlib import Path
@@ -9,11 +10,14 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+env_path = BASE_DIR / '.env'
 
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-development-key-for-railway-only')
+SECRET_KEY = os.environ.get('SECRET_KEY', default='fallback-secret-key-for-dev')
+
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+
 # DEBUG = True
 
 RAILWAY_DOMAIN = os.environ.get('RAILWAY_STATIC_DOMAIN', '').replace('https://', '') or 'qldt.up.railway.app'
@@ -26,6 +30,7 @@ ALLOWED_HOSTS = [
     '.railway.app',  # Cho phép tất cả subdomain railway
     '.onrender.com',  # Cho phép tất cả subdomain onrender
 ]
+
 
 CSRF_TRUSTED_ORIGINS = [
     f'https://*.{RAILWAY_DOMAIN}',
@@ -124,7 +129,7 @@ TEMPLATES = [
 
 
 # Lấy DATABASE_URL từ environment variable
-DATABASE_URL = config('DATABASE_URL', default='')
+DATABASE_URL = os.environ.get('DATABASE_URL', default='')
 
 if DATABASE_URL:
     # Sử dụng dj_database_url để parse DATABASE_URL
@@ -141,11 +146,11 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME', default='postgres'),
-            'USER': config('DB_USER', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default=''),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
+            'NAME': os.environ.get('DB_NAME', default='postgres'),
+            'USER': os.environ.get('DB_USER', default='postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', default=''),
+            'HOST': os.environ.get('DB_HOST', default='localhost'),
+            'PORT': os.environ.get('DB_PORT', default='5432'),
             'OPTIONS': {
                 'sslmode': 'require',
                 'sslrootcert': os.path.join(BASE_DIR, 'supabase-ca.pem'),  # Nếu cần
