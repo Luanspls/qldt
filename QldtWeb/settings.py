@@ -1,15 +1,16 @@
 import os
 import sys
 import dj_database_url
-import socket
+from decouple import config
+import dj_database_url
 from urllib.parse import urlparse
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-development-key-for-railway-only')
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
@@ -35,7 +36,7 @@ CSRF_TRUSTED_ORIGINS = [
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        'LOCATION': '/tmp/django_cache',
+        'LOCATION': os.path.join(BASE_DIR, 'cache'),
     }
 }
 
@@ -123,15 +124,34 @@ TEMPLATES = [
 
 
 # Lấy DATABASE_URL từ environment variable
-DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = config('DATABASE_URL', default='')
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+if DATABASE_URL:
+    # Sử dụng dj_database_url để parse DATABASE_URL
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True
+        )
+    }
+else:
+    # Fallback: sử dụng các biến riêng lẻ
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='postgres'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+            'OPTIONS': {
+                'sslmode': 'require',
+                'sslrootcert': os.path.join(BASE_DIR, 'supabase-ca.pem'),  # Nếu cần
+            }
+        }
+    }
     
 
 # Password validation
