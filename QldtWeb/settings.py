@@ -8,9 +8,9 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-env_path = BASE_DIR / '.env'
 
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+# Load environment variables from .env file
+load_dotenv()
 
 SECRET_KEY = os.environ.get('SECRET_KEY', default='fallback-secret-key-for-dev')
 
@@ -136,7 +136,6 @@ if DATABASE_URL:
             DATABASE_URL,
             conn_max_age=600,
             conn_health_checks=True,
-            ssl_require=True
         )
     }
 else:
