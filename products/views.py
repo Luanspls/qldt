@@ -5,6 +5,7 @@ from django.views.decorators.cache import cache_page
 import json
 import random
 import traceback
+import time
 from django.db.models import Prefetch
 from django.shortcuts import render, get_object_or_404
 from django.core.serializers import serialize
@@ -1191,69 +1192,65 @@ def api_courses(request):
 def api_subjects(request):
     """API lấy danh sách môn học theo bộ lọc"""
     try:
+        start_time = time.time()
+        
         curriculum_id = request.GET.get('curriculum_id')
         department_id = request.GET.get('department_id')
         subject_group_id = request.GET.get('subject_group_id')
         # course_id = request.GET.get('course_id')
         page = int(request.GET.get('page', 1))
-        page_size = int(request.GET.get('page_size', 50))  # Giới hạn 50 bản ghi mỗi trang
+        page_size = min(int(request.GET.get('page_size', 50)), 100)  # Giới hạn tối đa 100
         
-        # Sử dụng select_related và prefetch_related để tối ưu
-        curriculum_subjects = Subject.objects.select_related(
-            'subject_type', 'department', 'curriculum', 'course'
-        ).prefetch_related(
-            Prefetch(
-                'semester_allocations', 
-                queryset=SemesterAllocation.objects.only('semester', 'credits', 'base_subject')
-            ),
-            Prefetch(
-                'teaching_assignments',
-                queryset=TeachingAssignment.objects.select_related('instructor')
-            )
-        ).order_by('order_number')
+        # Chỉ query các trường cần thiết
+        queryset = Subject.objects.filter(curriculum_id=curriculum_id) if curriculum_id else Subject.objects.all()
+        
+        # Thêm các filter nếu có
+        if department_id:
+            queryset = queryset.filter(department_id=department_id)
+        if subject_group_id:
+            queryset = queryset.filter(subject_group_id=subject_group_id)
         
         # Chỉ lấy các trường cần thiết
-        curriculum_subjects = curriculum_subjects.only(
+        queryset = queryset.select_related(
+            'subject_type', 'department', 'curriculum', 'course'
+        ).only(
             'id', 'code', 'name', 'credits', 'total_hours',
             'theory_hours', 'practice_hours', 'tests_hours', 'exam_hours',
             'order_number', 'original_code',
-            'curriculum__id', 'curriculum__name', 'curriculum__code',
-            'course__id', 'course__name', 'course__code',
+            'curriculum__name', 'curriculum__code',
+            'course__name', 'course__code',
             'department__name', 'subject_group__name', 'subject_type__name'
-        )
+        ).order_by('order_number')
         
         # Phân trang
-        total_count = curriculum_subjects.count()
+        total_count = queryset.count()
         start = (page - 1) * page_size
         end = start + page_size
-        curriculum_subjects = curriculum_subjects[start:end]
+        subjects = queryset[start:end]
+        
+        # Lấy tất cả semester allocations cho các subjects này trong 1 query
+        subject_ids = [s.id for s in subjects]
+        semester_allocations = {}
+        
+        if subject_ids:
+            allocations = SemesterAllocation.objects.filter(base_subject_id__in=subject_ids)
+            for alloc in allocations:
+                if alloc.base_subject_id not in semester_allocations:
+                    semester_allocations[alloc.base_subject_id] = {}
+                semester_allocations[alloc.base_subject_id][f'hk{alloc.semester}'] = float(alloc.credits) if alloc.credits else ''
         
         # Xử lý dữ liệu
         subject_data = []
-        for cs in curriculum_subjects:
-            # Lấy dữ liệu học kỳ từ prefetched
-            semester_data = {}
-            for alloc in cs.semester_allocations.all():
-                semester_data[f'hk{alloc.semester}'] = float(alloc.credits) if alloc.credits else ''
-            
-            # Lấy danh sách giảng viên từ prefetched
-            giang_vien_list = []
-            for ta in cs.teaching_assignments.all():
-                if ta.instructor and ta.instructor.full_name:
-                    giang_vien_list.append(ta.instructor.full_name)
-            giang_vien = ", ".join(giang_vien_list) if giang_vien_list else ""
-            
-            # Xử lý trường course có thể là None
-            course_id = cs.course.id if cs.course else None
-            course_code = cs.course.code if cs.course else ''
-            course_name = cs.course.name if cs.course else ''
+        for cs in subjects:
+            # Lấy dữ liệu học kỳ từ dictionary
+            semester_data = semester_allocations.get(cs.id, {})
             
             subject_data.append({
-                'id': cs.id,  # Sử dụng ID của CurriculumSubject
+                'id': cs.id,
                 'curriculum_id': cs.curriculum.id if cs.curriculum else None,
                 'curriculum_name': cs.curriculum.name if cs.curriculum else '',
                 'curriculum_code': cs.curriculum.code if cs.curriculum else '',
-                'course_id': cs.course.id if cs.course else '',
+                'course_id': cs.course.id if cs.course else None,
                 'course_code': cs.course.code if cs.course else '',
                 'course_name': cs.course.name if cs.course else '',
                 'ma_mon_hoc': cs.code or '',
@@ -1273,11 +1270,14 @@ def api_subjects(request):
                 'don_vi': cs.department.name if cs.department else '',
                 'bo_mon': cs.subject_group.name if cs.subject_group else '',
                 'order_number': cs.order_number or 0,
-                'original_code': cs.original_code if cs.original_code else '',
-                'giang_vien': giang_vien,
+                'original_code': cs.original_code or '',
+                'giang_vien': '',  # Tạm bỏ để tăng tốc
                 'loai_mon': cs.subject_type.name if cs.subject_type else '',
                 'subject_id': cs.id
             })
+        
+        end_time = time.time()
+        print(f"API subjects executed in {end_time - start_time:.2f} seconds")
         
         return JsonResponse({
             'status': 'success',
@@ -1287,7 +1287,8 @@ def api_subjects(request):
                 'page_size': page_size,
                 'total_count': total_count,
                 'total_pages': (total_count + page_size - 1) // page_size
-            }
+            },
+            'execution_time': end_time - start_time
         }, safe=False, json_dumps_params={'ensure_ascii': False})
     except Exception as e:
         error_details = traceback.format_exc()
@@ -1296,7 +1297,7 @@ def api_subjects(request):
         return JsonResponse({
             'status': 'error',
             'message': 'Lỗi server khi lấy danh sách môn học',
-            'detail': str(e)
+            'detail': str(e)[:100]
         }, status=500, json_dumps_params={'ensure_ascii': False})
 
 def serialize_curriculum_data(data):
