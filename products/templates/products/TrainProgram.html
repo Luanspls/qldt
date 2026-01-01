@@ -2438,41 +2438,66 @@
 
 		// Hàm khởi tạo Select2 cho các dropdown trong bảng
 		function initializeTableSelect2() {
-		    // Destroy existing Select2 instances in table to avoid conflicts
-            $('tbody select.select2-hidden-accessible').each(function() {
-                try {
-                    $(this).select2('destroy');
-                } catch (e) {
-                    console.log('Could not destroy Select2:', e);
-                }
-            });
-            
-            // Initialize Select2 for new selects
-            $('tbody select.editable:not(.select2-hidden-accessible)').each(function() {
-                const $select = $(this);
-                
-                // Only initialize if there are options
-                if ($select.length && $select.find('option').length > 0) {
+            try {
+                // Destroy existing Select2 instances in table to avoid conflicts
+                $('tbody select.select2-hidden-accessible').each(function() {
                     try {
-                        // Use body as parent for proper positioning
-                        $select.select2({
-                            width: '100%',
-                            dropdownParent: $('body'),
-                            minimumResultsForSearch: 3,
-                            language: 'vi'
-                        });
-                        
-                        // Disable if the select is disabled
-                        if ($select.prop('disabled')) {
-                            $select.select2('disable');
+                        if ($.fn.select2 && $(this).data('select2')) {
+                            $(this).select2('destroy');
                         }
-                    } catch (error) {
-                        console.error('Error initializing Select2 in table:', error);
-                        $select.removeClass('select2-hidden-accessible');
-                        $select.show();
+                    } catch (e) {
+                        console.log('Could not destroy Select2:', e);
                     }
-                }
-            });
+                });
+
+                // Initialize Select2 for new selects
+                $('tbody select.editable:not(.select2-hidden-accessible)').each(function() {
+                    const $select = $(this);
+                    
+                    // Chỉ khởi tạo nếu select tồn tại và không bị disabled
+                    if ($select.length && !$select.prop('disabled')) {
+                        // Kiểm tra xem có options hợp lệ không
+                        const hasOptions = $select.find('option').length > 1 || 
+                                        ($select.find('option').length === 1 && $select.find('option').first().val() !== '');
+                        
+                        if (hasOptions) {
+                            try {
+                                // Sử dụng một Select2 configuration đơn giản
+                                $select.select2({
+                                    width: '100%',
+                                    minimumResultsForSearch: 3,
+                                    language: 'vi',
+                                    placeholder: "Chọn...",
+                                    allowClear: true,
+                                    dropdownParent: $('body')  // Sử dụng body để tránh bị cắt
+                                });
+                                
+                                console.log('Select2 initialized for:', $select.attr('data-field'));
+                            } catch (error) {
+                                console.error('Error initializing Select2 for element:', error);
+                                // Thêm fallback: disable Select2 và chỉ hiển thị native select
+                                $select.removeClass('select2-hidden-accessible');
+                            }
+                        } else {
+                            // Nếu không có options, ẩn select và hiển thị input thay thế
+                            const field = $select.attr('data-field');
+                            const id = $select.attr('data-id');
+                            
+                            // Tạo input thay thế
+                            const $input = $('<input>', {
+                                type: 'text',
+                                class: 'w-full bg-transparent border-none text-sm',
+                                placeholder: 'Không có dữ liệu',
+                                readonly: true
+                            });
+                            
+                            $select.hide().after($input);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error initializing table Select2:', error);
+            }
 		}
 		
         // Render bảng dữ liệu
@@ -2595,13 +2620,30 @@
                 
                 tableBody.appendChild(row);
             });
-            
-            // Initialize Select2 for table
-            setTimeout(() => {
-                initializeTableSelect2();
-            }, 100);
-            
             updateStatistics();
+
+            setTimeout(() => {
+                // Thêm event listeners cho nút sửa
+                document.querySelectorAll('.btn-sua').forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const id = this.getAttribute('data-id');
+                        const row = this.closest('tr');
+                        enterEditMode(row, this);
+                    });
+                });
+                
+                // Thêm event listeners cho nút xóa
+                document.querySelectorAll('.btn-xoa').forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const id = $(this).data('id');
+                        if (id && confirm('Bạn có chắc chắn muốn xóa môn học này?')) {
+                            deleteMonHoc(id);
+                        }
+                    });
+                });
+            }, 100);
         }
 
 		// Hàm escape HTML để tránh XSS
@@ -2875,58 +2917,117 @@
                 if (courseId) params.append('course_id', courseId);
                 
                 const url = `/api/subjects/${params.toString() ? '?' + params.toString() : ''}`;
-                
-                // Sử dụng AbortController để timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 giây
-                
-                const response = await fetch(url, {
-                    signal: controller.signal,
+                console.log('Fetching URL:', url);
+
+                // Sử dụng fetch với timeout đơn giản hơn
+                const fetchPromise = fetch(url, {
                     headers: {
                         'Accept': 'application/json',
-                        'Cache-Control': 'no-cache',
+                        'Cache-Control': 'no-cache'
                     }
                 });
 
-                clearTimeout(timeoutId);
+                // Timeout promise
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Request timeout')), 30000); // 30 giây
+                });
+                
+                // Race giữa fetch và timeout
+                const response = await Promise.race([fetchPromise, timeoutPromise]);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
                 
-                const data = await response.json();
-                monHocData = Array.isArray(data) ? data : [];
+                const result = await response.json();
+                console.log('API response:', result);
                 
-                renderTable();
-                updateStatistics();
-                
+                if (result.status === 'success') {
+                    monHocData = Array.isArray(result.data) ? result.data : [];
+                    console.log(`Loaded ${monHocData.length} items`);
+                    
+                    renderTable();
+                    updateStatistics();
+                    
+                    // Show success notification
+                    if (monHocData.length > 0) {
+                        showNotification(`Đã tải ${monHocData.length} môn học`, 'success', 2000);
+                    }
+                } else {
+                    throw new Error(result.message || 'API returned error status');
+                }
             } catch (error) {
                 console.error('Error loading data:', error);
 
                 // Hiển thị thông báo lỗi cụ thể
                 let errorMessage = 'Không thể tải dữ liệu';
-                if (error.name === 'AbortError') {
+                if (error.message.includes('timeout')) {
                     errorMessage = 'Yêu cầu timeout. Vui lòng thử lại';
+                } else if (error.message.includes('500')) {
+                    errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau';
                 } else if (error.message.includes('502') || error.message.includes('503')) {
                     errorMessage = 'Server đang quá tải. Vui lòng thử lại sau';
+                } else {
+                    errorMessage = `Lỗi: ${error.message}`;
                 }
-                // Show error message
+                
+                // Show error in table
                 $('#table-body').html(`
                     <tr>
-                        <td colspan="19" class="px-4 py-4 text-center text-red-500">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            Không thể tải dữ liệu. ${error.message}
-                            <button class="mt-2 ml-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" 
-                                    onclick="loadFilteredData()">
-                                <i class="fas fa-redo mr-1"></i> Thử lại
-                            </button>
+                        <td colspan="19" class="px-4 py-4 text-center">
+                            <div class="text-red-500">
+                                <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                                <p class="font-bold">${errorMessage}</p>
+                                <button class="mt-3 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                        onclick="retryLoadData()">
+                                    <i class="fas fa-redo mr-2"></i>Thử lại
+                                </button>
+                                <button class="mt-3 ml-2 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                                        onclick="useSampleData()">
+                                    <i class="fas fa-file-alt mr-2"></i>Sử dụng dữ liệu mẫu
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `);
                 
-                // Fallback: sử dụng dữ liệu mẫu
                 showNotification(errorMessage, 'error');
             }
+        }
+
+        function retryLoadData() {
+            showNotification('Đang thử tải lại dữ liệu...', 'info');
+            loadFilteredData();
+        }
+
+        function useSampleData() {
+            const sampleData = getSampleData().subjects.map((subject, index) => ({
+                id: index + 1,
+                ma_mon_hoc: subject.code,
+                ten_mon_hoc: subject.name,
+                so_tin_chi: subject.credits,
+                tong_so_gio: subject.total_hours,
+                ly_thuyet: Math.floor(subject.total_hours * 0.7),
+                thuc_hanh: Math.floor(subject.total_hours * 0.3),
+                kiem_tra: 0,
+                thi: 0,
+                hk1: subject.credits,
+                hk2: '',
+                hk3: '',
+                hk4: '',
+                hk5: '',
+                hk6: '',
+                don_vi: 'Khoa Công nghệ thông tin',
+                department_id: 1,
+                giang_vien: 'Giảng viên mẫu',
+                course_id: 1,
+                curriculum_id: $('#chuong-trinh-dao-tao').val() || 1
+            }));
+            
+            monHocData = sampleData;
+            renderTable();
+            updateStatistics();
+            showNotification('Đang sử dụng dữ liệu mẫu', 'warning');
         }
 
 		// Hàm clear cache khi cần
@@ -3915,22 +4016,46 @@
             button.classList.add('btn-luu', 'text-green-600');
             button.title = 'Lưu thay đổi';
             
-            // Enable selects and initialize Select2
-            const selects = row.querySelectorAll('select.editable');
+            button.onclick = function(e) {
+                e.stopPropagation();
+                exitEditMode(row, button, button.getAttribute('data-id'));
+            };
+            
+            // Enable các input trong row
+            const inputs = row.querySelectorAll('input.editable');
+            inputs.forEach(input => {
+                input.readOnly = false;
+                input.classList.add('border', 'border-blue-300', 'px-1');
+            });
+            
+            // Enable và khởi tạo Select2 cho các select
+            const selects = row.querySelectorAll('select');
             selects.forEach(select => {
                 select.disabled = false;
+                select.classList.add('border', 'border-blue-300');
                 
-                const $select = $(select);
-                if ($select.hasClass('select2-hidden-accessible')) {
-                    $select.select2('enable');
+                // Chỉ khởi tạo Select2 nếu có options
+                if ($(select).find('option').length > 0) {
+                    try {
+                        $(select).select2({
+                            width: '100%',
+                            dropdownParent: $('body'),
+                            minimumResultsForSearch: 3,
+                            language: 'vi'
+                        });
+                    } catch (error) {
+                        console.log('Could not initialize Select2:', error);
+                    }
                 }
             });
             
-            // Enable instructor input
-            const inputs = row.querySelectorAll('input.editable[data-field="instructor"]');
-            inputs.forEach(input => {
-                input.readOnly = false;
-            });
+            // Tạo autocomplete cho giảng viên
+            const instructorInput = row.querySelector('input[data-field="instructor"]');
+            if (instructorInput) {
+                instructorInput.readOnly = false;
+                // Khởi tạo autocomplete nếu cần
+                initializeInstructorAutocompleteForInput(instructorInput);
+            }
 		}
 		
 		// ===== EXIT EDIT MODE FUNCTION =====
@@ -3943,21 +4068,33 @@
             button.classList.add('text-blue-600');
             button.title = 'Sửa';
             
+            button.onclick = function(e) {
+                e.stopPropagation();
+                enterEditMode(row, button);
+            };
+            
             // Collect changes
             const changes = {};
             
-            // Process selects
-            const selects = row.querySelectorAll('select.editable');
+            // Process selects (destroy Select2 first)
+            const selects = row.querySelectorAll('select');
             selects.forEach(select => {
                 const $select = $(select);
-                const field = select.getAttribute('data-field');
-                const value = $select.val();
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    try {
+                        $select.select2('destroy');
+                    } catch (e) {
+                        console.log('Could not destroy Select2:', e);
+                    }
+                }
                 
+                const field = select.getAttribute('data-field');
+                const value = select.value;
                 changes[field] = value;
                 
-                // Disable and update
-                $select.select2('disable');
+                // Disable select
                 select.disabled = true;
+                select.classList.remove('border', 'border-blue-300');
             });
             
             // Process inputs
@@ -3965,9 +4102,9 @@
             inputs.forEach(input => {
                 const field = input.getAttribute('data-field');
                 const value = input.value;
-                
                 changes[field] = value;
                 input.readOnly = true;
+                input.classList.remove('border', 'border-blue-300', 'px-1');
             });
             
             // Save changes
@@ -4171,6 +4308,19 @@
         $(document).ready(function() {
             console.log('Document ready, initializing...');
             
+            // Đảm bảo jQuery và Select2 đã tải xong
+            if (typeof $ === 'undefined' || typeof $.fn.select2 === 'undefined') {
+                console.error('jQuery or Select2 not loaded');
+                setTimeout(() => {
+                    initApplication();
+                }, 1000);
+                return;
+            }
+            
+            initApplication();
+        });
+
+        function initApplication() {
             // First, load initial data from template if available
             if (window.initialMonHocData && window.initialMonHocData.length > 0) {
                 monHocData = window.initialMonHocData;
@@ -4178,14 +4328,14 @@
                 renderTable();
                 updateStatistics();
             }
-
+            
             // Then load data asynchronously
             setTimeout(() => {
                 loadInitialData()
                     .then((success) => {
                         if (success) {
-                            // Initialize dropdowns
-                            initializeDropdowns();
+                            // Initialize dropdowns (chỉ dropdown chính, không phải trong bảng)
+                            initializeMainDropdowns();
                             
                             // Setup dropdown events
                             setupDropdownEvents();
@@ -4215,7 +4365,7 @@
                             allCurricula = sampleData.curricula;
                             allCourses = sampleData.courses;
                             
-                            initializeDropdowns();
+                            initializeMainDropdowns();
                             setupDropdownEvents();
                             setupEventListeners();
                         }
@@ -4224,8 +4374,39 @@
                         console.error('❌ Initialization error:', error);
                         showNotification('Lỗi khởi tạo ứng dụng', 'error');
                     });
-            }, 100);
-        });
+            }, 500);
+        }
+
+        // Hàm riêng để khởi tạo dropdown chính
+        function initializeMainDropdowns() {
+            console.log('Initializing main dropdowns...');
+            
+            const dropdowns = [
+                { id: 'khoa-dao-tao', placeholder: '-- Chọn khoa --' },
+                { id: 'to-bo-mon', placeholder: '-- Chọn tổ bộ môn --' },
+                { id: 'chuong-trinh-dao-tao', placeholder: '-- Chọn chương trình --' },
+                { id: 'khoa-hoc', placeholder: '-- Chọn khóa học --' }
+            ];
+            
+            dropdowns.forEach(dropdown => {
+                const $select = $(`#${dropdown.id}`);
+                if ($select.length) {
+                    // Destroy existing Select2
+                    if ($select.hasClass('select2-hidden-accessible')) {
+                        $select.select2('destroy');
+                    }
+                    
+                    // Initialize Select2
+                    $select.select2({
+                        width: '100%',
+                        placeholder: dropdown.placeholder,
+                        allowClear: true,
+                        language: 'vi',
+                        minimumResultsForSearch: 0
+                    });
+                }
+            });
+        }
 
         // Cleanup on page unload
         $(window).on('beforeunload', function() {
