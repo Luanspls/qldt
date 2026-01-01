@@ -247,6 +247,48 @@
             max-height: 500px;
             overflow-y: auto;
             position: relative;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f1f1f1;
+        }
+
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Đảm bảo các ô không bị co lại */
+        .table-container table td, 
+        .table-container table th {
+            box-sizing: border-box;
+        }
+
+        /* Giữ cho header luôn hiển thị đầy đủ */
+        .table-container thead th {
+            background-color: #f9fafb;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 1px 0 #e5e7eb;
+        }
+
+        .table-container table {
+            table-layout: fixed;
+            width: 100%;
         }
 
         /* Đảm bảo nội dung trong ô không bị tràn */
@@ -282,20 +324,38 @@
         }
 
         /* Độ rộng cột cụ thể */
-        .col-tt { width: 48px; min-width: 48px; }
-        .col-ma { width: 100px; min-width: 100px; }
-        .col-ten { width: 220px; min-width: 220px; }
-        .col-tinchi { width: 64px; min-width: 64px; }
-        .col-gio { width: 80px; min-width: 80px; }
-        .col-lythuyet { width: 64px; min-width: 64px; }
-        .col-thuchanh { width: 64px; min-width: 64px; }
-        .col-kiemtra { width: 50px; min-width: 50px; }
-        .col-thi { width: 40px; min-width: 40px; }
-        .col-hk { width: 48px; min-width: 48px; }
-        .col-donvi { width: 180px; min-width: 180px; }
-        .col-giangvien { width: 200px; min-width: 200px; }
-        .col-course { width: 150px; min-width: 150px; }
-        .col-thaotac { width: 80px; min-width: 80px; }
+        .col-tt { min-width: 40px; max-width: 50px; }
+        .col-ma { min-width: 80px; max-width: 120px; }
+        .col-ten { min-width: 200px; max-width: 300px; }
+        .col-tinchi { min-width: 60px; max-width: 80px; }
+        .col-gio { min-width: 70px; max-width: 90px; }
+        .col-lythuyet { min-width: 60px; max-width: 80px; }
+        .col-thuchanh { min-width: 60px; max-width: 80px; }
+        .col-kiemtra { min-width: 60px; max-width: 80px; }
+        .col-thi { min-width: 40px; max-width: 60px; }
+        .col-hk { min-width: 40px; max-width: 60px; }
+        .col-donvi { min-width: 150px; max-width: 250px; }
+        .col-giangvien { min-width: 150px; max-width: 250px; }
+        .col-course { min-width: 120px; max-width: 180px; }
+        .col-thaotac { min-width: 70px; max-width: 100px; }
+
+        .wrap-cell {
+            white-space: normal;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .table-container table td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 0;
+        }
+
+        .table-container table td.col-ten {
+            white-space: normal;
+            word-wrap: break-word;
+        }
 
         /* Table header sticky */
         .bg-gray-50.sticky {
@@ -1150,25 +1210,25 @@
                 <table class="min-w-full divide-y divide-gray-200 table-fixed">
                     <thead class="bg-gray-50 sticky top-0" style="z-index: 10;">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">TT</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Mã môn học</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Tên học phần</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Số tín chỉ</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Tổng số giờ</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Lý thuyết</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Thực hành</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Kiểm tra</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Thi</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">HK1</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">HK2</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider wg-12">HK3</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider wg-12">HK4</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">HK5</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">HK6</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-60">Đơn vị</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Giảng viên</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Khóa học</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Thao tác</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-tt">TT</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-ma">Mã môn học</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-ten">Tên học phần</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-tinchi">Số tín chỉ</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-gio">Tổng số giờ</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-lythuyet">Lý thuyết</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-thuchanh">Thực hành</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-kiemtra">Kiểm tra</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-thi">Thi</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-hk1">HK1</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-hk2">HK2</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-hk3">HK3</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-hk4">HK4</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-hk5">HK5</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-hk6">HK6</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-donvi">Đơn vị</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-giangvien">Giảng viên</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-course">Khóa học</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-thaotac">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="bg-white divide-y divide-gray-200">
@@ -2035,14 +2095,6 @@
             }
         }
 
-        // Thêm sự kiện để đóng dropdown khi click ra ngoài modal
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('#modal-them-mon-hoc').length && 
-                !$(e.target).hasClass('select2-container')) {
-                $('.select2-container--open').select2('close');
-            }
-        });
-
         // Khởi tạo Select2 cho modal thêm chương trình
         function initializeSelect2ForCurriculumModal() {
             console.log('Initializing Select2 for curriculum modal...');
@@ -2561,50 +2613,50 @@
                 row.className = 'hover:bg-gray-50';
                 
                 row.innerHTML = `
-                    <td class="px-2 py-2 text-center">${index + 1}</td>
-                    <td class="px-2 py-2">
+                    <td class="px-2 py-2 text-center col-tt">${index + 1}</td>
+                    <td class="px-2 py-2 col-ma">
                         <input type="text" value="${escapeHtml(item.ma_mon_hoc || '')}" 
                             class="editable w-full bg-transparent border-none text-sm text-center"
                             data-field="code" data-id="${item.id}" readonly>
                     </td>
-                    <td class="px-2 py-2">
+                    <td class="px-2 py-2 col-ten wrap-cell">
                         <input type="text" value="${escapeHtml(item.ten_mon_hoc || '')}" 
                             class="editable w-full bg-transparent border-none text-sm"
                             data-field="name" data-id="${item.id}" readonly>
                     </td>
-                    <td class="px-2 py-2 text-center">
+                    <td class="px-2 py-2 text-center col-tinchi">
                         <input type="number" value="${item.so_tin_chi || 0}" 
                             class="editable w-full bg-transparent border-none text-sm text-center"
                             data-field="credits" data-id="${item.id}" readonly>
                     </td>
-                    <td class="px-2 py-2 text-center">
+                    <td class="px-2 py-2 text-center col-gio">
                         <input type="number" value="${item.tong_so_gio || 0}" 
                             class="editable w-full bg-transparent border-none text-sm text-center"
                             data-field="total_hours" data-id="${item.id}" readonly>
                     </td>
-                    <td class="px-2 py-2 text-center">
+                    <td class="px-2 py-2 text-center col-lythuyet">
                         <input type="number" value="${item.ly_thuyet || 0}" 
                             class="editable w-full bg-transparent border-none text-sm text-center"
                             data-field="theory_hours" data-id="${item.id}" readonly>
                     </td>
-                    <td class="px-2 py-2 text-center">
+                    <td class="px-2 py-2 text-center col-thuchanh">
                         <input type="number" value="${item.thuc_hanh || 0}" 
                             class="editable w-full bg-transparent border-none text-sm text-center"
                             data-field="practice_hours" data-id="${item.id}" readonly>
                     </td>
-                    <td class="px-2 py-2 text-center">
+                    <td class="px-2 py-2 text-center col-kiemtra">
                         <input type="number" value="${item.kiem_tra || 0}" 
                             class="editable w-full bg-transparent border-none text-sm text-center"
                             data-field="tests_hours" data-id="${item.id}" readonly>
                     </td>
-                    <td class="px-2 py-2 text-center">
+                    <td class="px-2 py-2 text-center col-thi">
                         <input type="number" value="${item.thi || 0}" 
                             class="editable w-full bg-transparent border-none text-sm text-center"
                             data-field="exam_hours" data-id="${item.id}" readonly>
                     </td>
                     <!-- HK columns -->
                     ${[1,2,3,4,5,6].map(i => `
-                        <td class="px-2 py-2 text-center">
+                        <td class="px-2 py-2 text-center col-hk">
                             <input type="number" value="${item[`hk${i}`] || ''}" 
                                 class="editable w-full bg-transparent border-none text-sm text-center"
                                 data-field="hk${i}" data-id="${item.id}" readonly
@@ -2612,7 +2664,7 @@
                         </td>
                     `).join('')}
                     <!-- Department select -->
-                    <td class="px-2 py-2">
+                    <td class="px-2 py-2 col-donvi">
                         <select class="editable w-full text-sm" 
                                 data-field="department" data-id="${item.id}" disabled>
                             <option value="">-- Chọn đơn vị --</option>
@@ -2624,13 +2676,13 @@
                         </select>
                     </td>
                     <!-- Instructor input -->
-                    <td class="px-2 py-2">
+                    <td class="px-2 py-2 col-giangvien">
                         <input type="text" value="${escapeHtml(item.giang_vien || '')}" 
                             class="editable w-full bg-transparent border-none text-sm"
                             data-field="instructor" data-id="${item.id}" readonly>
                     </td>
                     <!-- Course select -->
-                    <td class="px-2 py-2">
+                    <td class="px-2 py-2 col-course">
                         <select class="editable course-select w-full text-sm" 
                                 data-field="course" data-id="${item.id}" disabled>
                             <option value="">-- Chọn --</option>
@@ -2642,7 +2694,7 @@
                         </select>
                     </td>
                     <!-- Action buttons -->
-                    <td class="px-2 py-2 text-center">
+                    <td class="px-2 py-2 text-center col-thaotac">
                         <button class="btn-sua text-blue-600 hover:text-blue-900 mr-2" 
                                 data-id="${item.id}" title="Sửa">
                             <i class="fas fa-edit"></i>
@@ -2680,6 +2732,10 @@
                     });
                 });
             }, 100);
+
+            setTimeout(() => {
+                autoAdjustColumnWidths();
+            }, 100);
         }
 
 		// Hàm escape HTML để tránh XSS
@@ -2690,6 +2746,60 @@
             return div.innerHTML;
 		}
 		
+        function autoAdjustColumnWidths() {
+            const table = document.querySelector('.table-container table');
+            if (!table) return;
+            
+            // Lấy tất cả các hàng
+            const rows = table.querySelectorAll('tbody tr');
+            if (rows.length === 0) return;
+            
+            // Lấy tất cả các cột
+            const columns = table.querySelectorAll('thead th');
+            
+            // Mảng lưu độ rộng tối đa của mỗi cột
+            const maxWidths = Array(columns.length).fill(0);
+            
+            // Duyệt qua tất cả các ô để tìm độ rộng tối đa
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                cells.forEach((cell, index) => {
+                    if (index < columns.length) {
+                        // Tính độ rộng thực tế của nội dung
+                        const contentWidth = cell.scrollWidth;
+                        const currentMax = maxWidths[index];
+                        
+                        // Cập nhật độ rộng tối đa
+                        if (contentWidth > currentMax) {
+                            maxWidths[index] = contentWidth;
+                        }
+                    }
+                });
+            });
+            
+            // Áp dụng độ rộng cho các cột (với giới hạn tối đa)
+            columns.forEach((col, index) => {
+                if (index < maxWidths.length) {
+                    const calculatedWidth = Math.min(maxWidths[index] + 20, 300); // Giới hạn tối đa 300px
+                    const minWidth = col.classList.contains('col-ten') ? 200 : 60;
+                    const finalWidth = Math.max(calculatedWidth, minWidth);
+                    
+                    // Áp dụng độ rộng
+                    col.style.minWidth = `${finalWidth}px`;
+                    col.style.width = `${finalWidth}px`;
+                    
+                    // Áp dụng cho tất cả ô trong cột này
+                    const columnCells = table.querySelectorAll(`tbody td:nth-child(${index + 1})`);
+                    columnCells.forEach(cell => {
+                        cell.style.minWidth = `${finalWidth}px`;
+                        cell.style.maxWidth = `${finalWidth}px`;
+                    });
+                }
+            });
+            
+            console.log('Auto-adjusted column widths');
+        }
+
         // Cập nhật thống kê
         function updateStatistics() {
             if (!monHocData || monHocData.length === 0) {
