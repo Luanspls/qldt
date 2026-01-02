@@ -56,16 +56,19 @@
             display: flex !important;
         }
 
-        #modal-them-mon-hoc > div {
-            z-index: 1051 !important;
+        #modal-them-mon-hoc > div,
+        #modal-them-chuong-trinh > div,
+        #modal-import > div {
+            /*z-index: 1051 !important;
             position: relative;
             max-height: 90vh !important;
-            overflow: visible !important;
+            overflow-y: auto !important;
             background-color: white !important;
             border-radius: 0.5rem !important;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
             width: 95% !important;
-            max-width: 1200px !important;
+            max-width: 1200px !important;*/
+            overflow: visible !important;
         }
 
 		.modal {
@@ -116,8 +119,18 @@
         .modal .select2-search__field {
             width: 100% !important;
             padding: 6px 10px;
-            border: 1px solid #d1d5db;
+            border: 2px solid #d1d5db !important;
+            background-color: #f9fafb !important;
             border-radius: 4px;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+            box-sizing: border-box !important;
+        }
+
+        .modal .select2-search__field:focus {
+            border-color: #3b82f6 !important;
+            background-color: white !important;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important;
         }
 
         /* Fix cho Select2 trong modal thêm môn học */
@@ -133,6 +146,7 @@
             display: flex !important;
             align-items: center !important;
             padding: 0 8px;
+            cursor: pointer !important;
         }
 
         #modal-them-mon-hoc .select2-selection__rendered {
@@ -141,7 +155,9 @@
         }
 
         /* Đảm bảo dropdown không bị cắt */
-        #modal-them-mon-hoc {
+        #modal-them-mon-hoc,
+        #modal-them-chuong-trinh,
+        #modal-import {
             overflow: visible !important;
         }
 
@@ -173,7 +189,19 @@
 
 		.select2-container--default .select2-selection--single {
 		    transition: border-color 0.2s;
+            cursor: pointer !important;
 		}
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 38px !important;
+        }
+
+        /* Đảm bảo ô tìm kiếm được focus */
+        .select2-search__field:focus {
+            outline: 2px solid #3b82f6 !important;
+            outline-offset: 2px !important;
+            border-color: #3b82f6 !important;
+        }
+
         .select2-container--default .select2-selection--multiple {
             height: auto !important;
             padding: 0.5rem 0.75rem !important;
@@ -185,12 +213,62 @@
             border: none !important;
             border-radius: 0.25rem !important;
         }
-
+        
+        /* ===== SELECT2 SEARCH FIELD ENHANCEMENTS ===== */
         .select2-dropdown {
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+        
+        /* Đảm bảo ô tìm kiếm luôn hiển thị và có style đẹp */
+        .select2-search--dropdown {
+            display: block !important;
+            padding: 8px !important;
+            background-color: white !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            position: relative !important;
+        }
+
+        .select2-search__field {
+            width: 100% !important;
+            padding: 8px 12px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 6px !important;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+            color: #374151 !important;
+            background-color: white !important;
+            transition: all 0.2s ease !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .select2-search__field:focus {
+            outline: none !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        }
+
+        .select2-search__field::placeholder {
+            color: #9ca3af !important;
+        }
+
+        /* Đảm bảo dropdown có đủ không gian cho ô tìm kiếm */
+        .select2-dropdown {
+            padding-top: 0 !important;
+        }
+
+        /* Style cho kết quả tìm kiếm */
+        .select2-results__option {
+            padding: 8px 12px !important;
+            font-size: 14px !important;
+        }
+
+        .select2-results__option--highlighted {
+            background-color: #3b82f6 !important;
+            color: white !important;
+        }
+
 
         /* ===== INPUT & FORM STYLES ===== */
 		#modal-them-mon-hoc, 
@@ -2052,10 +2130,10 @@
         		$('.select2-container--open').select2('close');
 
                 // Đảm bảo modal hiển thị đúng
-                $(monHocModal).css({
-                    'display': 'flex',
-                    'z-index': '1050'
-                });
+                //$(monHocModal).css({
+                //    'display': 'flex',
+                //    'z-index': '1050'
+                //});
 				
 				// Initialize all selects in modal
                 const selects = [
@@ -2080,11 +2158,28 @@
                         // Initialize with modal as parent
                         $select.select2({
                             width: '100%',
-                            dropdownParent: modal,
+                            dropdownParent: monHocModal,
                             language: 'vi',
                             placeholder: $select.attr('placeholder') || '-- Chọn --',
                             allowClear: true,
-                            minimumResultsForSearch: 0
+                            minimumResultsForSearch: 0,
+                            dropdownCssClass: 'modal-select2-dropdown',
+                            containerCssClass: 'modal-select2-container'
+                        });
+
+                        // Thêm sự kiện để tự động focus vào ô tìm kiếm khi mở dropdown
+                        $select.on('select2:open', function() {
+                            console.log('Select2 opened:', selector);
+                            
+                            setTimeout(() => {
+                                // Tìm ô tìm kiếm trong dropdown
+                                const searchField = $('.select2-container--open .select2-search__field');
+                                if (searchField.length) {
+                                    searchField.focus();
+                                } else {
+                                    console.log('Search field not found for:', selector);
+                                }
+                            }, 100);
                         });
                     }
                 });
@@ -2101,20 +2196,41 @@
             
             try {
                 const chuongTrinhModal = $('#modal-them-chuong-trinh');
-                
                 if (!chuongTrinhModal) return;
 
 				// Đóng tất cả Select2 đang mở trước
-        		closeAllOpenSelect2();
+        		$('.select2-container--open').select2('close');
 
-                $('select[name="major_id"]').select2({
-                    width: '100%',
-                    placeholder: '-- Chọn ngành --',
-                    allowClear: true,
-                    language: 'vi',
-                    dropdownParent: chuongTrinhModal,
-                    //dropdownCssClass: 'modal-select2'
-                });
+                const $select = $('#them-chuong-trinh-major');
+                if ($select.length) {
+                    // Destroy nếu đã được khởi tạo
+                    if ($select.hasClass('select2-hidden-accessible')) {
+                        $select.select2('destroy');
+                    }
+                    
+                    // Khởi tạo Select2 với cấu hình đầy đủ
+                    $select.select2({
+                        width: '100%',
+                        dropdownParent: chuongTrinhModal,
+                        language: 'vi',
+                        placeholder: '-- Chọn ngành --',
+                        allowClear: true,
+                        minimumResultsForSearch: 0, // Luôn hiển thị ô tìm kiếm
+                        dropdownCssClass: 'modal-select2-dropdown',
+                        containerCssClass: 'modal-select2-container'
+                    });
+                    
+                    // Thêm sự kiện để tự động focus vào ô tìm kiếm khi mở dropdown
+                    $select.on('select2:open', function() {                        
+                        setTimeout(() => {
+                            const searchField = $('.select2-container--open .select2-search__field');
+                            if (searchField.length) {
+                                searchField.focus();
+                                console.log('Focused search field for major');
+                            }
+                        }, 100);
+                    });
+                }
 
                 console.log('Select2 initialized for curriculum modal');
                 
@@ -3748,8 +3864,28 @@
         
         // Mở modal thêm chương trình
         function openThemChuongTrinhModal() {
-			$('#modal-them-chuong-trinh').removeClass('hidden');
+            console.log('Opening add curriculum modal...');
+
+			// Hiển thị modal
+            $('#modal-them-chuong-trinh').removeClass('hidden');
             $('body').addClass('overflow-hidden');
+            
+            // Reset form
+            $('#form-them-chuong-trinh')[0].reset();
+            
+            // Khởi tạo Select2 sau khi modal hiển thị
+            setTimeout(() => {
+                // Đảm bảo modal đã hiển thị hoàn toàn
+                $('#modal-them-chuong-trinh').css({
+                    'display': 'flex',
+                    'z-index': '1050'
+                });
+                
+                // Khởi tạo Select2
+                initializeSelect2ForCurriculumModal();
+                
+                console.log('Curriculum modal fully initialized');
+            }, 150);
         }
 
         // Đóng modal thêm chương trình
@@ -3889,13 +4025,22 @@
             $('#existing-subject-info').addClass('hidden');
 
             setTimeout(() => {
-                loadExistingSubjects();
+                // Đảm bảo modal đã hiển thị hoàn toàn
+                $('#modal-them-mon-hoc').css({
+                    'display': 'flex',
+                    'z-index': '1050'
+                });
+
+                // Khởi tạo Select2 trong modal
                 initializeSelect2ForSubjectModal();
+                // Enable tất cả inputs trong modal
                 enableModalInputs();
+                // Tải danh sách môn học có sẵn
+                loadExistingSubjects();
                 
                 // Đảm bảo Select2 được refresh
                 $('#select-existing-subject').val('').trigger('change.select2');
-            }, 100);
+            }, 150);
         }
 
 		// Hàm cleanup khi đóng modal
@@ -4233,45 +4378,33 @@
 		    const allInputs = monHocModal.querySelectorAll('input, select, textarea');
 		    allInputs.forEach(input => {
 		        // Remove any blocking attributes
-		        input.removeAttribute('disabled');
-		        input.removeAttribute('readonly');
+		        input.disabled = false;
+                input.readOnly = false;
 		        
 		        // Force styles
 		        input.style.pointerEvents = 'auto';
-		        input.style.cursor = 'text';
-		        input.style.userSelect = 'auto';
-		        input.style.webkitUserSelect = 'auto';
+                input.style.opacity = '1';
 		        input.style.backgroundColor = 'white';
-		        input.style.color = '#000';
-		        input.style.opacity = '1';
 		        
-		        // Add event listeners to ensure they work
-		        input.addEventListener('mousedown', function(e) {
-		            e.stopPropagation();
-		        });
-		        
-		        input.addEventListener('click', function(e) {
-		            e.stopPropagation();
-		        });
-		        
-		        input.addEventListener('focus', function(e) {
-		            this.style.outline = '2px solid #3b82f6';
-		        });
-		        
-		        input.addEventListener('blur', function(e) {
-		            this.style.outline = '';
-		        });
-		    });
+		        // Đảm bảo select có thể click được
+                if (input.tagName === 'SELECT') {
+                    input.style.cursor = 'pointer';
+                }
+            });
 
             // Đảm bảo Select2 được enable
             setTimeout(() => {
                 $('.modal select').each(function() {
                     const $select = $(this);
                     if ($select.hasClass('select2-hidden-accessible')) {
-                        $select.select2('enable');
+                        try {
+                            $select.select2('enable');
+                        } catch (e) {
+                            console.log('Could not enable Select2:', e);
+                        }
                     }
                 });
-            }, 50);
+            }, 100);
 		}
 
 		// ===== ENTER EDIT MODE FUNCTION =====
@@ -4607,8 +4740,40 @@
             }, 500);
         }
 
+        // Hàm fix chung cho tất cả Select2 dropdowns
+        function fixAllSelect2Dropdowns() {
+            console.log('Fixing all Select2 dropdowns...');
+            
+            // Thêm sự kiện cho tất cả Select2 để tự động focus
+            $(document).on('select2:open', () => {
+                setTimeout(() => {
+                    const searchField = document.querySelector('.select2-container--open .select2-search__field');
+                    if (searchField) {
+                        searchField.focus();
+                        console.log('Auto-focused search field');
+                    }
+                }, 100);
+            });
+            
+            // Đảm bảo dropdown của Select2 trong modal có z-index đúng
+            $(document).on('click', '.select2-selection', function() {
+                const $select = $(this).closest('.select2-container').prev('select');
+                if ($select.closest('.modal').length) {
+                    setTimeout(() => {
+                        const $dropdown = $('.select2-dropdown');
+                        if ($dropdown.length) {
+                            $dropdown.css('z-index', '10000');
+                        }
+                    }, 50);
+                }
+            });
+        }
+
         $(document).ready(function() {
             console.log('Document ready, initializing...');
+
+            // Fix Select2 dropdowns
+            fixAllSelect2Dropdowns();
             
             // Đảm bảo jQuery và Select2 đã tải xong
             if (typeof $ === 'undefined' || typeof $.fn.select2 === 'undefined') {
@@ -4708,7 +4873,21 @@
                         placeholder: dropdown.placeholder,
                         allowClear: true,
                         language: 'vi',
-                        minimumResultsForSearch: 0
+                        minimumResultsForSearch: 0,
+                        dropdownParent: $('body')
+                    });
+
+                    // Thêm sự kiện để tự động focus vào ô tìm kiếm khi mở dropdown
+                    $select.on('select2:open', function() {
+                        console.log(`Select2 opened for ${dropdown.id}`);
+                        
+                        setTimeout(() => {
+                            const searchField = $('.select2-container--open .select2-search__field');
+                            if (searchField.length) {
+                                searchField.focus();
+                                console.log(`Focused search field for ${dropdown.id}`);
+                            }
+                        }, 100);
                     });
                 }
             });
